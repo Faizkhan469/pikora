@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with text, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
+<meta name="description" content="Free online photo editor with editable text, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
@@ -44,11 +44,13 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .canvas-area{min-height:450px;background:#080d19;border:1px dashed #354568;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:15px;overflow:hidden}
 canvas{display:block;max-width:100%;max-height:650px;width:auto;height:auto;touch-action:none;cursor:grab}
 canvas.dragging{cursor:grabbing}
+canvas.selecting{cursor:pointer}
 .placeholder{text-align:center;color:#8292ae;padding:40px}
 .placeholder strong{display:block;color:#c4b5fd;font-size:20px;margin-bottom:10px}
 .history-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .status{font-size:12px;color:#a5b4fc;min-height:16px}
 .note{font-size:12px;color:#8292ae;line-height:1.5;margin:0}
+.selected-info{background:#1c2944;border:1px solid #465a82;padding:10px;border-radius:8px;font-size:12px;color:#cbd5e1;line-height:1.5;margin-bottom:12px}
 @media(max-width:850px){.editor{grid-template-columns:1fr}.workspace{min-height:420px}.canvas-area{min-height:300px}}
 </style>
 </head>
@@ -61,7 +63,7 @@ canvas.dragging{cursor:grabbing}
 
 <main>
 <h1>Free Photo Editor</h1>
-<p class="subtitle">Edit photos, add text and stickers, apply filters and download your creation. Free, with no watermark.</p>
+<p class="subtitle">Edit photos, add and edit text, stickers, filters and download your creation. Free, with no watermark.</p>
 
 <div class="editor">
 <aside class="panel">
@@ -85,13 +87,10 @@ canvas.dragging{cursor:grabbing}
 <h2>3. Adjustments</h2>
 <label>Brightness <span class="range-value" id="brightnessValue">100%</span></label>
 <input type="range" id="brightness" min="0" max="200" value="100">
-
 <label>Contrast <span class="range-value" id="contrastValue">100%</span></label>
 <input type="range" id="contrast" min="0" max="200" value="100">
-
 <label>Saturation <span class="range-value" id="saturationValue">100%</span></label>
 <input type="range" id="saturation" min="0" max="200" value="100">
-
 <label>Blur <span class="range-value" id="blurValue">0px</span></label>
 <input type="range" id="blur" min="0" max="15" value="0">
 </div>
@@ -130,8 +129,13 @@ canvas.dragging{cursor:grabbing}
 </div>
 
 <div class="section">
-<h2>6. Add & Style Text</h2>
-<label>Your Text</label>
+<h2>6. Add & Edit Text</h2>
+
+<div class="selected-info" id="selectionInfo">
+No text selected. Click text on your photo to select it, or double-click to edit it.
+</div>
+
+<label>Text Content</label>
 <input type="text" id="textInput" placeholder="Type your text here">
 
 <label>Font Family</label>
@@ -165,7 +169,12 @@ canvas.dragging{cursor:grabbing}
 <label for="textItalic">Italic</label>
 </div>
 
-<button class="full" id="addText">＋ Add Styled Text</button>
+<div class="btn-grid">
+<button class="full" id="addText">＋ Add New Text</button>
+<button class="full" id="updateText" disabled>✓ Update Selected Text</button>
+</div>
+<button class="danger full" id="deleteSelected" disabled>Delete Selected</button>
+<p class="note">Click existing text to select it. Double-click it to load it into these editing controls. Change the text or style, then press Update Selected Text.</p>
 </div>
 
 <div class="section">
@@ -230,7 +239,6 @@ canvas.dragging{cursor:grabbing}
 <strong>Editing Workspace</strong>
 <span id="imageInfo">No image uploaded</span>
 </div>
-
 <div class="canvas-area">
 <div class="placeholder" id="placeholder">
 <strong>Your photo will appear here</strong>
@@ -238,7 +246,6 @@ Upload an image to start editing.
 </div>
 <canvas id="canvas" hidden></canvas>
 </div>
-
 <div class="status" id="status">Ready to edit your photo.</div>
 <p class="note">Your photo is processed in your browser. It is not uploaded to a Pikora server.</p>
 </section>
@@ -260,6 +267,7 @@ let flipV=false;
 let overlays=[];
 let outputWidth=0;
 let outputHeight=0;
+let selectedIndex=-1;
 
 let history=[];
 let future=[];
@@ -285,20 +293,22 @@ function readControls(){
   };
 }
 
-function saveSnapshot(){
-  if(!img)return;
-
-  const snapshot={
+function makeSnapshot(){
+  return {
     angle,
     flipH,
     flipV,
     overlays:JSON.parse(JSON.stringify(overlays)),
     outputWidth,
     outputHeight,
+    selectedIndex,
     controls:readControls()
   };
+}
 
-  history.push(snapshot);
+function saveSnapshot(){
+  if(!img)return;
+  history.push(makeSnapshot());
   if(history.length>HISTORY_LIMIT)history.shift();
   future=[];
   updateHistoryButtons();
@@ -307,9 +317,33 @@ function saveSnapshot(){
 function updateHistoryButtons(){
   document.getElementById("undo").disabled=history.length===0;
   document.getElementById("redo").disabled=future.length===0;
-
   document.getElementById("historyInfo").textContent=
     `${history.length} undo step(s) available · ${future.length} redo step(s) available`;
+}
+
+function updateSelectionControls(){
+  const item=overlays[selectedIndex];
+  const info=document.getElementById("selectionInfo");
+  const updateButton=document.getElementById("updateText");
+  const deleteButton=document.getElementById("deleteSelected");
+
+  if(!item){
+    selectedIndex=-1;
+    info.textContent="No text selected. Click text on your photo to select it, or double-click to edit it.";
+    updateButton.disabled=true;
+    deleteButton.disabled=true;
+    return;
+  }
+
+  deleteButton.disabled=false;
+
+  if(item.type==="text"){
+    info.textContent="Text selected. Edit its content or style below, then click Update Selected Text.";
+    updateButton.disabled=false;
+  }else{
+    info.textContent="An overlay is selected. You can move or delete it. Select text to edit its words.";
+    updateButton.disabled=true;
+  }
 }
 
 function applySnapshot(snapshot){
@@ -319,6 +353,9 @@ function applySnapshot(snapshot){
   overlays=JSON.parse(JSON.stringify(snapshot.overlays));
   outputWidth=snapshot.outputWidth;
   outputHeight=snapshot.outputHeight;
+  selectedIndex=snapshot.selectedIndex??-1;
+
+  if(selectedIndex>=overlays.length)selectedIndex=-1;
 
   document.getElementById("brightness").value=snapshot.controls.brightness;
   document.getElementById("contrast").value=snapshot.controls.contrast;
@@ -329,39 +366,22 @@ function applySnapshot(snapshot){
 
   updateRangeLabels();
   updateResizeFields();
+  updateSelectionControls();
   render();
   updateHistoryButtons();
 }
 
 function undo(){
   if(!history.length)return;
-
-  future.push({
-    angle,flipH,flipV,
-    overlays:JSON.parse(JSON.stringify(overlays)),
-    outputWidth,outputHeight,
-    controls:readControls()
-  });
-
-  const previous=history.pop();
-  applySnapshot(previous);
+  future.push(makeSnapshot());
+  applySnapshot(history.pop());
   setStatus("Undo successful.");
 }
 
 function redo(){
   if(!future.length)return;
-
-  history.push({
-    angle,flipH,flipV,
-    overlays:JSON.parse(JSON.stringify(overlays)),
-    outputWidth,outputHeight,
-    controls:readControls()
-  });
-
-  const next=future.pop();
-  applySnapshot(next);
-  updateHistoryButtons();
-  render();
+  history.push(makeSnapshot());
+  applySnapshot(future.pop());
   setStatus("Redo successful.");
 }
 
@@ -370,7 +390,6 @@ document.getElementById("redo").addEventListener("click",redo);
 
 function getCropDimensions(){
   if(!img)return {width:0,height:0};
-
   const ratio=document.getElementById("crop").value;
   const originalRatio=img.width/img.height;
 
@@ -378,7 +397,6 @@ function getCropDimensions(){
 
   const parts=ratio.split(":").map(Number);
   const targetRatio=parts[0]/parts[1];
-
   let width=img.width;
   let height=img.height;
 
@@ -391,7 +409,6 @@ function getCropDimensions(){
 function getBaseDimensions(){
   const crop=getCropDimensions();
   const rotated=Math.abs(angle%180)===90;
-
   return rotated
     ? {width:crop.height,height:crop.width}
     : {width:crop.width,height:crop.height};
@@ -399,7 +416,6 @@ function getBaseDimensions(){
 
 function updateResizeFields(){
   if(!img)return;
-
   const base=getBaseDimensions();
   document.getElementById("resizeWidth").value=outputWidth||Math.round(base.width);
   document.getElementById("resizeHeight").value=outputHeight||Math.round(base.height);
@@ -408,7 +424,6 @@ function updateResizeFields(){
 function makeBaseCanvas(){
   const crop=getCropDimensions();
   const base=document.createElement("canvas");
-
   const baseWidth=Math.max(1,Math.round(angle%180===0?crop.width:crop.height));
   const baseHeight=Math.max(1,Math.round(angle%180===0?crop.height:crop.width));
 
@@ -442,6 +457,22 @@ function getFilter(){
   const preset=document.getElementById("filter").value;
 
   return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px) ${preset==="none"?"":preset}`;
+}
+
+function getTextBounds(item){
+  ctx.save();
+  const weight=item.bold?"bold":"normal";
+  const italic=item.italic?"italic":"normal";
+  ctx.font=`${italic} ${weight} ${item.size}px "${item.fontFamily}"`;
+  const width=ctx.measureText(item.text).width;
+  ctx.restore();
+
+  return {
+    x:item.x-width/2-10,
+    y:item.y-item.size/2-10,
+    width:width+20,
+    height:item.size+20
+  };
 }
 
 function drawOverlays(context){
@@ -489,6 +520,45 @@ function drawOverlays(context){
   });
 }
 
+function drawSelection(){
+  const item=overlays[selectedIndex];
+  if(!item)return;
+
+  ctx.save();
+  ctx.strokeStyle="#a78bfa";
+  ctx.lineWidth=2;
+  ctx.setLineDash([7,5]);
+
+  let x,y,width,height;
+
+  if(item.type==="text"){
+    const bounds=getTextBounds(item);
+    x=bounds.x;
+    y=bounds.y;
+    width=bounds.width;
+    height=bounds.height;
+  }else if(item.type==="rect"){
+    x=item.x-78;
+    y=item.y-53;
+    width=156;
+    height=106;
+  }else if(item.type==="circle"){
+    x=item.x-53;
+    y=item.y-53;
+    width=106;
+    height=106;
+  }else{
+    x=item.x-item.size*.8;
+    y=item.y-item.size*.8;
+    width=item.size*1.6;
+    height=item.size*1.6;
+  }
+
+  ctx.strokeRect(x,y,width,height);
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 function render(){
   if(!img)return;
 
@@ -506,12 +576,14 @@ function render(){
   ctx.drawImage(base,0,0);
   ctx.filter="none";
   drawOverlays(ctx);
+  drawSelection();
   ctx.restore();
 
   canvas.hidden=false;
   placeholder.hidden=true;
   imageInfo.textContent=`${width} × ${height} px`;
   updateResizeFields();
+  updateSelectionControls();
 }
 
 function addOverlay(item){
@@ -521,14 +593,14 @@ function addOverlay(item){
   }
 
   saveSnapshot();
-
   const dimensions=getBaseDimensions();
   item.x=dimensions.width/2;
   item.y=dimensions.height/2;
   overlays.push(item);
+  selectedIndex=overlays.length-1;
 
   render();
-  setStatus("Added! Drag it on the photo to position it.");
+  setStatus("Added! Click to select it and drag to reposition.");
 }
 
 function updateRangeLabels(){
@@ -558,6 +630,7 @@ upload.addEventListener("change",event=>{
       flipH=false;
       flipV=false;
       overlays=[];
+      selectedIndex=-1;
       outputWidth=0;
       outputHeight=0;
 
@@ -569,7 +642,6 @@ upload.addEventListener("change",event=>{
       document.getElementById("filter").value="none";
 
       updateRangeLabels();
-
       history=[];
       future=[];
       render();
@@ -643,28 +715,86 @@ document.getElementById("flipV").addEventListener("click",()=>{
   render();
 });
 
-document.getElementById("addText").addEventListener("click",()=>{
-  const text=document.getElementById("textInput").value.trim();
+function getTextStyleFromControls(){
+  return {
+    text:document.getElementById("textInput").value.trim(),
+    color:document.getElementById("textColor").value,
+    outlineColor:document.getElementById("outlineColor").value,
+    outlineWidth:Math.max(0,Math.min(15,Number(document.getElementById("outlineWidth").value)||0)),
+    fontFamily:document.getElementById("fontFamily").value,
+    bold:document.getElementById("textBold").checked,
+    italic:document.getElementById("textItalic").checked,
+    size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45))
+  };
+}
 
-  if(!text){
+document.getElementById("addText").addEventListener("click",()=>{
+  const style=getTextStyleFromControls();
+
+  if(!style.text){
     setStatus("Please type some text first.");
     return;
   }
 
-  const size=Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45));
-  const outlineWidth=Math.max(0,Math.min(15,Number(document.getElementById("outlineWidth").value)||0));
-
   addOverlay({
     type:"text",
-    text,
-    color:document.getElementById("textColor").value,
-    outlineColor:document.getElementById("outlineColor").value,
-    outlineWidth,
-    fontFamily:document.getElementById("fontFamily").value,
-    bold:document.getElementById("textBold").checked,
-    italic:document.getElementById("textItalic").checked,
-    size
+    ...style
   });
+});
+
+function loadSelectedTextIntoControls(){
+  const item=overlays[selectedIndex];
+  if(!item||item.type!=="text")return;
+
+  document.getElementById("textInput").value=item.text;
+  document.getElementById("textColor").value=item.color;
+  document.getElementById("outlineColor").value=item.outlineColor;
+  document.getElementById("outlineWidth").value=item.outlineWidth;
+  document.getElementById("fontFamily").value=item.fontFamily;
+  document.getElementById("textBold").checked=item.bold;
+  document.getElementById("textItalic").checked=item.italic;
+  document.getElementById("textSize").value=item.size;
+
+  updateSelectionControls();
+}
+
+document.getElementById("updateText").addEventListener("click",()=>{
+  const item=overlays[selectedIndex];
+
+  if(!item||item.type!=="text"){
+    setStatus("Please select a text overlay first.");
+    return;
+  }
+
+  const style=getTextStyleFromControls();
+
+  if(!style.text){
+    setStatus("Text cannot be empty. Please type something.");
+    return;
+  }
+
+  saveSnapshot();
+
+  const x=item.x;
+  const y=item.y;
+
+  Object.assign(item,style,{x,y,type:"text"});
+
+  render();
+  setStatus("Selected text updated successfully!");
+});
+
+document.getElementById("deleteSelected").addEventListener("click",()=>{
+  if(selectedIndex<0||!overlays[selectedIndex]){
+    setStatus("Please select an overlay first.");
+    return;
+  }
+
+  saveSnapshot();
+  overlays.splice(selectedIndex,1);
+  selectedIndex=-1;
+  render();
+  setStatus("Selected overlay deleted.");
 });
 
 document.getElementById("addSticker").addEventListener("click",()=>{
@@ -691,6 +821,7 @@ document.getElementById("undoOverlay").addEventListener("click",()=>{
 
   saveSnapshot();
   overlays.pop();
+  selectedIndex=-1;
   render();
   setStatus("Last overlay removed.");
 });
@@ -700,6 +831,7 @@ document.getElementById("clearOverlays").addEventListener("click",()=>{
 
   saveSnapshot();
   overlays=[];
+  selectedIndex=-1;
   render();
   setStatus("All overlays removed.");
 });
@@ -724,7 +856,6 @@ document.getElementById("applyResize").addEventListener("click",()=>{
 
 document.getElementById("resetResize").addEventListener("click",()=>{
   if(!img)return;
-
   saveSnapshot();
   outputWidth=0;
   outputHeight=0;
@@ -734,10 +865,8 @@ document.getElementById("resetResize").addEventListener("click",()=>{
 
 function getPointerPosition(event){
   const rect=canvas.getBoundingClientRect();
-
   const outputX=(event.clientX-rect.left)*canvas.width/rect.width;
   const outputY=(event.clientY-rect.top)*canvas.height/rect.height;
-
   const base=getBaseDimensions();
 
   return {
@@ -760,14 +889,8 @@ function hitTest(item,x,y){
   }
 
   if(item.type==="text"){
-    ctx.save();
-    const weight=item.bold?"bold":"normal";
-    const italic=item.italic?"italic":"normal";
-    ctx.font=`${italic} ${weight} ${item.size}px "${item.fontFamily}"`;
-    const width=ctx.measureText(item.text).width;
-    ctx.restore();
-
-    return Math.abs(x-item.x)<=width/2+8 && Math.abs(y-item.y)<=item.size/2+8;
+    const bounds=getTextBounds(item);
+    return x>=bounds.x&&x<=bounds.x+bounds.width&&y>=bounds.y&&y<=bounds.y+bounds.height;
   }
 
   return false;
@@ -781,15 +904,41 @@ canvas.addEventListener("pointerdown",event=>{
   for(let i=overlays.length-1;i>=0;i--){
     if(hitTest(overlays[i],position.x,position.y)){
       saveSnapshot();
+      selectedIndex=i;
       draggingIndex=i;
       activePointer=event.pointerId;
       dragOffsetX=position.x-overlays[i].x;
       dragOffsetY=position.y-overlays[i].y;
 
+      updateSelectionControls();
+      render();
+
       canvas.classList.add("dragging");
       canvas.setPointerCapture(event.pointerId);
       event.preventDefault();
       break;
+    }
+  }
+});
+
+canvas.addEventListener("dblclick",event=>{
+  if(!img)return;
+
+  const position=getPointerPosition(event);
+
+  for(let i=overlays.length-1;i>=0;i--){
+    if(overlays[i].type==="text"&&hitTest(overlays[i],position.x,position.y)){
+      selectedIndex=i;
+      loadSelectedTextIntoControls();
+      render();
+
+      const input=document.getElementById("textInput");
+      input.focus();
+      input.select();
+
+      setStatus("Text loaded into the editing panel. Make your changes and click Update Selected Text.");
+      event.preventDefault();
+      return;
     }
   }
 });
@@ -838,7 +987,14 @@ document.getElementById("download").addEventListener("click",()=>{
   const extension=format==="image/jpeg"?"jpg":format==="image/webp"?"webp":"png";
 
   try{
+    const oldSelection=selectedIndex;
+    selectedIndex=-1;
+    render();
+
     canvas.toBlob(blob=>{
+      selectedIndex=oldSelection;
+      render();
+
       if(!blob){
         setStatus("Could not export the image. Please try again.");
         return;
@@ -872,6 +1028,7 @@ document.getElementById("resetAll").addEventListener("click",()=>{
   flipH=false;
   flipV=false;
   overlays=[];
+  selectedIndex=-1;
   outputWidth=0;
   outputHeight=0;
 
@@ -888,6 +1045,7 @@ document.getElementById("resetAll").addEventListener("click",()=>{
 });
 
 updateHistoryButtons();
+updateSelectionControls();
 </script>
 </body>
 </html>
