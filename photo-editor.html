@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with filters, text, stickers, shapes, blur, crop and resize tools.">
+<meta name="description" content="Free online photo editor with filters, text, stickers, shapes, blur, crop, resize and draggable objects.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#090d1a;color:#fff;font-family:Arial,sans-serif}
@@ -32,11 +33,13 @@ button.secondary{background:#303b55}
 button:disabled{opacity:.4;cursor:not-allowed}
 .workspace{text-align:center;min-height:450px}
 .canvas-wrap{background:#090d1a;border:1px dashed #495573;border-radius:10px;min-height:330px;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
-canvas{max-width:100%;max-height:650px;object-fit:contain}
+canvas{max-width:100%;max-height:650px;object-fit:contain;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
 #empty{color:#8994ac;padding:50px 15px}
 .note{color:#929db4;font-size:12px;margin-top:15px}
 .row{display:flex;gap:8px}
 .row>*{flex:1;min-width:0}
+.status{font-size:13px;color:#c5cadd;margin-top:10px;min-height:18px}
 @media(max-width:800px){.layout{grid-template-columns:1fr}header{padding:15px 4%}}
 </style>
 </head>
@@ -147,8 +150,10 @@ canvas{max-width:100%;max-height:650px;object-fit:contain}
 </div>
 
 <div class="group">
-<h2>9. Layers</h2>
+<h2>9. Object Controls</h2>
+<p class="note">Click an object to select it. Drag it to move it.</p>
 <button class="secondary" onclick="undoOverlay()">Undo Last Addition</button>
+<button class="secondary" onclick="deleteSelected()">Delete Selected</button>
 <button class="secondary" onclick="clearOverlays()">Remove All Text & Shapes</button>
 </div>
 
@@ -173,7 +178,8 @@ canvas{max-width:100%;max-height:650px;object-fit:contain}
 <div id="empty">🖼️<br><br>Upload a photo to start editing.</div>
 <canvas id="canvas" hidden></canvas>
 </div>
-<p class="note">Text, stickers and shapes are added in the centre of your image.</p>
+<p class="status" id="status">Upload a photo to begin.</p>
+<p class="note">Select and drag text, stickers and shapes to position them anywhere on your photo.</p>
 <p class="note">Pikora Photo Editor — Free creative tools for everyone.</p>
 </section>
 </div>
@@ -185,41 +191,66 @@ const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
 const empty=document.getElementById('empty');
 const downloadBtn=document.getElementById('download');
+const statusText=document.getElementById('status');
 
 let img=null;
 let crop={x:0,y:0,w:0,h:0};
 let angle=0,flipH=1,flipV=1;
 let overlays=[];
 let outputWidth=0,outputHeight=0;
+let selectedIndex=-1;
+let dragging=false;
+let dragOffset={x:0,y:0};
 
 function currentCrop(){
  return crop.w>0?crop:{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
 }
 
+function baseDimensions(){
+ const c=currentCrop();
+ const rotated=Math.abs(angle%180)===90;
+ return {
+  width:Math.max(1,Math.round(rotated?c.h:c.w)),
+  height:Math.max(1,Math.round(rotated?c.w:c.h))
+ };
+}
+
 upload.addEventListener('change',e=>{
  const file=e.target.files[0];
  if(!file)return;
- if(!file.type.startsWith('image/')){alert('Please select an image file.');return;}
+ if(!file.type.startsWith('image/')){
+  alert('Please select an image file.');return;
+ }
  const url=URL.createObjectURL(file);
  const newImg=new Image();
  newImg.onload=()=>{
   img=newImg;
   crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
-  angle=0;flipH=1;flipV=1;overlays=[];
+  angle=0;flipH=1;flipV=1;
+  overlays=[];
+  selectedIndex=-1;
   outputWidth=0;outputHeight=0;
   resetAdjustments();
   document.getElementById('resizeWidth').value='';
   document.getElementById('resizeHeight').value='';
-  canvas.hidden=false;empty.hidden=true;downloadBtn.disabled=false;
+  canvas.hidden=false;
+  empty.hidden=true;
+  downloadBtn.disabled=false;
+  statusText.textContent='Photo loaded. Add an object or edit your image.';
   render();
   URL.revokeObjectURL(url);
  };
- newImg.onerror=()=>{alert('Could not open this image.');URL.revokeObjectURL(url);};
+ newImg.onerror=()=>{
+  alert('Could not open this image. Please try another file.');
+  URL.revokeObjectURL(url);
+ };
  newImg.src=url;
 });
 
 function resetAdjustments(){
- ['brightness','contrast','saturation'].forEach(id=>document.getElementById(id).value=100);
+ ['brightness','contrast','saturation'].forEach(id=>{
+  document.getElementById(id).value=100;
+ });
  document.getElementById('blur').value=0;
  document.getElementById('filter').value='none';
  updateLabels();
@@ -227,33 +258,67 @@ function resetAdjustments(){
 
 ['brightness','contrast','saturation','blur','filter'].forEach(id=>{
  document.getElementById(id).addEventListener('input',()=>{
-  updateLabels();render();
+  updateLabels();
+  render();
  });
 });
 
 function updateLabels(){
  ['brightness','contrast','saturation','blur'].forEach(id=>{
-  document.getElementById(id+'Value').textContent=document.getElementById(id).value;
+  document.getElementById(id+'Value').textContent=
+   document.getElementById(id).value;
  });
 }
 
-function render(){
+function getOverlayBounds(item){
+ if(item.type==='text'){
+  ctx.save();
+  ctx.font=`bold ${item.size}px Arial`;
+  const width=ctx.measureText(item.text).width;
+  ctx.restore();
+  return {
+   x:item.x-width/2-5,
+   y:item.y-item.size/2-5,
+   w:width+10,
+   h:item.size+10
+  };
+ }
+ if(item.type==='sticker'){
+  return {
+   x:item.x-item.size/2,
+   y:item.y-item.size/2,
+   w:item.size,
+   h:item.size
+  };
+ }
+ if(item.type==='rect'){
+  return {x:item.x-70,y:item.y-40,w:140,h:80};
+ }
+ if(item.type==='circle'){
+  return {x:item.x-45,y:item.y-45,w:90,h:90};
+ }
+ return {x:item.x-20,y:item.y-20,w:40,h:40};
+}
+
+function render(showSelection=true){
  if(!img)return;
- const c=currentCrop();
- const rotated=Math.abs(angle%180)===90;
- const baseW=Math.max(1,Math.round(rotated?c.h:c.w));
- const baseH=Math.max(1,Math.round(rotated?c.w:c.h));
+
+ const dimensions=baseDimensions();
+ const baseW=dimensions.width;
+ const baseH=dimensions.height;
 
  canvas.width=outputWidth||baseW;
  canvas.height=outputHeight||baseH;
 
  const off=document.createElement('canvas');
- off.width=baseW;off.height=baseH;
+ off.width=baseW;
+ off.height=baseH;
  const octx=off.getContext('2d');
 
  octx.translate(baseW/2,baseH/2);
  octx.rotate(angle*Math.PI/180);
  octx.scale(flipH,flipV);
+ const c=currentCrop();
  octx.drawImage(img,c.x,c.y,c.w,c.h,-c.w/2,-c.h/2,c.w,c.h);
 
  ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -270,10 +335,13 @@ function render(){
 
  const sx=canvas.width/baseW;
  const sy=canvas.height/baseH;
+
  ctx.save();
  ctx.scale(sx,sy);
- overlays.forEach(item=>{
+
+ overlays.forEach((item,index)=>{
   ctx.save();
+
   if(item.type==='text'){
    ctx.font=`bold ${item.size}px Arial`;
    ctx.textAlign='center';
@@ -296,16 +364,148 @@ function render(){
    ctx.arc(item.x,item.y,45,0,Math.PI*2);
    ctx.fill();
   }
+
+  if(showSelection && index===selectedIndex){
+   const b=getOverlayBounds(item);
+   ctx.shadowBlur=0;
+   ctx.strokeStyle='#ffffff';
+   ctx.lineWidth=2;
+   ctx.setLineDash([7,5]);
+   ctx.strokeRect(b.x-3,b.y-3,b.w+6,b.h+6);
+   ctx.setLineDash([]);
+  }
+
   ctx.restore();
  });
+
  ctx.restore();
 }
+
+function addText(){
+ if(!img){alert('Upload a photo first.');return;}
+ const text=document.getElementById('textInput').value.trim();
+ if(!text){alert('Please type some text first.');return;}
+
+ const dimensions=baseDimensions();
+ overlays.push({
+  type:'text',
+  text,
+  color:document.getElementById('textColor').value,
+  size:Math.max(8,Math.min(300,Number(document.getElementById('textSize').value)||48)),
+  x:dimensions.width/2,
+  y:dimensions.height/2
+ });
+ selectedIndex=overlays.length-1;
+ statusText.textContent='Text added. Drag it to move it.';
+ render();
+}
+
+function addSticker(){
+ if(!img){alert('Upload a photo first.');return;}
+ const dimensions=baseDimensions();
+ overlays.push({
+  type:'sticker',
+  text:document.getElementById('sticker').value,
+  size:64,
+  x:dimensions.width/2,
+  y:dimensions.height/2
+ });
+ selectedIndex=overlays.length-1;
+ statusText.textContent='Sticker added. Drag it to move it.';
+ render();
+}
+
+function addShape(type){
+ if(!img){alert('Upload a photo first.');return;}
+ const dimensions=baseDimensions();
+ overlays.push({
+  type,
+  color:document.getElementById('shapeColor').value,
+  x:dimensions.width/2,
+  y:dimensions.height/2
+ });
+ selectedIndex=overlays.length-1;
+ statusText.textContent='Shape added. Drag it to move it.';
+ render();
+}
+
+function pointerPosition(event){
+ const rect=canvas.getBoundingClientRect();
+ const dimensions=baseDimensions();
+
+ const canvasX=(event.clientX-rect.left)*(canvas.width/rect.width);
+ const canvasY=(event.clientY-rect.top)*(canvas.height/rect.height);
+
+ return {
+  x:canvasX*(dimensions.width/canvas.width),
+  y:canvasY*(dimensions.height/canvas.height)
+ };
+}
+
+function hitTest(x,y){
+ for(let i=overlays.length-1;i>=0;i--){
+  const b=getOverlayBounds(overlays[i]);
+  if(x>=b.x-8 && x<=b.x+b.w+8 &&
+     y>=b.y-8 && y<=b.y+b.h+8){
+   return i;
+  }
+ }
+ return -1;
+}
+
+canvas.addEventListener('pointerdown',event=>{
+ if(!img)return;
+ const pos=pointerPosition(event);
+ const hit=hitTest(pos.x,pos.y);
+
+ selectedIndex=hit;
+
+ if(hit!==-1){
+  dragging=true;
+  dragOffset={
+   x:pos.x-overlays[hit].x,
+   y:pos.y-overlays[hit].y
+  };
+  canvas.setPointerCapture(event.pointerId);
+  statusText.textContent='Moving selected object. Release to place it.';
+ }else{
+  statusText.textContent='No object selected. Add text, a sticker or a shape.';
+ }
+
+ render();
+});
+
+canvas.addEventListener('pointermove',event=>{
+ if(!dragging || selectedIndex<0 || !img)return;
+
+ const pos=pointerPosition(event);
+ const item=overlays[selectedIndex];
+ const dimensions=baseDimensions();
+
+ item.x=Math.max(0,Math.min(dimensions.width,pos.x-dragOffset.x));
+ item.y=Math.max(0,Math.min(dimensions.height,pos.y-dragOffset.y));
+
+ render();
+});
+
+function stopDragging(){
+ if(!dragging)return;
+ dragging=false;
+ statusText.textContent='Object positioned successfully.';
+}
+
+canvas.addEventListener('pointerup',stopDragging);
+canvas.addEventListener('pointercancel',stopDragging);
+canvas.addEventListener('lostpointercapture',stopDragging);
 
 function cropPhoto(ratio){
  if(!img){alert('Upload a photo first.');return;}
  outputWidth=0;outputHeight=0;
- if(ratio===0)crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
- else{
+ selectedIndex=-1;
+
+ if(ratio===0){
+  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+ }else{
   const w=img.naturalWidth,h=img.naturalHeight;
   let cw=w,ch=h;
   if(w/h>ratio)cw=h*ratio;
@@ -318,44 +518,15 @@ function cropPhoto(ratio){
 function rotate(degrees){
  if(!img){alert('Upload a photo first.');return;}
  angle=(angle+degrees+360)%360;
- outputWidth=0;outputHeight=0;render();
+ outputWidth=0;outputHeight=0;
+ selectedIndex=-1;
+ render();
 }
 
 function flip(direction){
  if(!img){alert('Upload a photo first.');return;}
- if(direction==='h')flipH*=-1;else flipV*=-1;
- render();
-}
-
-function addText(){
- if(!img){alert('Upload a photo first.');return;}
- const text=document.getElementById('textInput').value.trim();
- if(!text){alert('Please type some text first.');return;}
- overlays.push({
-  type:'text',text,
-  color:document.getElementById('textColor').value,
-  size:Math.max(8,Math.min(300,Number(document.getElementById('textSize').value)||48)),
-  x:canvas.width/2,y:canvas.height/2
- });
- render();
-}
-
-function addSticker(){
- if(!img){alert('Upload a photo first.');return;}
- overlays.push({
-  type:'sticker',
-  text:document.getElementById('sticker').value,
-  size:64,x:canvas.width/2,y:canvas.height/2
- });
- render();
-}
-
-function addShape(type){
- if(!img){alert('Upload a photo first.');return;}
- overlays.push({
-  type,color:document.getElementById('shapeColor').value,
-  x:canvas.width/2,y:canvas.height/2
- });
+ if(direction==='h')flipH*=-1;
+ else flipV*=-1;
  render();
 }
 
@@ -363,15 +534,22 @@ function resizePhoto(){
  if(!img){alert('Upload a photo first.');return;}
  const w=Number(document.getElementById('resizeWidth').value);
  const h=Number(document.getElementById('resizeHeight').value);
- if(!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>12000||h>12000){
-  alert('Enter a width and height between 1 and 12000 pixels.');return;
+
+ if(!Number.isInteger(w)||!Number.isInteger(h)||
+    w<1||h<1||w>12000||h>12000){
+  alert('Enter a width and height between 1 and 12000 pixels.');
+  return;
  }
- outputWidth=w;outputHeight=h;render();
+
+ outputWidth=w;
+ outputHeight=h;
+ render();
 }
 
 function resetResize(){
  if(!img)return;
- outputWidth=0;outputHeight=0;
+ outputWidth=0;
+ outputHeight=0;
  document.getElementById('resizeWidth').value='';
  document.getElementById('resizeHeight').value='';
  render();
@@ -379,33 +557,74 @@ function resetResize(){
 
 function undoOverlay(){
  if(!img)return;
- overlays.pop();render();
+ if(overlays.length===0)return;
+ overlays.pop();
+ selectedIndex=-1;
+ statusText.textContent='Last added object removed.';
+ render();
+}
+
+function deleteSelected(){
+ if(!img)return;
+ if(selectedIndex<0){
+  alert('Please select an object first by clicking it.');
+  return;
+ }
+ overlays.splice(selectedIndex,1);
+ selectedIndex=-1;
+ statusText.textContent='Selected object deleted.';
+ render();
 }
 
 function clearOverlays(){
  if(!img)return;
- overlays=[];render();
+ overlays=[];
+ selectedIndex=-1;
+ statusText.textContent='All text, stickers and shapes removed.';
+ render();
 }
 
 function resetEditor(){
  if(!img){alert('Upload a photo first.');return;}
+
  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
- angle=0;flipH=1;flipV=1;overlays=[];
+ angle=0;flipH=1;flipV=1;
+ overlays=[];
+ selectedIndex=-1;
  outputWidth=0;outputHeight=0;
+
  resetAdjustments();
- resetResize();
+
+ document.getElementById('resizeWidth').value='';
+ document.getElementById('resizeHeight').value='';
+
+ statusText.textContent='Editor reset.';
  render();
 }
 
 function downloadPhoto(){
  if(!img)return;
- const format=document.getElementById('format').value;
- const quality=format==='image/png'?undefined:0.92;
- const link=document.createElement('a');
- link.download='pikora-edited-photo.'+
-  (format==='image/jpeg'?'jpg':format==='image/webp'?'webp':'png');
- link.href=canvas.toDataURL(format,quality);
- link.click();
+
+ try{
+  const format=document.getElementById('format').value;
+  const quality=format==='image/png'?undefined:0.92;
+
+  // Hide the selection outline in the downloaded image.
+  render(false);
+
+  const link=document.createElement('a');
+  link.download='pikora-edited-photo.'+
+   (format==='image/jpeg'?'jpg':format==='image/webp'?'webp':'png');
+
+  link.href=canvas.toDataURL(format,quality);
+  link.click();
+
+  render(true);
+  statusText.textContent='Your edited photo is ready for download.';
+ }catch(error){
+  render(true);
+  alert('Could not export this image. Try a smaller image or another format.');
+ }
 }
 </script>
 </body>
