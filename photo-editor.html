@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with editable text backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
+<meta name="description" content="Free online photo editor with editable text, text alignment, backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
@@ -147,6 +147,14 @@ No text selected. Click text on your photo to select it, or double-click to edit
 <option value="Courier New">Courier New</option>
 <option value="Trebuchet MS">Trebuchet MS</option>
 </select>
+
+<label>Text Alignment</label>
+<select id="textAlign">
+<option value="center">Centre Alignment</option>
+<option value="left">Left Alignment</option>
+<option value="right">Right Alignment</option>
+</select>
+<p class="note" style="margin:-4px 0 12px">Choose how the text sits around its position on your photo.</p>
 
 <label>Text Colour</label>
 <input type="color" id="textColor" value="#ffffff">
@@ -386,6 +394,11 @@ function applySnapshot(snapshot){
   updateRangeLabels();
   updateResizeFields();
   updateSelectionControls();
+
+  if(overlays[selectedIndex]?.type==="text"){
+    loadSelectedTextIntoControls();
+  }
+
   render();
   updateHistoryButtons();
 }
@@ -487,11 +500,17 @@ function getTextMetrics(item){
   ctx.restore();
 
   const padding=item.backgroundEnabled?12:10;
+  const align=item.align||"center";
+
+  let textLeft=item.x;
+
+  if(align==="center")textLeft=item.x-width/2;
+  if(align==="right")textLeft=item.x-width;
 
   return {
     textWidth:width,
     padding,
-    x:item.x-width/2-padding,
+    x:textLeft-padding,
     y:item.y-item.size/2-padding,
     width:width+padding*2,
     height:item.size+padding*2
@@ -510,7 +529,7 @@ function drawOverlays(context){
       const weight=item.bold?"bold":"normal";
       const italic=item.italic?"italic":"normal";
       context.font=`${italic} ${weight} ${item.size}px "${item.fontFamily}"`;
-      context.textAlign="center";
+      context.textAlign=item.align||"center";
       context.textBaseline="middle";
       context.lineJoin="round";
 
@@ -761,6 +780,7 @@ function getTextStyleFromControls(){
     outlineColor:document.getElementById("outlineColor").value,
     outlineWidth:Math.max(0,Math.min(15,Number(document.getElementById("outlineWidth").value)||0)),
     fontFamily:document.getElementById("fontFamily").value,
+    align:document.getElementById("textAlign").value,
     bold:document.getElementById("textBold").checked,
     italic:document.getElementById("textItalic").checked,
     size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45)),
@@ -809,6 +829,7 @@ function loadSelectedTextIntoControls(){
   document.getElementById("outlineColor").value=item.outlineColor;
   document.getElementById("outlineWidth").value=item.outlineWidth;
   document.getElementById("fontFamily").value=item.fontFamily;
+  document.getElementById("textAlign").value=item.align||"center";
   document.getElementById("textBold").checked=item.bold;
   document.getElementById("textItalic").checked=item.italic;
   document.getElementById("textSize").value=item.size;
@@ -841,7 +862,7 @@ document.getElementById("updateText").addEventListener("click",()=>{
   Object.assign(item,style,{x,y,type:"text"});
 
   render();
-  setStatus("Selected text and its background updated successfully!");
+  setStatus("Selected text, alignment and background updated successfully!");
 });
 
 document.getElementById("deleteSelected").addEventListener("click",()=>{
