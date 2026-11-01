@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with editable text, text alignment, backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
+<meta name="description" content="Free online photo editor with editable text, text opacity, text alignment, backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
@@ -168,6 +168,10 @@ No text selected. Click text on your photo to select it, or double-click to edit
 <label>Font Size</label>
 <input type="number" id="textSize" min="8" max="300" value="45">
 
+<label>Text Opacity <span class="range-value" id="textOpacityValue">100%</span></label>
+<input type="range" id="textOpacity" min="0" max="100" value="100">
+<p class="note" style="margin:-5px 0 12px">Adjust transparency. This affects the text, outline and background together.</p>
+
 <div class="checkline">
 <input type="checkbox" id="textBold" checked>
 <label for="textBold">Bold</label>
@@ -304,6 +308,7 @@ let draggingIndex=-1;
 let dragOffsetX=0;
 let dragOffsetY=0;
 let activePointer=null;
+let opacityEditStarted=false;
 
 function setStatus(message){
   statusText.textContent=message;
@@ -526,6 +531,9 @@ function drawOverlays(context){
     context.save();
 
     if(item.type==="text"){
+      const opacity=item.opacity===undefined?100:Number(item.opacity);
+      context.globalAlpha=Math.max(0,Math.min(100,opacity))/100;
+
       const weight=item.bold?"bold":"normal";
       const italic=item.italic?"italic":"normal";
       context.font=`${italic} ${weight} ${item.size}px "${item.fontFamily}"`;
@@ -666,6 +674,9 @@ function updateRangeLabels(){
     const value=document.getElementById(id).value;
     document.getElementById(id+"Value").textContent=value+(id==="blur"?"px":"%");
   });
+
+  document.getElementById("textOpacityValue").textContent=
+    document.getElementById("textOpacity").value+"%";
 }
 
 upload.addEventListener("change",event=>{
@@ -691,6 +702,7 @@ upload.addEventListener("change",event=>{
       selectedIndex=-1;
       outputWidth=0;
       outputHeight=0;
+      opacityEditStarted=false;
 
       document.getElementById("crop").value="original";
       document.getElementById("brightness").value=100;
@@ -698,6 +710,7 @@ upload.addEventListener("change",event=>{
       document.getElementById("saturation").value=100;
       document.getElementById("blur").value=0;
       document.getElementById("filter").value="none";
+      document.getElementById("textOpacity").value=100;
 
       updateRangeLabels();
       history=[];
@@ -731,6 +744,33 @@ upload.addEventListener("change",event=>{
     updateRangeLabels();
     render();
   });
+});
+
+const textOpacityControl=document.getElementById("textOpacity");
+
+textOpacityControl.addEventListener("input",()=>{
+  updateRangeLabels();
+
+  const item=overlays[selectedIndex];
+
+  if(!img||!item||item.type!=="text")return;
+
+  if(!opacityEditStarted){
+    saveSnapshot();
+    opacityEditStarted=true;
+  }
+
+  item.opacity=Number(textOpacityControl.value);
+  render();
+  setStatus("Text opacity updated. You can undo this change.");
+});
+
+textOpacityControl.addEventListener("change",()=>{
+  opacityEditStarted=false;
+});
+
+textOpacityControl.addEventListener("pointercancel",()=>{
+  opacityEditStarted=false;
 });
 
 document.getElementById("filter").addEventListener("change",()=>{
@@ -784,6 +824,7 @@ function getTextStyleFromControls(){
     bold:document.getElementById("textBold").checked,
     italic:document.getElementById("textItalic").checked,
     size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45)),
+    opacity:Number(document.getElementById("textOpacity").value),
     backgroundEnabled:document.getElementById("textBgEnabled").checked,
     backgroundColor:document.getElementById("textBgColor").value
   };
@@ -833,9 +874,11 @@ function loadSelectedTextIntoControls(){
   document.getElementById("textBold").checked=item.bold;
   document.getElementById("textItalic").checked=item.italic;
   document.getElementById("textSize").value=item.size;
+  document.getElementById("textOpacity").value=item.opacity===undefined?100:item.opacity;
   document.getElementById("textBgEnabled").checked=!!item.backgroundEnabled;
   document.getElementById("textBgColor").value=item.backgroundColor||"#000000";
 
+  updateRangeLabels();
   updateSelectionControls();
 }
 
@@ -862,7 +905,7 @@ document.getElementById("updateText").addEventListener("click",()=>{
   Object.assign(item,style,{x,y,type:"text"});
 
   render();
-  setStatus("Selected text, alignment and background updated successfully!");
+  setStatus("Selected text, alignment, opacity and background updated successfully!");
 });
 
 document.getElementById("deleteSelected").addEventListener("click",()=>{
@@ -992,6 +1035,9 @@ canvas.addEventListener("pointerdown",event=>{
       dragOffsetY=position.y-overlays[i].y;
 
       updateSelectionControls();
+      if(overlays[i].type==="text"){
+        loadSelectedTextIntoControls();
+      }
       render();
 
       canvas.classList.add("dragging");
@@ -1112,6 +1158,7 @@ document.getElementById("resetAll").addEventListener("click",()=>{
   selectedIndex=-1;
   outputWidth=0;
   outputHeight=0;
+  opacityEditStarted=false;
 
   document.getElementById("brightness").value=100;
   document.getElementById("contrast").value=100;
@@ -1119,12 +1166,14 @@ document.getElementById("resetAll").addEventListener("click",()=>{
   document.getElementById("blur").value=0;
   document.getElementById("filter").value="none";
   document.getElementById("crop").value="original";
+  document.getElementById("textOpacity").value=100;
 
   updateRangeLabels();
   render();
   setStatus("All editing changes have been reset. You can undo this action.");
 });
 
+updateRangeLabels();
 updateHistoryButtons();
 updateSelectionControls();
 </script>
