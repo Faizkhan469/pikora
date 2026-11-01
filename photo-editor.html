@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with editable text, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
+<meta name="description" content="Free online photo editor with editable text backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
@@ -168,6 +168,25 @@ No text selected. Click text on your photo to select it, or double-click to edit
 <input type="checkbox" id="textItalic">
 <label for="textItalic">Italic</label>
 </div>
+
+<hr style="border:0;border-top:1px solid #263453;margin:14px 0">
+
+<h2>Text Background</h2>
+<div class="checkline">
+<input type="checkbox" id="textBgEnabled">
+<label for="textBgEnabled">Enable text background</label>
+</div>
+
+<label>Background Colour</label>
+<input type="color" id="textBgColor" value="#000000">
+
+<div class="btn-grid">
+<button type="button" class="secondary" id="blackBg">Black Background</button>
+<button type="button" class="secondary" id="whiteBg">White Background</button>
+</div>
+<button type="button" class="secondary full" id="noBg" style="margin-top:8px">Transparent Background</button>
+
+<p class="note" style="margin:8px 0 12px">Choose a background colour or use a preset. The background is included when you download your photo.</p>
 
 <div class="btn-grid">
 <button class="full" id="addText">＋ Add New Text</button>
@@ -459,7 +478,7 @@ function getFilter(){
   return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px) ${preset==="none"?"":preset}`;
 }
 
-function getTextBounds(item){
+function getTextMetrics(item){
   ctx.save();
   const weight=item.bold?"bold":"normal";
   const italic=item.italic?"italic":"normal";
@@ -467,12 +486,20 @@ function getTextBounds(item){
   const width=ctx.measureText(item.text).width;
   ctx.restore();
 
+  const padding=item.backgroundEnabled?12:10;
+
   return {
-    x:item.x-width/2-10,
-    y:item.y-item.size/2-10,
-    width:width+20,
-    height:item.size+20
+    textWidth:width,
+    padding,
+    x:item.x-width/2-padding,
+    y:item.y-item.size/2-padding,
+    width:width+padding*2,
+    height:item.size+padding*2
   };
+}
+
+function getTextBounds(item){
+  return getTextMetrics(item);
 }
 
 function drawOverlays(context){
@@ -486,6 +513,18 @@ function drawOverlays(context){
       context.textAlign="center";
       context.textBaseline="middle";
       context.lineJoin="round";
+
+      const metrics=getTextMetrics(item);
+
+      if(item.backgroundEnabled){
+        context.fillStyle=item.backgroundColor||"#000000";
+        context.fillRect(
+          metrics.x,
+          metrics.y,
+          metrics.width,
+          metrics.height
+        );
+      }
 
       if(item.outlineWidth>0){
         context.strokeStyle=item.outlineColor;
@@ -724,9 +763,28 @@ function getTextStyleFromControls(){
     fontFamily:document.getElementById("fontFamily").value,
     bold:document.getElementById("textBold").checked,
     italic:document.getElementById("textItalic").checked,
-    size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45))
+    size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45)),
+    backgroundEnabled:document.getElementById("textBgEnabled").checked,
+    backgroundColor:document.getElementById("textBgColor").value
   };
 }
+
+document.getElementById("blackBg").addEventListener("click",()=>{
+  document.getElementById("textBgEnabled").checked=true;
+  document.getElementById("textBgColor").value="#000000";
+  setStatus("Black text background selected. Add new text or update selected text to apply it.");
+});
+
+document.getElementById("whiteBg").addEventListener("click",()=>{
+  document.getElementById("textBgEnabled").checked=true;
+  document.getElementById("textBgColor").value="#ffffff";
+  setStatus("White text background selected. Add new text or update selected text to apply it.");
+});
+
+document.getElementById("noBg").addEventListener("click",()=>{
+  document.getElementById("textBgEnabled").checked=false;
+  setStatus("Transparent text background selected. Add new text or update selected text to apply it.");
+});
 
 document.getElementById("addText").addEventListener("click",()=>{
   const style=getTextStyleFromControls();
@@ -754,6 +812,8 @@ function loadSelectedTextIntoControls(){
   document.getElementById("textBold").checked=item.bold;
   document.getElementById("textItalic").checked=item.italic;
   document.getElementById("textSize").value=item.size;
+  document.getElementById("textBgEnabled").checked=!!item.backgroundEnabled;
+  document.getElementById("textBgColor").value=item.backgroundColor||"#000000";
 
   updateSelectionControls();
 }
@@ -781,7 +841,7 @@ document.getElementById("updateText").addEventListener("click",()=>{
   Object.assign(item,style,{x,y,type:"text"});
 
   render();
-  setStatus("Selected text updated successfully!");
+  setStatus("Selected text and its background updated successfully!");
 });
 
 document.getElementById("deleteSelected").addEventListener("click",()=>{
