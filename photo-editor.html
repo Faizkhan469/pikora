@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with editable text, text shadow, opacity, alignment, backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
+<meta name="description" content="Free online photo editor with editable text, rotation, shadow, opacity, stickers, shapes, filters, crop, resize and downloads.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
@@ -110,7 +110,7 @@ canvas.selecting{cursor:pointer}
 </div>
 
 <div class="section">
-<h2>5. Crop & Rotate</h2>
+<h2>5. Crop & Rotate Image</h2>
 <label>Crop Ratio</label>
 <select id="crop">
 <option value="original">Original</option>
@@ -171,6 +171,17 @@ No text selected. Click text on your photo to select it, or double-click to edit
 <label>Text Opacity <span class="range-value" id="textOpacityValue">100%</span></label>
 <input type="range" id="textOpacity" min="0" max="100" value="100">
 <p class="note" style="margin:-5px 0 12px">Adjust transparency. This affects the text, outline and background together.</p>
+
+<hr style="border:0;border-top:1px solid #263453;margin:14px 0">
+
+<h2>Text Rotation</h2>
+<label>Rotation Angle <span class="range-value" id="textRotationValue">0°</span></label>
+<input type="range" id="textRotation" min="0" max="360" value="0">
+<div class="btn-grid">
+<button type="button" class="secondary" id="rotateTextLeft">↶ Rotate -90°</button>
+<button type="button" class="secondary" id="rotateTextRight">↷ Rotate +90°</button>
+</div>
+<p class="note" style="margin:5px 0 12px">Rotate selected text to any angle. Rotation is included in your downloaded photo.</p>
 
 <div class="checkline">
 <input type="checkbox" id="textBold" checked>
@@ -332,6 +343,7 @@ let dragOffsetY=0;
 let activePointer=null;
 let opacityEditStarted=false;
 let shadowEditStarted=false;
+let rotationEditStarted=false;
 
 function setStatus(message){
   statusText.textContent=message;
@@ -530,23 +542,54 @@ function getTextMetrics(item){
   const padding=item.backgroundEnabled?12:10;
   const align=item.align||"center";
 
-  let textLeft=item.x;
+  let textLeft=0;
 
-  if(align==="center")textLeft=item.x-width/2;
-  if(align==="right")textLeft=item.x-width;
+  if(align==="center")textLeft=-width/2;
+  if(align==="left")textLeft=0;
+  if(align==="right")textLeft=-width;
 
   return {
     textWidth:width,
     padding,
     x:textLeft-padding,
-    y:item.y-item.size/2-padding,
+    y:-item.size/2-padding,
     width:width+padding*2,
     height:item.size+padding*2
   };
 }
 
 function getTextBounds(item){
-  return getTextMetrics(item);
+  const metrics=getTextMetrics(item);
+  const rotation=(Number(item.rotation)||0)*Math.PI/180;
+  const cos=Math.cos(rotation);
+  const sin=Math.sin(rotation);
+
+  const corners=[
+    {x:metrics.x,y:metrics.y},
+    {x:metrics.x+metrics.width,y:metrics.y},
+    {x:metrics.x+metrics.width,y:metrics.y+metrics.height},
+    {x:metrics.x,y:metrics.y+metrics.height}
+  ];
+
+  const rotated=corners.map(point=>({
+    x:item.x+point.x*cos-point.y*sin,
+    y:item.y+point.x*sin+point.y*cos
+  }));
+
+  const xs=rotated.map(point=>point.x);
+  const ys=rotated.map(point=>point.y);
+
+  const left=Math.min(...xs);
+  const top=Math.min(...ys);
+  const right=Math.max(...xs);
+  const bottom=Math.max(...ys);
+
+  return {
+    x:left,
+    y:top,
+    width:right-left,
+    height:bottom-top
+  };
 }
 
 function drawOverlays(context){
@@ -563,6 +606,10 @@ function drawOverlays(context){
       context.textAlign=item.align||"center";
       context.textBaseline="middle";
       context.lineJoin="round";
+
+      const rotation=(Number(item.rotation)||0)*Math.PI/180;
+      context.translate(item.x,item.y);
+      context.rotate(rotation);
 
       const metrics=getTextMetrics(item);
 
@@ -585,7 +632,7 @@ function drawOverlays(context){
         context.shadowOffsetY=Number(item.shadowOffsetY)||0;
 
         context.fillStyle=item.color;
-        context.fillText(item.text,item.x,item.y);
+        context.fillText(item.text,0,0);
 
         context.shadowColor="transparent";
         context.shadowBlur=0;
@@ -596,11 +643,11 @@ function drawOverlays(context){
       if(item.outlineWidth>0){
         context.strokeStyle=item.outlineColor;
         context.lineWidth=item.outlineWidth;
-        context.strokeText(item.text,item.x,item.y);
+        context.strokeText(item.text,0,0);
       }
 
       context.fillStyle=item.color;
-      context.fillText(item.text,item.x,item.y);
+      context.fillText(item.text,0,0);
     }
 
     if(item.type==="sticker"){
@@ -718,6 +765,9 @@ function updateRangeLabels(){
   document.getElementById("textOpacityValue").textContent=
     document.getElementById("textOpacity").value+"%";
 
+  document.getElementById("textRotationValue").textContent=
+    document.getElementById("textRotation").value+"°";
+
   document.getElementById("textShadowBlurValue").textContent=
     document.getElementById("textShadowBlur").value+"px";
 
@@ -753,6 +803,7 @@ upload.addEventListener("change",event=>{
       outputHeight=0;
       opacityEditStarted=false;
       shadowEditStarted=false;
+      rotationEditStarted=false;
 
       document.getElementById("crop").value="original";
       document.getElementById("brightness").value=100;
@@ -761,6 +812,7 @@ upload.addEventListener("change",event=>{
       document.getElementById("blur").value=0;
       document.getElementById("filter").value="none";
       document.getElementById("textOpacity").value=100;
+      document.getElementById("textRotation").value=0;
 
       updateRangeLabels();
       history=[];
@@ -821,6 +873,33 @@ textOpacityControl.addEventListener("change",()=>{
 
 textOpacityControl.addEventListener("pointercancel",()=>{
   opacityEditStarted=false;
+});
+
+const textRotationControl=document.getElementById("textRotation");
+
+textRotationControl.addEventListener("input",()=>{
+  updateRangeLabels();
+
+  const item=overlays[selectedIndex];
+
+  if(!img||!item||item.type!=="text")return;
+
+  if(!rotationEditStarted){
+    saveSnapshot();
+    rotationEditStarted=true;
+  }
+
+  item.rotation=Number(textRotationControl.value);
+  render();
+  setStatus("Text rotation updated. You can undo this change.");
+});
+
+textRotationControl.addEventListener("change",()=>{
+  rotationEditStarted=false;
+});
+
+textRotationControl.addEventListener("pointercancel",()=>{
+  rotationEditStarted=false;
 });
 
 const shadowControls=[
@@ -917,6 +996,7 @@ function getTextStyleFromControls(){
     italic:document.getElementById("textItalic").checked,
     size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45)),
     opacity:Number(document.getElementById("textOpacity").value),
+    rotation:Number(document.getElementById("textRotation").value),
     shadowEnabled:document.getElementById("textShadowEnabled").checked,
     shadowColor:document.getElementById("textShadowColor").value,
     shadowBlur:Number(document.getElementById("textShadowBlur").value),
@@ -926,6 +1006,36 @@ function getTextStyleFromControls(){
     backgroundColor:document.getElementById("textBgColor").value
   };
 }
+
+document.getElementById("rotateTextLeft").addEventListener("click",()=>{
+  const item=overlays[selectedIndex];
+
+  if(!item||item.type!=="text"){
+    setStatus("Please select a text overlay first.");
+    return;
+  }
+
+  saveSnapshot();
+  item.rotation=((Number(item.rotation)||0)-90+360)%360;
+  loadSelectedTextIntoControls();
+  render();
+  setStatus("Text rotated 90 degrees to the left.");
+});
+
+document.getElementById("rotateTextRight").addEventListener("click",()=>{
+  const item=overlays[selectedIndex];
+
+  if(!item||item.type!=="text"){
+    setStatus("Please select a text overlay first.");
+    return;
+  }
+
+  saveSnapshot();
+  item.rotation=((Number(item.rotation)||0)+90)%360;
+  loadSelectedTextIntoControls();
+  render();
+  setStatus("Text rotated 90 degrees to the right.");
+});
 
 document.getElementById("blackBg").addEventListener("click",()=>{
   document.getElementById("textBgEnabled").checked=true;
@@ -972,6 +1082,7 @@ function loadSelectedTextIntoControls(){
   document.getElementById("textItalic").checked=item.italic;
   document.getElementById("textSize").value=item.size;
   document.getElementById("textOpacity").value=item.opacity===undefined?100:item.opacity;
+  document.getElementById("textRotation").value=item.rotation===undefined?0:item.rotation;
 
   document.getElementById("textShadowEnabled").checked=!!item.shadowEnabled;
   document.getElementById("textShadowColor").value=item.shadowColor||"#000000";
@@ -1009,7 +1120,7 @@ document.getElementById("updateText").addEventListener("click",()=>{
   Object.assign(item,style,{x,y,type:"text"});
 
   render();
-  setStatus("Selected text, shadow, alignment, opacity and background updated successfully!");
+  setStatus("Selected text, rotation, shadow, alignment, opacity and background updated successfully!");
 });
 
 document.getElementById("deleteSelected").addEventListener("click",()=>{
@@ -1117,8 +1228,19 @@ function hitTest(item,x,y){
   }
 
   if(item.type==="text"){
-    const bounds=getTextBounds(item);
-    return x>=bounds.x&&x<=bounds.x+bounds.width&&y>=bounds.y&&y<=bounds.y+bounds.height;
+    const rotation=(Number(item.rotation)||0)*Math.PI/180;
+    const dx=x-item.x;
+    const dy=y-item.y;
+
+    const localX=dx*Math.cos(rotation)+dy*Math.sin(rotation);
+    const localY=-dx*Math.sin(rotation)+dy*Math.cos(rotation);
+
+    const bounds=getTextMetrics(item);
+
+    return localX>=bounds.x&&
+      localX<=bounds.x+bounds.width&&
+      localY>=bounds.y&&
+      localY<=bounds.y+bounds.height;
   }
 
   return false;
@@ -1264,6 +1386,7 @@ document.getElementById("resetAll").addEventListener("click",()=>{
   outputHeight=0;
   opacityEditStarted=false;
   shadowEditStarted=false;
+  rotationEditStarted=false;
 
   document.getElementById("brightness").value=100;
   document.getElementById("contrast").value=100;
@@ -1272,6 +1395,7 @@ document.getElementById("resetAll").addEventListener("click",()=>{
   document.getElementById("filter").value="none";
   document.getElementById("crop").value="original";
   document.getElementById("textOpacity").value=100;
+  document.getElementById("textRotation").value=0;
 
   updateRangeLabels();
   render();
