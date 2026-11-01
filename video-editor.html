@@ -1,0 +1,650 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Video Editor | Pikora</title>
+<meta name="description" content="Edit videos online for free with Pikora. Trim videos, add text and stickers, apply filters, rotate and export without watermarks.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d1a;color:#f4f4ff;font-family:Arial,Helvetica,sans-serif}
+header{padding:18px 5%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #252b40;background:#0d1222}
+.logo{font-size:25px;font-weight:900;color:#a99aff;text-decoration:none;letter-spacing:1px}
+header a.back{color:#ddd;text-decoration:none;font-size:14px}
+.container{max-width:1400px;margin:auto;padding:25px 18px}
+h1{font-size:30px;margin:0 0 8px}
+.subtitle{color:#aab0c5;margin:0 0 24px;font-size:14px}
+.editor{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+.panel{background:#11182a;border:1px solid #27314a;border-radius:15px;padding:17px;margin-bottom:16px}
+.preview-wrap{background:#05070d;border:1px solid #303951;border-radius:12px;overflow:hidden;position:relative;min-height:260px;display:flex;align-items:center;justify-content:center}
+canvas{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;background:#05070d;touch-action:none}
+.empty{padding:65px 15px;text-align:center;color:#aab0c5}
+.empty strong{display:block;color:#fff;font-size:20px;margin-bottom:10px}
+.controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+button,.upload-label{background:#252d46;border:1px solid #3a4664;color:white;padding:10px 13px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13px}
+button:hover,.upload-label:hover{background:#5141a3}
+button.primary,.upload-label.primary{background:#7962e8;border-color:#7962e8}
+button.danger{background:#542b40;border-color:#79415c}
+button:disabled{opacity:.4;cursor:not-allowed}
+input,select{width:100%;background:#090f1e;border:1px solid #35415e;border-radius:8px;color:#fff;padding:10px;margin-top:7px;min-width:0}
+input[type=range]{padding:0;accent-color:#9b85ff}
+input[type=color]{height:40px;padding:3px}
+input[type=checkbox]{width:auto;margin-right:7px}
+label{display:block;font-size:13px;color:#c8cce0;margin:13px 0 5px}
+h2{font-size:16px;margin:0 0 12px;color:#c6baff}
+h3{font-size:14px;margin:0 0 8px}
+.small{font-size:12px;color:#9ca5bd;line-height:1.5}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.time-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.status{font-size:12px;color:#bdb3ff;margin-top:10px;min-height:18px}
+.timeline{margin-top:15px}
+.timeline input{margin-top:5px}
+.file-name{font-size:12px;color:#aab0c5;overflow-wrap:anywhere;margin-top:8px}
+.tool-section{border-top:1px solid #27314a;padding-top:15px;margin-top:15px}
+footer{text-align:center;padding:28px;color:#8e96ad;font-size:12px}
+.hidden{display:none!important}
+@media(max-width:850px){.editor{grid-template-columns:1fr}.container{padding:18px 12px}h1{font-size:25px}.preview-wrap{min-height:190px}}
+@media(max-width:450px){.row,.time-row{grid-template-columns:1fr 1fr}.panel{padding:13px}.controls button{flex:1}}
+</style>
+</head>
+<body>
+<header>
+<a class="logo" href="index.html">PIKORA</a>
+<a class="back" href="index.html">← Back to Home</a>
+</header>
+
+<main class="container">
+<h1>Free Video Editor</h1>
+<p class="subtitle">Edit your videos directly in your browser. Free to use, no registration and no watermark.</p>
+
+<div class="panel">
+<div class="controls" style="margin-top:0">
+<label class="upload-label primary" for="videoInput">＋ Upload Video</label>
+<input id="videoInput" type="file" accept="video/*" class="hidden">
+<button id="playBtn" disabled>▶ Play</button>
+<button id="pauseBtn" disabled>Ⅱ Pause</button>
+<button id="resetBtn" disabled>↺ Reset</button>
+</div>
+<div id="fileName" class="file-name">No video selected yet.</div>
+</div>
+
+<div class="editor">
+<section>
+<div class="panel">
+<h2>Video Preview</h2>
+<div class="preview-wrap">
+<div id="emptyMessage" class="empty">
+<strong>Your video preview will appear here</strong>
+Upload a video to start editing.
+</div>
+<canvas id="preview" width="960" height="540" class="hidden"></canvas>
+</div>
+<div class="timeline">
+<label>Preview position: <span id="currentTime">0.00</span> seconds</label>
+<input type="range" id="seek" min="0" max="100" value="0" disabled>
+<div class="time-row">
+<div><label>Trim start (seconds)</label><input id="trimStart" type="number" min="0" step="0.1" value="0" disabled></div>
+<div><label>Trim end (seconds)</label><input id="trimEnd" type="number" min="0" step="0.1" value="0" disabled></div>
+</div>
+<p class="small">The exported video will contain only the selected start-to-end section.</p>
+</div>
+<div class="controls">
+<button id="rotateBtn" disabled>↻ Rotate 90°</button>
+<button id="fitBtn" disabled>Fit Video</button>
+<button id="fillBtn" disabled>Fill Preview</button>
+</div>
+</div>
+
+<div class="panel">
+<h2>Video Filters</h2>
+<label>Brightness: <span id="brightnessValue">100%</span></label>
+<input type="range" id="brightness" min="0" max="200" value="100" disabled>
+<label>Contrast: <span id="contrastValue">100%</span></label>
+<input type="range" id="contrast" min="0" max="200" value="100" disabled>
+<label>Saturation: <span id="saturationValue">100%</span></label>
+<input type="range" id="saturation" min="0" max="200" value="100" disabled>
+<label>Grayscale: <span id="grayValue">0%</span></label>
+<input type="range" id="grayscale" min="0" max="100" value="0" disabled>
+</div>
+
+<div class="panel">
+<h2>Export Video</h2>
+<p class="small">Export records your edited preview in real time. Keep this tab open until the export finishes.</p>
+<label>Export quality</label>
+<select id="quality" disabled>
+<option value="5000000">High quality</option>
+<option value="3000000" selected>Standard quality</option>
+<option value="1500000">Smaller file</option>
+</select>
+<div class="controls">
+<button class="primary" id="exportBtn" disabled>⬇ Export Edited Video</button>
+</div>
+<div id="exportStatus" class="status"></div>
+</div>
+</section>
+
+<aside>
+<div class="panel">
+<h2>Add Text</h2>
+<label>Text content</label>
+<input id="textContent" type="text" placeholder="Write your text here">
+<div class="row">
+<div><label>Text colour</label><input id="textColor" type="color" value="#ffffff"></div>
+<div><label>Background colour</label><input id="textBg" type="color" value="#000000"></div>
+</div>
+<div class="row">
+<div><label>Font size</label><input id="textSize" type="number" min="12" max="120" value="42"></div>
+<div><label>Background opacity</label><input id="textBgOpacity" type="range" min="0" max="100" value="0"></div>
+</div>
+<label><input type="checkbox" id="boldText"> Bold text</label>
+<div class="controls">
+<button id="addTextBtn" disabled>＋ Add Text</button>
+<button id="updateTextBtn" disabled>Update Selected Text</button>
+</div>
+<p class="small">Select a text overlay on the preview to move it. Select it and edit its content using the controls above.</p>
+</div>
+
+<div class="panel">
+<h2>Stickers</h2>
+<div class="row">
+<button class="sticker" data-sticker="❤️" disabled>❤️ Heart</button>
+<button class="sticker" data-sticker="⭐" disabled>⭐ Star</button>
+<button class="sticker" data-sticker="🔥" disabled>🔥 Fire</button>
+<button class="sticker" data-sticker="😂" disabled>😂 Laugh</button>
+<button class="sticker" data-sticker="👍" disabled>👍 Like</button>
+<button class="sticker" data-sticker="✨" disabled>✨ Sparkle</button>
+</div>
+<label>Sticker size</label>
+<input id="stickerSize" type="range" min="20" max="120" value="60" disabled>
+</div>
+
+<div class="panel">
+<h2>Selected Overlay</h2>
+<p class="small">Click an overlay in the preview to select it. Drag it to move it.</p>
+<div class="controls">
+<button id="frontBtn" disabled>Bring Forward</button>
+<button id="backBtn" disabled>Send Back</button>
+<button id="deleteBtn" class="danger" disabled>Delete Selected</button>
+</div>
+</div>
+
+<div class="panel">
+<h2>Reset Editing</h2>
+<button id="resetEditsBtn" disabled>Reset Filters & Overlays</button>
+</div>
+</aside>
+</div>
+</main>
+
+<footer>© 2026 Pikora. Create. Edit. Share.</footer>
+
+<video id="sourceVideo" playsinline preload="metadata" class="hidden"></video>
+
+<script>
+const $ = id => document.getElementById(id);
+const video = $("sourceVideo");
+const canvas = $("preview");
+const ctx = canvas.getContext("2d");
+
+let videoURL = null;
+let overlays = [];
+let selected = -1;
+let rotation = 0;
+let fitMode = "fit";
+let dragging = false;
+let dragOffset = {x:0,y:0};
+let animationFrame = null;
+let exporting = false;
+
+const filterIds = ["brightness","contrast","saturation","grayscale"];
+const buttons = ["playBtn","pauseBtn","resetBtn","rotateBtn","fitBtn","fillBtn","exportBtn","quality","addTextBtn","updateTextBtn","stickerSize","deleteBtn","frontBtn","backBtn","resetEditsBtn","trimStart","trimEnd","seek",...filterIds];
+
+function enableEditor(on){
+buttons.forEach(id => $(id).disabled = !on);
+document.querySelectorAll(".sticker").forEach(b=>b.disabled=!on);
+}
+
+function setStatus(message){$("exportStatus").textContent=message}
+
+function duration(){
+return Number.isFinite(video.duration)?video.duration:0;
+}
+
+function clamp(n,min,max){return Math.min(max,Math.max(min,n))}
+
+function getFilter(){
+return `brightness(${$("brightness").value}%) contrast(${$("contrast").value}%) saturate(${$("saturation").value}%) grayscale(${$("grayscale").value}%)`;
+}
+
+function updateFilterLabels(){
+$("brightnessValue").textContent=$("brightness").value+"%";
+$("contrastValue").textContent=$("contrast").value+"%";
+$("saturationValue").textContent=$("saturation").value+"%";
+$("grayValue").textContent=$("grayscale").value+"%";
+}
+
+function drawFrame(){
+if(!video.videoWidth||!video.videoHeight)return;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#05070d";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+const rotated=rotation%180!==0;
+const sourceW=rotated?video.videoHeight:video.videoWidth;
+const sourceH=rotated?video.videoWidth:video.videoHeight;
+const scale=fitMode==="fill"
+?Math.max(canvas.width/sourceW,canvas.height/sourceH)
+:Math.min(canvas.width/sourceW,canvas.height/sourceH);
+
+const w=sourceW*scale;
+const h=sourceH*scale;
+
+ctx.save();
+ctx.translate(canvas.width/2,canvas.height/2);
+ctx.rotate(rotation*Math.PI/180);
+ctx.filter=getFilter();
+ctx.drawImage(video,-w/2,-h/2,w,h);
+ctx.restore();
+ctx.filter="none";
+
+overlays.forEach((item,index)=>{
+ctx.save();
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+if(item.type==="text"){
+const size=item.size;
+ctx.font=`${item.bold?"bold ":""}${size}px Arial`;
+if(item.bgOpacity>0){
+const metrics=ctx.measureText(item.text||" ");
+const boxW=metrics.width+22;
+const boxH=size+18;
+ctx.globalAlpha=item.bgOpacity/100;
+ctx.fillStyle=item.bg;
+ctx.fillRect(item.x-boxW/2,item.y-boxH/2,boxW,boxH);
+ctx.globalAlpha=1;
+}
+ctx.fillStyle=item.color;
+ctx.fillText(item.text,item.x,item.y);
+}else{
+ctx.font=`${item.size}px Arial`;
+ctx.fillText(item.text,item.x,item.y);
+}
+if(index===selected){
+ctx.strokeStyle="#a995ff";
+ctx.lineWidth=2;
+ctx.setLineDash([7,5]);
+ctx.strokeRect(item.x-75,item.y-45,150,90);
+}
+ctx.restore();
+});
+}
+
+function renderLoop(){
+drawFrame();
+if(!video.paused&&!video.ended)animationFrame=requestAnimationFrame(renderLoop);
+}
+
+function refresh(){
+drawFrame();
+}
+
+function updateSeek(){
+if(duration()){
+$("seek").value=(video.currentTime/duration())*100;
+$("currentTime").textContent=video.currentTime.toFixed(2);
+}
+}
+
+function loadVideo(file){
+if(!file)return;
+if(!file.type.startsWith("video/")){
+alert("Please select a valid video file.");
+return;
+}
+if(videoURL)URL.revokeObjectURL(videoURL);
+videoURL=URL.createObjectURL(file);
+video.src=videoURL;
+video.load();
+$("fileName").textContent=file.name;
+setStatus("");
+}
+
+$("videoInput").addEventListener("change",e=>loadVideo(e.target.files[0]));
+
+video.addEventListener("loadedmetadata",()=>{
+if(!duration())return;
+$("emptyMessage").classList.add("hidden");
+canvas.classList.remove("hidden");
+enableEditor(true);
+$("trimStart").value=0;
+$("trimEnd").value=duration().toFixed(2);
+$("seek").value=0;
+video.currentTime=0;
+refresh();
+});
+
+video.addEventListener("loadeddata",refresh);
+video.addEventListener("seeked",()=>{refresh();updateSeek()});
+video.addEventListener("timeupdate",updateSeek);
+
+$("playBtn").onclick=()=>{
+const end=Number($("trimEnd").value);
+if(video.currentTime>=end)video.currentTime=Number($("trimStart").value);
+video.play();
+renderLoop();
+};
+$("pauseBtn").onclick=()=>video.pause();
+video.addEventListener("play",()=>{renderLoop()});
+
+$("resetBtn").onclick=()=>{
+video.pause();
+video.currentTime=0;
+$("trimStart").value=0;
+$("trimEnd").value=duration().toFixed(2);
+refresh();
+};
+
+$("seek").addEventListener("input",()=>{
+video.currentTime=(Number($("seek").value)/100)*duration();
+});
+
+$("trimStart").addEventListener("change",()=>{
+const start=clamp(Number($("trimStart").value)||0,0,duration());
+$("trimStart").value=start;
+if(start>=Number($("trimEnd").value)){
+$("trimEnd").value=duration();
+}
+if(video.currentTime<start)video.currentTime=start;
+});
+
+$("trimEnd").addEventListener("change",()=>{
+const end=clamp(Number($("trimEnd").value)||duration(),0,duration());
+$("trimEnd").value=end;
+if(end<=Number($("trimStart").value)){
+$("trimStart").value=0;
+}
+});
+
+$("rotateBtn").onclick=()=>{rotation=(rotation+90)%360;refresh()};
+$("fitBtn").onclick=()=>{fitMode="fit";refresh()};
+$("fillBtn").onclick=()=>{fitMode="fill";refresh()};
+
+filterIds.forEach(id=>{
+$(id).addEventListener("input",()=>{updateFilterLabels();refresh()});
+});
+
+$("addTextBtn").onclick=()=>{
+const text=$("textContent").value.trim();
+if(!text){alert("Please enter some text first.");return}
+overlays.push({
+type:"text",text,
+x:canvas.width/2,y:canvas.height/2,
+color:$("textColor").value,
+bg:$("textBg").value,
+bgOpacity:Number($("textBgOpacity").value),
+size:clamp(Number($("textSize").value)||42,12,120),
+bold:$("boldText").checked
+});
+selected=overlays.length-1;
+refresh();
+updateSelectionButtons();
+};
+
+$("updateTextBtn").onclick=()=>{
+if(selected<0||!overlays[selected]||overlays[selected].type!=="text")return;
+const item=overlays[selected];
+item.text=$("textContent").value;
+item.color=$("textColor").value;
+item.bg=$("textBg").value;
+item.bgOpacity=Number($("textBgOpacity").value);
+item.size=clamp(Number($("textSize").value)||42,12,120);
+item.bold=$("boldText").checked;
+refresh();
+};
+
+document.querySelectorAll(".sticker").forEach(button=>{
+button.onclick=()=>{
+overlays.push({
+type:"sticker",
+text:button.dataset.sticker,
+x:canvas.width/2,y:canvas.height/2,
+size:Number($("stickerSize").value)
+});
+selected=overlays.length-1;
+refresh();
+updateSelectionButtons();
+};
+});
+
+function canvasPoint(event){
+const rect=canvas.getBoundingClientRect();
+return {
+x:(event.clientX-rect.left)*canvas.width/rect.width,
+y:(event.clientY-rect.top)*canvas.height/rect.height
+};
+}
+
+function hitTest(point){
+for(let i=overlays.length-1;i>=0;i--){
+const item=overlays[i];
+const radius=item.type==="text"?Math.max(65,item.size*2):Math.max(45,item.size);
+if(Math.abs(point.x-item.x)<radius&&Math.abs(point.y-item.y)<radius)return i;
+}
+return -1;
+}
+
+canvas.addEventListener("pointerdown",event=>{
+const point=canvasPoint(event);
+selected=hitTest(point);
+if(selected>=0){
+dragging=true;
+dragOffset.x=point.x-overlays[selected].x;
+dragOffset.y=point.y-overlays[selected].y;
+canvas.setPointerCapture(event.pointerId);
+}else{
+selected=-1;
+}
+updateSelectionButtons();
+refresh();
+});
+
+canvas.addEventListener("pointermove",event=>{
+if(!dragging||selected<0)return;
+const point=canvasPoint(event);
+overlays[selected].x=clamp(point.x-dragOffset.x,0,canvas.width);
+overlays[selected].y=clamp(point.y-dragOffset.y,0,canvas.height);
+refresh();
+});
+
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointercancel",()=>dragging=false);
+
+function updateSelectionButtons(){
+const item=selected>=0?overlays[selected]:null;
+$("deleteBtn").disabled=!item;
+$("frontBtn").disabled=!item;
+$("backBtn").disabled=!item;
+$("updateTextBtn").disabled=!item||item.type!=="text";
+if(item&&item.type==="text"){
+$("textContent").value=item.text;
+$("textColor").value=item.color;
+$("textBg").value=item.bg;
+$("textBgOpacity").value=item.bgOpacity;
+$("textSize").value=item.size;
+$("boldText").checked=item.bold;
+}
+}
+
+$("deleteBtn").onclick=()=>{
+if(selected<0)return;
+overlays.splice(selected,1);
+selected=-1;
+updateSelectionButtons();
+refresh();
+};
+
+$("frontBtn").onclick=()=>{
+if(selected<0||selected===overlays.length-1)return;
+const item=overlays.splice(selected,1)[0];
+overlays.push(item);
+selected=overlays.length-1;
+refresh();
+};
+
+$("backBtn").onclick=()=>{
+if(selected<=0)return;
+const item=overlays.splice(selected,1)[0];
+overlays.unshift(item);
+selected=0;
+refresh();
+};
+
+$("resetEditsBtn").onclick=()=>{
+filterIds.forEach(id=>$(id).value=id==="grayscale"?0:100);
+updateFilterLabels();
+overlays=[];
+selected=-1;
+rotation=0;
+fitMode="fit";
+updateSelectionButtons();
+refresh();
+};
+
+function supportedMime(){
+const types=[
+"video/webm;codecs=vp9,opus",
+"video/webm;codecs=vp8,opus",
+"video/webm"
+];
+return types.find(type=>MediaRecorder.isTypeSupported(type))||"";
+}
+
+async function exportVideo(){
+if(exporting)return;
+if(!window.MediaRecorder||!canvas.captureStream){
+alert("Video export is not supported by this browser. Please use the latest Google Chrome or Microsoft Edge.");
+return;
+}
+
+const start=clamp(Number($("trimStart").value)||0,0,duration());
+const end=clamp(Number($("trimEnd").value)||duration(),0,duration());
+if(end<=start){
+alert("Trim end must be greater than trim start.");
+return;
+}
+
+const mime=supportedMime();
+if(!mime){
+alert("This browser does not support WebM video recording.");
+return;
+}
+
+exporting=true;
+$("exportBtn").disabled=true;
+setStatus("Preparing video export...");
+
+const previousTime=video.currentTime;
+const wasPaused=video.paused;
+let canvasStream=null;
+let combinedStream=null;
+let audioStream=null;
+let recorder=null;
+let chunks=[];
+
+try{
+video.pause();
+await new Promise(resolve=>{
+const done=()=>{video.removeEventListener("seeked",done);resolve()};
+video.addEventListener("seeked",done);
+video.currentTime=start;
+if(Math.abs(video.currentTime-start)<0.02)resolve();
+});
+
+refresh();
+
+canvasStream=canvas.captureStream(30);
+const tracks=[...canvasStream.getVideoTracks()];
+
+if(typeof video.captureStream==="function"){
+audioStream=video.captureStream();
+audioStream.getAudioTracks().forEach(track=>tracks.push(track));
+}else if(typeof video.mozCaptureStream==="function"){
+audioStream=video.mozCaptureStream();
+audioStream.getAudioTracks().forEach(track=>tracks.push(track));
+}
+
+combinedStream=new MediaStream(tracks);
+recorder=new MediaRecorder(combinedStream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)});
+
+recorder.ondataavailable=e=>{
+if(e.data&&e.data.size)chunks.push(e.data);
+};
+
+const finished=new Promise((resolve,reject)=>{
+recorder.onstop=resolve;
+recorder.onerror=()=>reject(new Error("Recording failed."));
+});
+
+recorder.start(250);
+setStatus("Exporting... 0%");
+
+await video.play();
+
+await new Promise((resolve,reject)=>{
+const check=()=>{
+if(video.currentTime>=end||video.ended){
+video.pause();
+resolve();
+return;
+}
+const progress=clamp(((video.currentTime-start)/(end-start))*100,0,100);
+setStatus("Exporting... "+Math.round(progress)+"%");
+requestAnimationFrame(check);
+};
+requestAnimationFrame(check);
+});
+
+if(recorder.state!=="inactive")recorder.stop();
+await finished;
+
+const blob=new Blob(chunks,{type:"video/webm"});
+if(!blob.size)throw new Error("The exported file is empty.");
+
+const url=URL.createObjectURL(blob);
+const link=document.createElement("a");
+link.href=url;
+link.download="pikora-edited-video.webm";
+document.body.appendChild(link);
+link.click();
+link.remove();
+setTimeout(()=>URL.revokeObjectURL(url),60000);
+
+setStatus("Export complete! Your video download should begin now.");
+
+}catch(error){
+console.error(error);
+if(recorder&&recorder.state!=="inactive")recorder.stop();
+setStatus("Export failed: "+error.message);
+alert("Export failed. Try a shorter video or use the latest Chrome browser.");
+}finally{
+if(canvasStream)canvasStream.getTracks().forEach(t=>t.stop());
+if(audioStream)audioStream.getTracks().forEach(t=>t.stop());
+video.pause();
+video.currentTime=previousTime;
+if(!wasPaused)video.play().catch(()=>{});
+exporting=false;
+$("exportBtn").disabled=false;
+refresh();
+}
+}
+
+$("exportBtn").onclick=exportVideo;
+
+updateFilterLabels();
+enableEditor(false);
+updateSelectionButtons();
+</script>
+</body>
+</html>
