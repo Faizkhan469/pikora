@@ -5,627 +5,718 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with filters, text, stickers, shapes, blur, crop, resize and draggable objects.">
+<meta name="description" content="Edit photos online for free with Pikora. Add text, stickers, shapes, filters, crop, resize and download without watermarks.">
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090d1a;color:#fff;font-family:Arial,sans-serif}
-header{padding:18px 5%;background:#11182a;border-bottom:1px solid #29334a;display:flex;justify-content:space-between;align-items:center}
-.logo{font-size:27px;font-weight:900;letter-spacing:2px}
-.logo span{color:#a394ff}
-a{color:#b9adff;text-decoration:none}
-main{width:min(1200px,94%);margin:30px auto}
-h1{text-align:center;font-size:32px}
-.intro{text-align:center;color:#adb6ca;margin-bottom:25px}
-.layout{display:grid;grid-template-columns:330px 1fr;gap:20px}
-.panel,.workspace{background:#131a2b;border:1px solid #29334a;border-radius:15px;padding:20px}
-h2{font-size:18px;margin-top:0}
-.group{border-bottom:1px solid #29334a;padding:14px 0}
-.group:last-child{border:0}
-label{display:block;font-size:13px;color:#c5cadd;margin:12px 0 5px}
-input[type=range]{width:100%;accent-color:#917cff}
-input[type=text],input[type=number],input[type=color],select,input[type=file]{
-width:100%;background:#202a40;color:white;padding:10px;border:1px solid #3b4761;border-radius:7px
-}
-input[type=color]{height:42px;padding:4px}
-button{border:0;border-radius:8px;padding:10px 12px;background:#7965ed;color:white;font-weight:bold;cursor:pointer;margin:4px 2px}
-button:hover{background:#9584ff}
-button.secondary{background:#303b55}
-button:disabled{opacity:.4;cursor:not-allowed}
-.workspace{text-align:center;min-height:450px}
-.canvas-wrap{background:#090d1a;border:1px dashed #495573;border-radius:10px;min-height:330px;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
-canvas{max-width:100%;max-height:650px;object-fit:contain;touch-action:none;cursor:grab}
-canvas:active{cursor:grabbing}
-#empty{color:#8994ac;padding:50px 15px}
-.note{color:#929db4;font-size:12px;margin-top:15px}
-.row{display:flex;gap:8px}
-.row>*{flex:1;min-width:0}
-.status{font-size:13px;color:#c5cadd;margin-top:10px;min-height:18px}
-@media(max-width:800px){.layout{grid-template-columns:1fr}header{padding:15px 4%}}
+body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
+header{padding:20px 5%;background:#111a30;border-bottom:1px solid #263453;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.logo{font-size:27px;font-weight:900;letter-spacing:1px;color:#a78bfa;text-decoration:none}
+header a.back{color:#cbd5e1;text-decoration:none}
+main{max-width:1450px;margin:auto;padding:25px 18px}
+h1{margin:0 0 8px;font-size:28px}
+.subtitle{color:#9caecb;margin:0 0 22px;line-height:1.5}
+.editor{display:grid;grid-template-columns:310px minmax(0,1fr);gap:20px;align-items:start}
+.panel,.workspace{background:#111a30;border:1px solid #263453;border-radius:15px;padding:18px}
+.panel{display:flex;flex-direction:column;gap:17px}
+.section{border-bottom:1px solid #263453;padding-bottom:15px}
+.section:last-child{border-bottom:0;padding-bottom:0}
+h2{font-size:15px;margin:0 0 12px;color:#c4b5fd}
+label{display:block;font-size:13px;color:#cbd5e1;margin-bottom:7px}
+input[type="file"],input[type="number"],input[type="text"],select{width:100%;background:#0b1020;border:1px solid #354568;color:white;padding:10px;border-radius:8px;margin-bottom:10px;min-width:0}
+input[type="color"]{width:100%;height:38px;background:#0b1020;border:1px solid #354568;border-radius:8px;padding:3px;margin-bottom:10px}
+input[type="range"]{width:100%;accent-color:#8b5cf6;margin:4px 0 12px}
+.range-value{font-size:12px;color:#9caecb;float:right}
+button{background:#6d4be8;color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+button:hover{background:#8264f2}
+button.secondary{background:#253451;color:#e2e8f0}
+button.secondary:hover{background:#354568}
+button.danger{background:#8b3044}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-grid button{width:100%}
+.full{width:100%}
+.workspace{min-height:600px;display:flex;flex-direction:column;gap:15px}
+.canvas-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.canvas-top span{font-size:13px;color:#9caecb}
+.canvas-area{min-height:450px;background:#080d19;border:1px dashed #354568;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:15px;overflow:hidden}
+canvas{display:block;max-width:100%;max-height:650px;width:auto;height:auto;touch-action:none;cursor:grab}
+canvas.dragging{cursor:grabbing}
+.placeholder{text-align:center;color:#8292ae;padding:40px}
+.placeholder strong{display:block;color:#c4b5fd;font-size:20px;margin-bottom:10px}
+.export-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status{font-size:12px;color:#a5b4fc;min-height:16px}
+.note{font-size:12px;color:#8292ae;line-height:1.5;margin:0}
+@media(max-width:850px){.editor{grid-template-columns:1fr}.workspace{min-height:420px}.canvas-area{min-height:300px}}
 </style>
 </head>
 <body>
+
 <header>
-<div class="logo">PIKO<span>RA</span></div>
-<a href="index.html">← Back to Home</a>
+<a class="logo" href="index.html">PIKORA</a>
+<a class="back" href="index.html">← Back to Home</a>
 </header>
 
 <main>
-<h1>Free Online Photo Editor</h1>
-<p class="intro">Edit your photos with free creative tools. No account or watermark.</p>
+<h1>Free Photo Editor</h1>
+<p class="subtitle">Edit your photos, add text and stickers, apply filters and download your creation. Free, with no watermark.</p>
 
-<div class="layout">
-<section class="panel">
-<h2>Photo Editing Tools</h2>
+<div class="editor">
 
-<div class="group">
-<label>1. Upload your photo</label>
+<aside class="panel">
+
+<div class="section">
+<h2>1. Upload Photo</h2>
 <input type="file" id="upload" accept="image/jpeg,image/png,image/webp">
+<p class="note">Supported formats: JPG, PNG and WebP.</p>
 </div>
 
-<div class="group">
+<div class="section">
 <h2>2. Adjustments</h2>
-<label>Brightness: <span id="brightnessValue">100</span>%</label>
-<input id="brightness" type="range" min="0" max="200" value="100">
-<label>Contrast: <span id="contrastValue">100</span>%</label>
-<input id="contrast" type="range" min="0" max="200" value="100">
-<label>Saturation: <span id="saturationValue">100</span>%</label>
-<input id="saturation" type="range" min="0" max="200" value="100">
-<label>Blur: <span id="blurValue">0</span> px</label>
-<input id="blur" type="range" min="0" max="20" value="0">
+
+<label>Brightness <span class="range-value" id="brightnessValue">100%</span></label>
+<input type="range" id="brightness" min="0" max="200" value="100">
+
+<label>Contrast <span class="range-value" id="contrastValue">100%</span></label>
+<input type="range" id="contrast" min="0" max="200" value="100">
+
+<label>Saturation <span class="range-value" id="saturationValue">100%</span></label>
+<input type="range" id="saturation" min="0" max="200" value="100">
+
+<label>Blur <span class="range-value" id="blurValue">0px</span></label>
+<input type="range" id="blur" min="0" max="15" value="0">
 </div>
 
-<div class="group">
+<div class="section">
 <h2>3. Filters</h2>
 <select id="filter">
 <option value="none">Original</option>
-<option value="grayscale(100%)">Black & White</option>
+<option value="grayscale(100%)">Grayscale</option>
 <option value="sepia(100%)">Sepia</option>
-<option value="contrast(125%) saturate(130%)">Vivid</option>
+<option value="saturate(180%) contrast(110%)">Vivid</option>
 <option value="brightness(110%) saturate(80%)">Soft</option>
-<option value="hue-rotate(35deg)">Warm</option>
+<option value="sepia(30%) saturate(130%)">Warm</option>
 <option value="invert(100%)">Invert</option>
+<option value="contrast(130%)">High Contrast</option>
 </select>
 </div>
 
-<div class="group">
-<h2>4. Crop Photo</h2>
-<button class="secondary" onclick="cropPhoto(1)">Square 1:1</button>
-<button class="secondary" onclick="cropPhoto(4/3)">4:3</button>
-<button class="secondary" onclick="cropPhoto(16/9)">16:9</button>
-<button class="secondary" onclick="cropPhoto(0)">Reset Crop</button>
-</div>
-
-<div class="group">
-<h2>5. Rotate & Flip</h2>
-<button class="secondary" onclick="rotate(-90)">↶ Rotate Left</button>
-<button class="secondary" onclick="rotate(90)">↷ Rotate Right</button>
-<button class="secondary" onclick="flip('h')">↔ Flip</button>
-<button class="secondary" onclick="flip('v')">↕ Flip</button>
-</div>
-
-<div class="group">
-<h2>6. Add Text</h2>
-<label>Text</label>
-<input id="textInput" type="text" placeholder="Type your text">
-<div class="row">
-<div>
-<label>Text colour</label>
-<input id="textColor" type="color" value="#ffffff">
-</div>
-<div>
-<label>Font size</label>
-<input id="textSize" type="number" min="8" max="300" value="48">
-</div>
-</div>
-<button onclick="addText()">Add Text</button>
-</div>
-
-<div class="group">
-<h2>7. Stickers & Shapes</h2>
-<label>Choose a sticker</label>
-<select id="sticker">
-<option value="⭐">⭐ Star</option>
-<option value="❤️">❤️ Heart</option>
-<option value="🔥">🔥 Fire</option>
-<option value="😊">😊 Smile</option>
-<option value="🎉">🎉 Party</option>
-<option value="🌈">🌈 Rainbow</option>
-<option value="✨">✨ Sparkles</option>
+<div class="section">
+<h2>4. Crop & Rotate</h2>
+<label>Crop Ratio</label>
+<select id="crop">
+<option value="original">Original</option>
+<option value="1:1">Square 1:1</option>
+<option value="4:3">Landscape 4:3</option>
+<option value="16:9">Wide 16:9</option>
+<option value="3:4">Portrait 3:4</option>
+<option value="9:16">Story 9:16</option>
 </select>
-<button onclick="addSticker()">Add Sticker</button>
-<label>Shape colour</label>
-<input id="shapeColor" type="color" value="#a394ff">
-<button onclick="addShape('rect')">Add Rectangle</button>
-<button onclick="addShape('circle')">Add Circle</button>
+<div class="btn-grid">
+<button class="secondary" id="rotateLeft">↶ Rotate Left</button>
+<button class="secondary" id="rotateRight">↷ Rotate Right</button>
+<button class="secondary" id="flipH">↔ Flip Horizontal</button>
+<button class="secondary" id="flipV">↕ Flip Vertical</button>
+</div>
 </div>
 
-<div class="group">
+<div class="section">
+<h2>5. Add Text</h2>
+<label>Your Text</label>
+<input type="text" id="textInput" placeholder="Type your text here">
+<label>Text Colour</label>
+<input type="color" id="textColor" value="#ffffff">
+<label>Font Size</label>
+<input type="number" id="textSize" min="8" max="300" value="45">
+<button class="full" id="addText">＋ Add Text</button>
+</div>
+
+<div class="section">
+<h2>6. Add Stickers</h2>
+<label>Choose Sticker</label>
+<select id="stickerInput">
+<option>⭐</option>
+<option>❤️</option>
+<option>🔥</option>
+<option>✨</option>
+<option>😍</option>
+<option>🎉</option>
+<option>🌸</option>
+<option>🌈</option>
+<option>👍</option>
+<option>☀️</option>
+<option>🎂</option>
+<option>💯</option>
+</select>
+<button class="full" id="addSticker">＋ Add Sticker</button>
+</div>
+
+<div class="section">
+<h2>7. Add Shapes</h2>
+<label>Shape Colour</label>
+<input type="color" id="shapeColor" value="#a78bfa">
+<div class="btn-grid">
+<button id="addRect">＋ Rectangle</button>
+<button id="addCircle">＋ Circle</button>
+</div>
+</div>
+
+<div class="section">
 <h2>8. Resize Image</h2>
 <label>Width (pixels)</label>
-<input id="resizeWidth" type="number" min="1" max="12000" placeholder="Width">
+<input type="number" id="resizeWidth" min="1" max="12000" placeholder="Width">
 <label>Height (pixels)</label>
-<input id="resizeHeight" type="number" min="1" max="12000" placeholder="Height">
-<button onclick="resizePhoto()">Apply Resize</button>
-<button class="secondary" onclick="resetResize()">Reset Size</button>
+<input type="number" id="resizeHeight" min="1" max="12000" placeholder="Height">
+<div class="btn-grid">
+<button id="applyResize">Apply Resize</button>
+<button class="secondary" id="resetResize">Original Size</button>
+</div>
 </div>
 
-<div class="group">
-<h2>9. Object Controls</h2>
-<p class="note">Click an object to select it. Drag it to move it.</p>
-<button class="secondary" onclick="undoOverlay()">Undo Last Addition</button>
-<button class="secondary" onclick="deleteSelected()">Delete Selected</button>
-<button class="secondary" onclick="clearOverlays()">Remove All Text & Shapes</button>
+<div class="section">
+<h2>9. Overlay Controls</h2>
+<div class="btn-grid">
+<button class="secondary" id="undoOverlay">Undo Last</button>
+<button class="danger" id="clearOverlays">Remove All</button>
+</div>
+<p class="note">Drag any text, sticker or shape directly on the photo to reposition it.</p>
 </div>
 
-<div class="group">
-<h2>10. Download</h2>
-<label>Image format</label>
+<div class="section">
+<h2>10. Download Photo</h2>
+<label>File Format</label>
 <select id="format">
 <option value="image/png">PNG</option>
 <option value="image/jpeg">JPG</option>
 <option value="image/webp">WebP</option>
 </select>
-<button id="download" disabled onclick="downloadPhoto()">Download Photo</button>
-<button class="secondary" onclick="resetEditor()">Reset All</button>
+<button class="full" id="download">⬇ Download Edited Photo</button>
 </div>
 
-<p class="note">Your selected image is processed locally in your browser.</p>
-</section>
+<button class="secondary full" id="resetAll">Reset Everything</button>
+
+</aside>
 
 <section class="workspace">
-<h2>Your Editing Workspace</h2>
-<div class="canvas-wrap">
-<div id="empty">🖼️<br><br>Upload a photo to start editing.</div>
+<div class="canvas-top">
+<strong>Editing Workspace</strong>
+<span id="imageInfo">No image uploaded</span>
+</div>
+
+<div class="canvas-area" id="canvasArea">
+<div class="placeholder" id="placeholder">
+<strong>Your photo will appear here</strong>
+Upload an image to start editing.
+</div>
 <canvas id="canvas" hidden></canvas>
 </div>
-<p class="status" id="status">Upload a photo to begin.</p>
-<p class="note">Select and drag text, stickers and shapes to position them anywhere on your photo.</p>
-<p class="note">Pikora Photo Editor — Free creative tools for everyone.</p>
+
+<div class="status" id="status">Ready to edit your photo.</div>
+<p class="note">Your photo is processed in your browser. It is not uploaded to a Pikora server. Drag overlays with your mouse or finger.</p>
 </section>
+
 </div>
 </main>
 
 <script>
-const upload=document.getElementById('upload');
-const canvas=document.getElementById('canvas');
-const ctx=canvas.getContext('2d');
-const empty=document.getElementById('empty');
-const downloadBtn=document.getElementById('download');
-const statusText=document.getElementById('status');
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const upload = document.getElementById("upload");
+const placeholder = document.getElementById("placeholder");
+const statusText = document.getElementById("status");
+const imageInfo = document.getElementById("imageInfo");
 
-let img=null;
-let crop={x:0,y:0,w:0,h:0};
-let angle=0,flipH=1,flipV=1;
-let overlays=[];
-let outputWidth=0,outputHeight=0;
-let selectedIndex=-1;
-let dragging=false;
-let dragOffset={x:0,y:0};
+let img = null;
+let angle = 0;
+let flipH = false;
+let flipV = false;
+let overlays = [];
+let outputWidth = 0;
+let outputHeight = 0;
+let draggingIndex = -1;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let activePointer = null;
 
-function currentCrop(){
- return crop.w>0?crop:{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+function setStatus(message){
+  statusText.textContent = message;
 }
 
-function baseDimensions(){
- const c=currentCrop();
- const rotated=Math.abs(angle%180)===90;
- return {
-  width:Math.max(1,Math.round(rotated?c.h:c.w)),
-  height:Math.max(1,Math.round(rotated?c.w:c.h))
- };
+function getCropDimensions(){
+  if(!img) return {width:0,height:0};
+
+  const ratio = document.getElementById("crop").value;
+  const originalRatio = img.width / img.height;
+
+  if(ratio === "original"){
+    return {width:img.width,height:img.height};
+  }
+
+  const parts = ratio.split(":").map(Number);
+  const targetRatio = parts[0] / parts[1];
+
+  let width = img.width;
+  let height = img.height;
+
+  if(originalRatio > targetRatio){
+    width = height * targetRatio;
+  }else{
+    height = width / targetRatio;
+  }
+
+  return {width,height};
 }
 
-upload.addEventListener('change',e=>{
- const file=e.target.files[0];
- if(!file)return;
- if(!file.type.startsWith('image/')){
-  alert('Please select an image file.');return;
- }
- const url=URL.createObjectURL(file);
- const newImg=new Image();
- newImg.onload=()=>{
-  img=newImg;
-  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
-  angle=0;flipH=1;flipV=1;
-  overlays=[];
-  selectedIndex=-1;
-  outputWidth=0;outputHeight=0;
-  resetAdjustments();
-  document.getElementById('resizeWidth').value='';
-  document.getElementById('resizeHeight').value='';
-  canvas.hidden=false;
-  empty.hidden=true;
-  downloadBtn.disabled=false;
-  statusText.textContent='Photo loaded. Add an object or edit your image.';
-  render();
-  URL.revokeObjectURL(url);
- };
- newImg.onerror=()=>{
-  alert('Could not open this image. Please try another file.');
-  URL.revokeObjectURL(url);
- };
- newImg.src=url;
-});
+function getBaseDimensions(){
+  const crop = getCropDimensions();
+  const rotated = Math.abs(angle % 180) === 90;
 
-function resetAdjustments(){
- ['brightness','contrast','saturation'].forEach(id=>{
-  document.getElementById(id).value=100;
- });
- document.getElementById('blur').value=0;
- document.getElementById('filter').value='none';
- updateLabels();
+  return rotated
+    ? {width:crop.height,height:crop.width}
+    : {width:crop.width,height:crop.height};
 }
 
-['brightness','contrast','saturation','blur','filter'].forEach(id=>{
- document.getElementById(id).addEventListener('input',()=>{
-  updateLabels();
-  render();
- });
-});
+function makeBaseCanvas(){
+  const crop = getCropDimensions();
+  const base = document.createElement("canvas");
+  const baseWidth = Math.max(1,Math.round(angle % 180 === 0 ? crop.width : crop.height));
+  const baseHeight = Math.max(1,Math.round(angle % 180 === 0 ? crop.height : crop.width));
 
-function updateLabels(){
- ['brightness','contrast','saturation','blur'].forEach(id=>{
-  document.getElementById(id+'Value').textContent=
-   document.getElementById(id).value;
- });
+  base.width = baseWidth;
+  base.height = baseHeight;
+
+  const bctx = base.getContext("2d");
+
+  bctx.save();
+  bctx.translate(baseWidth/2,baseHeight/2);
+  bctx.rotate(angle * Math.PI / 180);
+  bctx.scale(flipH ? -1 : 1,flipV ? -1 : 1);
+
+  const sx = (img.width - crop.width)/2;
+  const sy = (img.height - crop.height)/2;
+
+  bctx.drawImage(
+    img,
+    sx,sy,crop.width,crop.height,
+    -crop.width/2,-crop.height/2,crop.width,crop.height
+  );
+
+  bctx.restore();
+
+  return base;
 }
 
-function getOverlayBounds(item){
- if(item.type==='text'){
+function getFilter(){
+  const brightness = document.getElementById("brightness").value;
+  const contrast = document.getElementById("contrast").value;
+  const saturation = document.getElementById("saturation").value;
+  const blur = document.getElementById("blur").value;
+  const preset = document.getElementById("filter").value;
+
+  return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px) ${preset === "none" ? "" : preset}`;
+}
+
+function drawOverlays(context){
+  overlays.forEach(item=>{
+    context.save();
+
+    if(item.type === "text"){
+      context.font = `bold ${item.size}px Arial`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillStyle = item.color;
+      context.shadowColor = "rgba(0,0,0,.45)";
+      context.shadowBlur = 3;
+      context.fillText(item.text,item.x,item.y);
+    }
+
+    if(item.type === "sticker"){
+      context.font = `${item.size}px Arial`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(item.text,item.x,item.y);
+    }
+
+    if(item.type === "rect"){
+      context.fillStyle = item.color;
+      context.fillRect(item.x-70,item.y-45,140,90);
+    }
+
+    if(item.type === "circle"){
+      context.fillStyle = item.color;
+      context.beginPath();
+      context.arc(item.x,item.y,45,0,Math.PI*2);
+      context.fill();
+    }
+
+    context.restore();
+  });
+}
+
+function render(){
+  if(!img) return;
+
+  const base = makeBaseCanvas();
+  const baseWidth = base.width;
+  const baseHeight = base.height;
+
+  const width = outputWidth || baseWidth;
+  const height = outputHeight || baseHeight;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  ctx.clearRect(0,0,width,height);
   ctx.save();
-  ctx.font=`bold ${item.size}px Arial`;
-  const width=ctx.measureText(item.text).width;
+  ctx.scale(width/baseWidth,height/baseHeight);
+  ctx.filter = getFilter();
+  ctx.drawImage(base,0,0);
+  ctx.filter = "none";
+  drawOverlays(ctx);
   ctx.restore();
-  return {
-   x:item.x-width/2-5,
-   y:item.y-item.size/2-5,
-   w:width+10,
-   h:item.size+10
-  };
- }
- if(item.type==='sticker'){
-  return {
-   x:item.x-item.size/2,
-   y:item.y-item.size/2,
-   w:item.size,
-   h:item.size
-  };
- }
- if(item.type==='rect'){
-  return {x:item.x-70,y:item.y-40,w:140,h:80};
- }
- if(item.type==='circle'){
-  return {x:item.x-45,y:item.y-45,w:90,h:90};
- }
- return {x:item.x-20,y:item.y-20,w:40,h:40};
+
+  canvas.hidden = false;
+  placeholder.hidden = true;
+
+  imageInfo.textContent = `${width} × ${height} px`;
 }
 
-function render(showSelection=true){
- if(!img)return;
-
- const dimensions=baseDimensions();
- const baseW=dimensions.width;
- const baseH=dimensions.height;
-
- canvas.width=outputWidth||baseW;
- canvas.height=outputHeight||baseH;
-
- const off=document.createElement('canvas');
- off.width=baseW;
- off.height=baseH;
- const octx=off.getContext('2d');
-
- octx.translate(baseW/2,baseH/2);
- octx.rotate(angle*Math.PI/180);
- octx.scale(flipH,flipV);
- const c=currentCrop();
- octx.drawImage(img,c.x,c.y,c.w,c.h,-c.w/2,-c.h/2,c.w,c.h);
-
- ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.save();
- ctx.filter=
-  `brightness(${document.getElementById('brightness').value}%) `+
-  `contrast(${document.getElementById('contrast').value}%) `+
-  `saturate(${document.getElementById('saturation').value}%) `+
-  `blur(${document.getElementById('blur').value}px) `+
-  document.getElementById('filter').value;
- ctx.drawImage(off,0,0,canvas.width,canvas.height);
- ctx.restore();
- ctx.filter='none';
-
- const sx=canvas.width/baseW;
- const sy=canvas.height/baseH;
-
- ctx.save();
- ctx.scale(sx,sy);
-
- overlays.forEach((item,index)=>{
-  ctx.save();
-
-  if(item.type==='text'){
-   ctx.font=`bold ${item.size}px Arial`;
-   ctx.textAlign='center';
-   ctx.textBaseline='middle';
-   ctx.fillStyle=item.color;
-   ctx.shadowColor='rgba(0,0,0,.5)';
-   ctx.shadowBlur=3;
-   ctx.fillText(item.text,item.x,item.y);
-  }else if(item.type==='sticker'){
-   ctx.font=`${item.size}px Arial`;
-   ctx.textAlign='center';
-   ctx.textBaseline='middle';
-   ctx.fillText(item.text,item.x,item.y);
-  }else if(item.type==='rect'){
-   ctx.fillStyle=item.color;
-   ctx.fillRect(item.x-70,item.y-40,140,80);
-  }else if(item.type==='circle'){
-   ctx.fillStyle=item.color;
-   ctx.beginPath();
-   ctx.arc(item.x,item.y,45,0,Math.PI*2);
-   ctx.fill();
+function addOverlay(item){
+  if(!img){
+    setStatus("Please upload a photo first.");
+    return;
   }
 
-  if(showSelection && index===selectedIndex){
-   const b=getOverlayBounds(item);
-   ctx.shadowBlur=0;
-   ctx.strokeStyle='#ffffff';
-   ctx.lineWidth=2;
-   ctx.setLineDash([7,5]);
-   ctx.strokeRect(b.x-3,b.y-3,b.w+6,b.h+6);
-   ctx.setLineDash([]);
+  const dimensions = getBaseDimensions();
+  item.x = dimensions.width/2;
+  item.y = dimensions.height/2;
+  overlays.push(item);
+  render();
+  setStatus("Added! Drag it on the photo to position it.");
+}
+
+upload.addEventListener("change",event=>{
+  const file = event.target.files[0];
+  if(!file) return;
+
+  if(!file.type.startsWith("image/")){
+    setStatus("Please select a valid image.");
+    return;
   }
 
-  ctx.restore();
- });
+  const reader = new FileReader();
 
- ctx.restore();
-}
+  reader.onload = e=>{
+    const newImage = new Image();
 
-function addText(){
- if(!img){alert('Upload a photo first.');return;}
- const text=document.getElementById('textInput').value.trim();
- if(!text){alert('Please type some text first.');return;}
+    newImage.onload = ()=>{
+      img = newImage;
+      angle = 0;
+      flipH = false;
+      flipV = false;
+      overlays = [];
+      outputWidth = 0;
+      outputHeight = 0;
 
- const dimensions=baseDimensions();
- overlays.push({
-  type:'text',
-  text,
-  color:document.getElementById('textColor').value,
-  size:Math.max(8,Math.min(300,Number(document.getElementById('textSize').value)||48)),
-  x:dimensions.width/2,
-  y:dimensions.height/2
- });
- selectedIndex=overlays.length-1;
- statusText.textContent='Text added. Drag it to move it.';
- render();
-}
+      document.getElementById("crop").value = "original";
+      document.getElementById("resizeWidth").value = img.width;
+      document.getElementById("resizeHeight").value = img.height;
 
-function addSticker(){
- if(!img){alert('Upload a photo first.');return;}
- const dimensions=baseDimensions();
- overlays.push({
-  type:'sticker',
-  text:document.getElementById('sticker').value,
-  size:64,
-  x:dimensions.width/2,
-  y:dimensions.height/2
- });
- selectedIndex=overlays.length-1;
- statusText.textContent='Sticker added. Drag it to move it.';
- render();
-}
+      render();
+      setStatus("Photo uploaded successfully. Start editing!");
+    };
 
-function addShape(type){
- if(!img){alert('Upload a photo first.');return;}
- const dimensions=baseDimensions();
- overlays.push({
-  type,
-  color:document.getElementById('shapeColor').value,
-  x:dimensions.width/2,
-  y:dimensions.height/2
- });
- selectedIndex=overlays.length-1;
- statusText.textContent='Shape added. Drag it to move it.';
- render();
-}
+    newImage.onerror = ()=>{
+      setStatus("Could not open this image. Please try another file.");
+    };
 
-function pointerPosition(event){
- const rect=canvas.getBoundingClientRect();
- const dimensions=baseDimensions();
-
- const canvasX=(event.clientX-rect.left)*(canvas.width/rect.width);
- const canvasY=(event.clientY-rect.top)*(canvas.height/rect.height);
-
- return {
-  x:canvasX*(dimensions.width/canvas.width),
-  y:canvasY*(dimensions.height/canvas.height)
- };
-}
-
-function hitTest(x,y){
- for(let i=overlays.length-1;i>=0;i--){
-  const b=getOverlayBounds(overlays[i]);
-  if(x>=b.x-8 && x<=b.x+b.w+8 &&
-     y>=b.y-8 && y<=b.y+b.h+8){
-   return i;
-  }
- }
- return -1;
-}
-
-canvas.addEventListener('pointerdown',event=>{
- if(!img)return;
- const pos=pointerPosition(event);
- const hit=hitTest(pos.x,pos.y);
-
- selectedIndex=hit;
-
- if(hit!==-1){
-  dragging=true;
-  dragOffset={
-   x:pos.x-overlays[hit].x,
-   y:pos.y-overlays[hit].y
+    newImage.src = e.target.result;
   };
-  canvas.setPointerCapture(event.pointerId);
-  statusText.textContent='Moving selected object. Release to place it.';
- }else{
-  statusText.textContent='No object selected. Add text, a sticker or a shape.';
- }
 
- render();
+  reader.readAsDataURL(file);
 });
 
-canvas.addEventListener('pointermove',event=>{
- if(!dragging || selectedIndex<0 || !img)return;
-
- const pos=pointerPosition(event);
- const item=overlays[selectedIndex];
- const dimensions=baseDimensions();
-
- item.x=Math.max(0,Math.min(dimensions.width,pos.x-dragOffset.x));
- item.y=Math.max(0,Math.min(dimensions.height,pos.y-dragOffset.y));
-
- render();
+["brightness","contrast","saturation","blur"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",()=>{
+    const value = document.getElementById(id).value;
+    const unit = id === "blur" ? "px" : "%";
+    document.getElementById(id+"Value").textContent = value+unit;
+    render();
+  });
 });
 
-function stopDragging(){
- if(!dragging)return;
- dragging=false;
- statusText.textContent='Object positioned successfully.';
+document.getElementById("filter").addEventListener("change",render);
+document.getElementById("crop").addEventListener("change",render);
+
+document.getElementById("rotateLeft").addEventListener("click",()=>{
+  if(!img) return;
+  angle = (angle - 90 + 360) % 360;
+  render();
+});
+
+document.getElementById("rotateRight").addEventListener("click",()=>{
+  if(!img) return;
+  angle = (angle + 90) % 360;
+  render();
+});
+
+document.getElementById("flipH").addEventListener("click",()=>{
+  if(!img) return;
+  flipH = !flipH;
+  render();
+});
+
+document.getElementById("flipV").addEventListener("click",()=>{
+  if(!img) return;
+  flipV = !flipV;
+  render();
+});
+
+document.getElementById("addText").addEventListener("click",()=>{
+  const text = document.getElementById("textInput").value.trim();
+  if(!text){
+    setStatus("Please type some text first.");
+    return;
+  }
+
+  const size = Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45));
+
+  addOverlay({
+    type:"text",
+    text,
+    color:document.getElementById("textColor").value,
+    size
+  });
+});
+
+document.getElementById("addSticker").addEventListener("click",()=>{
+  addOverlay({
+    type:"sticker",
+    text:document.getElementById("stickerInput").value,
+    size:65
+  });
+});
+
+document.getElementById("addRect").addEventListener("click",()=>{
+  addOverlay({
+    type:"rect",
+    color:document.getElementById("shapeColor").value
+  });
+});
+
+document.getElementById("addCircle").addEventListener("click",()=>{
+  addOverlay({
+    type:"circle",
+    color:document.getElementById("shapeColor").value
+  });
+});
+
+document.getElementById("undoOverlay").addEventListener("click",()=>{
+  if(!overlays.length){
+    setStatus("There is nothing to undo.");
+    return;
+  }
+
+  overlays.pop();
+  render();
+  setStatus("Last overlay removed.");
+});
+
+document.getElementById("clearOverlays").addEventListener("click",()=>{
+  overlays = [];
+  render();
+  setStatus("All overlays removed.");
+});
+
+document.getElementById("applyResize").addEventListener("click",()=>{
+  if(!img) return;
+
+  const width = Number(document.getElementById("resizeWidth").value);
+  const height = Number(document.getElementById("resizeHeight").value);
+
+  if(!Number.isInteger(width) || !Number.isInteger(height) ||
+     width < 1 || height < 1 || width > 12000 || height > 12000){
+    setStatus("Enter valid width and height from 1 to 12000 pixels.");
+    return;
+  }
+
+  outputWidth = width;
+  outputHeight = height;
+  render();
+  setStatus("Image resized successfully.");
+});
+
+document.getElementById("resetResize").addEventListener("click",()=>{
+  if(!img) return;
+
+  outputWidth = 0;
+  outputHeight = 0;
+
+  const dimensions = getBaseDimensions();
+  document.getElementById("resizeWidth").value = Math.round(dimensions.width);
+  document.getElementById("resizeHeight").value = Math.round(dimensions.height);
+
+  render();
+  setStatus("Original image dimensions restored.");
+});
+
+function getPointerPosition(event){
+  const rect = canvas.getBoundingClientRect();
+
+  const outputX = (event.clientX-rect.left) * canvas.width/rect.width;
+  const outputY = (event.clientY-rect.top) * canvas.height/rect.height;
+
+  const base = getBaseDimensions();
+  const baseX = outputX * base.width/canvas.width;
+  const baseY = outputY * base.height/canvas.height;
+
+  return {x:baseX,y:baseY};
 }
 
-canvas.addEventListener('pointerup',stopDragging);
-canvas.addEventListener('pointercancel',stopDragging);
-canvas.addEventListener('lostpointercapture',stopDragging);
+function hitTest(item,x,y){
+  if(item.type === "rect"){
+    return Math.abs(x-item.x) <= 75 && Math.abs(y-item.y) <= 50;
+  }
 
-function cropPhoto(ratio){
- if(!img){alert('Upload a photo first.');return;}
- outputWidth=0;outputHeight=0;
- selectedIndex=-1;
+  if(item.type === "circle"){
+    return Math.hypot(x-item.x,y-item.y) <= 55;
+  }
 
- if(ratio===0){
-  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
- }else{
-  const w=img.naturalWidth,h=img.naturalHeight;
-  let cw=w,ch=h;
-  if(w/h>ratio)cw=h*ratio;
-  else ch=w/ratio;
-  crop={x:(w-cw)/2,y:(h-ch)/2,w:cw,h:ch};
- }
- render();
+  if(item.type === "sticker"){
+    return Math.abs(x-item.x) <= item.size*0.7 &&
+           Math.abs(y-item.y) <= item.size*0.7;
+  }
+
+  if(item.type === "text"){
+    ctx.save();
+    ctx.font = `bold ${item.size}px Arial`;
+    const width = ctx.measureText(item.text).width;
+    ctx.restore();
+
+    return Math.abs(x-item.x) <= width/2+8 &&
+           Math.abs(y-item.y) <= item.size/2+8;
+  }
+
+  return false;
 }
 
-function rotate(degrees){
- if(!img){alert('Upload a photo first.');return;}
- angle=(angle+degrees+360)%360;
- outputWidth=0;outputHeight=0;
- selectedIndex=-1;
- render();
+canvas.addEventListener("pointerdown",event=>{
+  if(!img || draggingIndex !== -1) return;
+
+  const position = getPointerPosition(event);
+
+  for(let i=overlays.length-1;i>=0;i--){
+    if(hitTest(overlays[i],position.x,position.y)){
+      draggingIndex = i;
+      activePointer = event.pointerId;
+      dragOffsetX = position.x-overlays[i].x;
+      dragOffsetY = position.y-overlays[i].y;
+
+      canvas.classList.add("dragging");
+      canvas.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      break;
+    }
+  }
+});
+
+canvas.addEventListener("pointermove",event=>{
+  if(draggingIndex < 0 || event.pointerId !== activePointer) return;
+
+  const position = getPointerPosition(event);
+  const item = overlays[draggingIndex];
+
+  item.x = position.x-dragOffsetX;
+  item.y = position.y-dragOffsetY;
+
+  render();
+  canvas.classList.add("dragging");
+  event.preventDefault();
+});
+
+function stopDragging(event){
+  if(activePointer !== null && event.pointerId !== activePointer) return;
+
+  if(draggingIndex >= 0){
+    draggingIndex = -1;
+    activePointer = null;
+    canvas.classList.remove("dragging");
+    setStatus("Overlay position updated.");
+  }
 }
 
-function flip(direction){
- if(!img){alert('Upload a photo first.');return;}
- if(direction==='h')flipH*=-1;
- else flipV*=-1;
- render();
-}
+canvas.addEventListener("pointerup",stopDragging);
+canvas.addEventListener("pointercancel",stopDragging);
+canvas.addEventListener("lostpointercapture",()=>{
+  draggingIndex = -1;
+  activePointer = null;
+  canvas.classList.remove("dragging");
+});
 
-function resizePhoto(){
- if(!img){alert('Upload a photo first.');return;}
- const w=Number(document.getElementById('resizeWidth').value);
- const h=Number(document.getElementById('resizeHeight').value);
+document.getElementById("download").addEventListener("click",()=>{
+  if(!img){
+    setStatus("Please upload a photo first.");
+    return;
+  }
 
- if(!Number.isInteger(w)||!Number.isInteger(h)||
-    w<1||h<1||w>12000||h>12000){
-  alert('Enter a width and height between 1 and 12000 pixels.');
-  return;
- }
+  const format = document.getElementById("format").value;
+  const extension = format === "image/jpeg" ? "jpg" :
+                    format === "image/webp" ? "webp" : "png";
 
- outputWidth=w;
- outputHeight=h;
- render();
-}
+  try{
+    canvas.toBlob(blob=>{
+      if(!blob){
+        setStatus("Could not export the image. Please try again.");
+        return;
+      }
 
-function resetResize(){
- if(!img)return;
- outputWidth=0;
- outputHeight=0;
- document.getElementById('resizeWidth').value='';
- document.getElementById('resizeHeight').value='';
- render();
-}
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `pikora-edited-photo.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      setStatus("Your edited photo has been downloaded!");
+    },format,0.95);
+  }catch(error){
+    setStatus("Export failed. Please try a smaller image.");
+  }
+});
 
-function undoOverlay(){
- if(!img)return;
- if(overlays.length===0)return;
- overlays.pop();
- selectedIndex=-1;
- statusText.textContent='Last added object removed.';
- render();
-}
+document.getElementById("resetAll").addEventListener("click",()=>{
+  if(!img){
+    setStatus("Upload a photo to start editing.");
+    return;
+  }
 
-function deleteSelected(){
- if(!img)return;
- if(selectedIndex<0){
-  alert('Please select an object first by clicking it.');
-  return;
- }
- overlays.splice(selectedIndex,1);
- selectedIndex=-1;
- statusText.textContent='Selected object deleted.';
- render();
-}
+  angle = 0;
+  flipH = false;
+  flipV = false;
+  overlays = [];
+  outputWidth = 0;
+  outputHeight = 0;
 
-function clearOverlays(){
- if(!img)return;
- overlays=[];
- selectedIndex=-1;
- statusText.textContent='All text, stickers and shapes removed.';
- render();
-}
+  document.getElementById("brightness").value = 100;
+  document.getElementById("contrast").value = 100;
+  document.getElementById("saturation").value = 100;
+  document.getElementById("blur").value = 0;
 
-function resetEditor(){
- if(!img){alert('Upload a photo first.');return;}
+  document.getElementById("brightnessValue").textContent = "100%";
+  document.getElementById("contrastValue").textContent = "100%";
+  document.getElementById("saturationValue").textContent = "100%";
+  document.getElementById("blurValue").textContent = "0px";
 
- crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
- angle=0;flipH=1;flipV=1;
- overlays=[];
- selectedIndex=-1;
- outputWidth=0;outputHeight=0;
+  document.getElementById("filter").value = "none";
+  document.getElementById("crop").value = "original";
 
- resetAdjustments();
+  document.getElementById("resizeWidth").value = img.width;
+  document.getElementById("resizeHeight").value = img.height;
 
- document.getElementById('resizeWidth').value='';
- document.getElementById('resizeHeight').value='';
-
- statusText.textContent='Editor reset.';
- render();
-}
-
-function downloadPhoto(){
- if(!img)return;
-
- try{
-  const format=document.getElementById('format').value;
-  const quality=format==='image/png'?undefined:0.92;
-
-  // Hide the selection outline in the downloaded image.
-  render(false);
-
-  const link=document.createElement('a');
-  link.download='pikora-edited-photo.'+
-   (format==='image/jpeg'?'jpg':format==='image/webp'?'webp':'png');
-
-  link.href=canvas.toDataURL(format,quality);
-  link.click();
-
-  render(true);
-  statusText.textContent='Your edited photo is ready for download.';
- }catch(error){
-  render(true);
-  alert('Could not export this image. Try a smaller image or another format.');
- }
-}
+  render();
+  setStatus("All editing changes have been reset.");
+});
 </script>
+
 </body>
 </html>
