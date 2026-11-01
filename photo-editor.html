@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Edit photos online for free with Pikora. Apply filters, crop, rotate and download your images.">
+<meta name="description" content="Free online photo editor with filters, text, stickers, shapes, blur, crop and resize tools.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#090d1a;color:#fff;font-family:Arial,sans-serif}
@@ -13,18 +12,21 @@ header{padding:18px 5%;background:#11182a;border-bottom:1px solid #29334a;displa
 .logo{font-size:27px;font-weight:900;letter-spacing:2px}
 .logo span{color:#a394ff}
 a{color:#b9adff;text-decoration:none}
-main{width:min(1150px,94%);margin:35px auto}
-h1{text-align:center;font-size:34px}
+main{width:min(1200px,94%);margin:30px auto}
+h1{text-align:center;font-size:32px}
 .intro{text-align:center;color:#adb6ca;margin-bottom:25px}
-.layout{display:grid;grid-template-columns:310px 1fr;gap:20px}
+.layout{display:grid;grid-template-columns:330px 1fr;gap:20px}
 .panel,.workspace{background:#131a2b;border:1px solid #29334a;border-radius:15px;padding:20px}
-h2{font-size:19px;margin-top:0}
+h2{font-size:18px;margin-top:0}
 .group{border-bottom:1px solid #29334a;padding:14px 0}
 .group:last-child{border:0}
 label{display:block;font-size:13px;color:#c5cadd;margin:12px 0 5px}
 input[type=range]{width:100%;accent-color:#917cff}
-select,input[type=file]{width:100%;background:#202a40;color:white;padding:10px;border:1px solid #3b4761;border-radius:7px}
-button{border:0;border-radius:8px;padding:11px 13px;background:#7965ed;color:white;font-weight:bold;cursor:pointer;margin:5px 3px 5px 0}
+input[type=text],input[type=number],input[type=color],select,input[type=file]{
+width:100%;background:#202a40;color:white;padding:10px;border:1px solid #3b4761;border-radius:7px
+}
+input[type=color]{height:42px;padding:4px}
+button{border:0;border-radius:8px;padding:10px 12px;background:#7965ed;color:white;font-weight:bold;cursor:pointer;margin:4px 2px}
 button:hover{background:#9584ff}
 button.secondary{background:#303b55}
 button:disabled{opacity:.4;cursor:not-allowed}
@@ -32,27 +34,28 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .canvas-wrap{background:#090d1a;border:1px dashed #495573;border-radius:10px;min-height:330px;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
 canvas{max-width:100%;max-height:650px;object-fit:contain}
 #empty{color:#8994ac;padding:50px 15px}
-.actions{margin-top:18px}
 .note{color:#929db4;font-size:12px;margin-top:15px}
-@media(max-width:750px){.layout{grid-template-columns:1fr}.workspace{min-height:300px}header{padding:15px 4%}}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+@media(max-width:800px){.layout{grid-template-columns:1fr}header{padding:15px 4%}}
 </style>
 </head>
 <body>
 <header>
-  <div class="logo">PIKO<span>RA</span></div>
-  <a href="index.html">← Back to Home</a>
+<div class="logo">PIKO<span>RA</span></div>
+<a href="index.html">← Back to Home</a>
 </header>
 
 <main>
 <h1>Free Online Photo Editor</h1>
-<p class="intro">Upload a photo, edit it and download your creation. No account or watermark.</p>
+<p class="intro">Edit your photos with free creative tools. No account or watermark.</p>
 
 <div class="layout">
 <section class="panel">
 <h2>Photo Editing Tools</h2>
 
 <div class="group">
-<label for="upload">1. Upload your photo</label>
+<label>1. Upload your photo</label>
 <input type="file" id="upload" accept="image/jpeg,image/png,image/webp">
 </div>
 
@@ -60,12 +63,12 @@ canvas{max-width:100%;max-height:650px;object-fit:contain}
 <h2>2. Adjustments</h2>
 <label>Brightness: <span id="brightnessValue">100</span>%</label>
 <input id="brightness" type="range" min="0" max="200" value="100">
-
 <label>Contrast: <span id="contrastValue">100</span>%</label>
 <input id="contrast" type="range" min="0" max="200" value="100">
-
 <label>Saturation: <span id="saturationValue">100</span>%</label>
 <input id="saturation" type="range" min="0" max="200" value="100">
+<label>Blur: <span id="blurValue">0</span> px</label>
+<input id="blur" type="range" min="0" max="20" value="0">
 </div>
 
 <div class="group">
@@ -98,7 +101,59 @@ canvas{max-width:100%;max-height:650px;object-fit:contain}
 </div>
 
 <div class="group">
-<h2>6. Download</h2>
+<h2>6. Add Text</h2>
+<label>Text</label>
+<input id="textInput" type="text" placeholder="Type your text">
+<div class="row">
+<div>
+<label>Text colour</label>
+<input id="textColor" type="color" value="#ffffff">
+</div>
+<div>
+<label>Font size</label>
+<input id="textSize" type="number" min="8" max="300" value="48">
+</div>
+</div>
+<button onclick="addText()">Add Text</button>
+</div>
+
+<div class="group">
+<h2>7. Stickers & Shapes</h2>
+<label>Choose a sticker</label>
+<select id="sticker">
+<option value="⭐">⭐ Star</option>
+<option value="❤️">❤️ Heart</option>
+<option value="🔥">🔥 Fire</option>
+<option value="😊">😊 Smile</option>
+<option value="🎉">🎉 Party</option>
+<option value="🌈">🌈 Rainbow</option>
+<option value="✨">✨ Sparkles</option>
+</select>
+<button onclick="addSticker()">Add Sticker</button>
+<label>Shape colour</label>
+<input id="shapeColor" type="color" value="#a394ff">
+<button onclick="addShape('rect')">Add Rectangle</button>
+<button onclick="addShape('circle')">Add Circle</button>
+</div>
+
+<div class="group">
+<h2>8. Resize Image</h2>
+<label>Width (pixels)</label>
+<input id="resizeWidth" type="number" min="1" max="12000" placeholder="Width">
+<label>Height (pixels)</label>
+<input id="resizeHeight" type="number" min="1" max="12000" placeholder="Height">
+<button onclick="resizePhoto()">Apply Resize</button>
+<button class="secondary" onclick="resetResize()">Reset Size</button>
+</div>
+
+<div class="group">
+<h2>9. Layers</h2>
+<button class="secondary" onclick="undoOverlay()">Undo Last Addition</button>
+<button class="secondary" onclick="clearOverlays()">Remove All Text & Shapes</button>
+</div>
+
+<div class="group">
+<h2>10. Download</h2>
 <label>Image format</label>
 <select id="format">
 <option value="image/png">PNG</option>
@@ -108,6 +163,7 @@ canvas{max-width:100%;max-height:650px;object-fit:contain}
 <button id="download" disabled onclick="downloadPhoto()">Download Photo</button>
 <button class="secondary" onclick="resetEditor()">Reset All</button>
 </div>
+
 <p class="note">Your selected image is processed locally in your browser.</p>
 </section>
 
@@ -117,9 +173,7 @@ canvas{max-width:100%;max-height:650px;object-fit:contain}
 <div id="empty">🖼️<br><br>Upload a photo to start editing.</div>
 <canvas id="canvas" hidden></canvas>
 </div>
-<div class="actions">
-<button class="secondary" onclick="document.getElementById('upload').click()">Choose Another Photo</button>
-</div>
+<p class="note">Text, stickers and shapes are added in the centre of your image.</p>
 <p class="note">Pikora Photo Editor — Free creative tools for everyone.</p>
 </section>
 </div>
@@ -135,118 +189,223 @@ const downloadBtn=document.getElementById('download');
 let img=null;
 let crop={x:0,y:0,w:0,h:0};
 let angle=0,flipH=1,flipV=1;
+let overlays=[];
+let outputWidth=0,outputHeight=0;
 
 function currentCrop(){
-  return crop.w>0?crop:{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+ return crop.w>0?crop:{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
 }
 
 upload.addEventListener('change',e=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  if(!file.type.startsWith('image/')){alert('Please select an image file.');return;}
-  const url=URL.createObjectURL(file);
-  const newImg=new Image();
-  newImg.onload=()=>{
-    if(img)URL.revokeObjectURL(img.src);
-    img=newImg;
-    crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
-    angle=0;flipH=1;flipV=1;
-    document.getElementById('brightness').value=100;
-    document.getElementById('contrast').value=100;
-    document.getElementById('saturation').value=100;
-    document.getElementById('filter').value='none';
-    updateLabels();
-    canvas.hidden=false;
-    empty.hidden=true;
-    downloadBtn.disabled=false;
-    render();
-    URL.revokeObjectURL(url);
-  };
-  newImg.onerror=()=>{alert('Could not open this image. Please try another file.');URL.revokeObjectURL(url);};
-  newImg.src=url;
+ const file=e.target.files[0];
+ if(!file)return;
+ if(!file.type.startsWith('image/')){alert('Please select an image file.');return;}
+ const url=URL.createObjectURL(file);
+ const newImg=new Image();
+ newImg.onload=()=>{
+  img=newImg;
+  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+  angle=0;flipH=1;flipV=1;overlays=[];
+  outputWidth=0;outputHeight=0;
+  resetAdjustments();
+  document.getElementById('resizeWidth').value='';
+  document.getElementById('resizeHeight').value='';
+  canvas.hidden=false;empty.hidden=true;downloadBtn.disabled=false;
+  render();
+  URL.revokeObjectURL(url);
+ };
+ newImg.onerror=()=>{alert('Could not open this image.');URL.revokeObjectURL(url);};
+ newImg.src=url;
 });
 
-['brightness','contrast','saturation','filter'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',()=>{
-    updateLabels();
-    render();
-  });
+function resetAdjustments(){
+ ['brightness','contrast','saturation'].forEach(id=>document.getElementById(id).value=100);
+ document.getElementById('blur').value=0;
+ document.getElementById('filter').value='none';
+ updateLabels();
+}
+
+['brightness','contrast','saturation','blur','filter'].forEach(id=>{
+ document.getElementById(id).addEventListener('input',()=>{
+  updateLabels();render();
+ });
 });
 
 function updateLabels(){
-  ['brightness','contrast','saturation'].forEach(id=>{
-    document.getElementById(id+'Value').textContent=document.getElementById(id).value;
-  });
+ ['brightness','contrast','saturation','blur'].forEach(id=>{
+  document.getElementById(id+'Value').textContent=document.getElementById(id).value;
+ });
 }
 
 function render(){
-  if(!img)return;
-  const c=currentCrop();
-  const rotated=Math.abs(angle%180)===90;
-  canvas.width=rotated?c.h:c.w;
-  canvas.height=rotated?c.w:c.h;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+ if(!img)return;
+ const c=currentCrop();
+ const rotated=Math.abs(angle%180)===90;
+ const baseW=Math.max(1,Math.round(rotated?c.h:c.w));
+ const baseH=Math.max(1,Math.round(rotated?c.w:c.h));
+
+ canvas.width=outputWidth||baseW;
+ canvas.height=outputHeight||baseH;
+
+ const off=document.createElement('canvas');
+ off.width=baseW;off.height=baseH;
+ const octx=off.getContext('2d');
+
+ octx.translate(baseW/2,baseH/2);
+ octx.rotate(angle*Math.PI/180);
+ octx.scale(flipH,flipV);
+ octx.drawImage(img,c.x,c.y,c.w,c.h,-c.w/2,-c.h/2,c.w,c.h);
+
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.save();
+ ctx.filter=
+  `brightness(${document.getElementById('brightness').value}%) `+
+  `contrast(${document.getElementById('contrast').value}%) `+
+  `saturate(${document.getElementById('saturation').value}%) `+
+  `blur(${document.getElementById('blur').value}px) `+
+  document.getElementById('filter').value;
+ ctx.drawImage(off,0,0,canvas.width,canvas.height);
+ ctx.restore();
+ ctx.filter='none';
+
+ const sx=canvas.width/baseW;
+ const sy=canvas.height/baseH;
+ ctx.save();
+ ctx.scale(sx,sy);
+ overlays.forEach(item=>{
   ctx.save();
-  ctx.translate(canvas.width/2,canvas.height/2);
-  ctx.rotate(angle*Math.PI/180);
-  ctx.scale(flipH,flipV);
-  ctx.filter=
-    `brightness(${document.getElementById('brightness').value}%) `+
-    `contrast(${document.getElementById('contrast').value}%) `+
-    `saturate(${document.getElementById('saturation').value}%) `+
-    document.getElementById('filter').value;
-  ctx.drawImage(img,c.x,c.y,c.w,c.h,-c.w/2,-c.h/2,c.w,c.h);
+  if(item.type==='text'){
+   ctx.font=`bold ${item.size}px Arial`;
+   ctx.textAlign='center';
+   ctx.textBaseline='middle';
+   ctx.fillStyle=item.color;
+   ctx.shadowColor='rgba(0,0,0,.5)';
+   ctx.shadowBlur=3;
+   ctx.fillText(item.text,item.x,item.y);
+  }else if(item.type==='sticker'){
+   ctx.font=`${item.size}px Arial`;
+   ctx.textAlign='center';
+   ctx.textBaseline='middle';
+   ctx.fillText(item.text,item.x,item.y);
+  }else if(item.type==='rect'){
+   ctx.fillStyle=item.color;
+   ctx.fillRect(item.x-70,item.y-40,140,80);
+  }else if(item.type==='circle'){
+   ctx.fillStyle=item.color;
+   ctx.beginPath();
+   ctx.arc(item.x,item.y,45,0,Math.PI*2);
+   ctx.fill();
+  }
   ctx.restore();
-  ctx.filter='none';
+ });
+ ctx.restore();
 }
 
 function cropPhoto(ratio){
-  if(!img){alert('Upload a photo first.');return;}
-  if(ratio===0){crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};}
-  else{
-    const w=img.naturalWidth,h=img.naturalHeight;
-    let cw=w,ch=h;
-    if(w/h>ratio)cw=h*ratio;
-    else ch=w/ratio;
-    crop={x:(w-cw)/2,y:(h-ch)/2,w:cw,h:ch};
-  }
-  render();
+ if(!img){alert('Upload a photo first.');return;}
+ outputWidth=0;outputHeight=0;
+ if(ratio===0)crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+ else{
+  const w=img.naturalWidth,h=img.naturalHeight;
+  let cw=w,ch=h;
+  if(w/h>ratio)cw=h*ratio;
+  else ch=w/ratio;
+  crop={x:(w-cw)/2,y:(h-ch)/2,w:cw,h:ch};
+ }
+ render();
 }
 
 function rotate(degrees){
-  if(!img){alert('Upload a photo first.');return;}
-  angle=(angle+degrees+360)%360;
-  render();
+ if(!img){alert('Upload a photo first.');return;}
+ angle=(angle+degrees+360)%360;
+ outputWidth=0;outputHeight=0;render();
 }
 
 function flip(direction){
-  if(!img){alert('Upload a photo first.');return;}
-  if(direction==='h')flipH*=-1;
-  else flipV*=-1;
-  render();
+ if(!img){alert('Upload a photo first.');return;}
+ if(direction==='h')flipH*=-1;else flipV*=-1;
+ render();
+}
+
+function addText(){
+ if(!img){alert('Upload a photo first.');return;}
+ const text=document.getElementById('textInput').value.trim();
+ if(!text){alert('Please type some text first.');return;}
+ overlays.push({
+  type:'text',text,
+  color:document.getElementById('textColor').value,
+  size:Math.max(8,Math.min(300,Number(document.getElementById('textSize').value)||48)),
+  x:canvas.width/2,y:canvas.height/2
+ });
+ render();
+}
+
+function addSticker(){
+ if(!img){alert('Upload a photo first.');return;}
+ overlays.push({
+  type:'sticker',
+  text:document.getElementById('sticker').value,
+  size:64,x:canvas.width/2,y:canvas.height/2
+ });
+ render();
+}
+
+function addShape(type){
+ if(!img){alert('Upload a photo first.');return;}
+ overlays.push({
+  type,color:document.getElementById('shapeColor').value,
+  x:canvas.width/2,y:canvas.height/2
+ });
+ render();
+}
+
+function resizePhoto(){
+ if(!img){alert('Upload a photo first.');return;}
+ const w=Number(document.getElementById('resizeWidth').value);
+ const h=Number(document.getElementById('resizeHeight').value);
+ if(!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>12000||h>12000){
+  alert('Enter a width and height between 1 and 12000 pixels.');return;
+ }
+ outputWidth=w;outputHeight=h;render();
+}
+
+function resetResize(){
+ if(!img)return;
+ outputWidth=0;outputHeight=0;
+ document.getElementById('resizeWidth').value='';
+ document.getElementById('resizeHeight').value='';
+ render();
+}
+
+function undoOverlay(){
+ if(!img)return;
+ overlays.pop();render();
+}
+
+function clearOverlays(){
+ if(!img)return;
+ overlays=[];render();
 }
 
 function resetEditor(){
-  if(!img){alert('Upload a photo first.');return;}
-  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
-  angle=0;flipH=1;flipV=1;
-  document.getElementById('brightness').value=100;
-  document.getElementById('contrast').value=100;
-  document.getElementById('saturation').value=100;
-  document.getElementById('filter').value='none';
-  updateLabels();
-  render();
+ if(!img){alert('Upload a photo first.');return;}
+ crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+ angle=0;flipH=1;flipV=1;overlays=[];
+ outputWidth=0;outputHeight=0;
+ resetAdjustments();
+ resetResize();
+ render();
 }
 
 function downloadPhoto(){
-  if(!img)return;
-  const format=document.getElementById('format').value;
-  const quality=format==='image/png'?undefined:0.92;
-  const link=document.createElement('a');
-  link.download='pikora-edited-photo.'+
-    (format==='image/jpeg'?'jpg':format==='image/webp'?'webp':'png');
-  link.href=canvas.toDataURL(format,quality);
-  link.click();
+ if(!img)return;
+ const format=document.getElementById('format').value;
+ const quality=format==='image/png'?undefined:0.92;
+ const link=document.createElement('a');
+ link.download='pikora-edited-photo.'+
+  (format==='image/jpeg'?'jpg':format==='image/webp'?'webp':'png');
+ link.href=canvas.toDataURL(format,quality);
+ link.click();
 }
 </script>
 </body>
