@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free Photo Editor | Pikora</title>
+<meta name="description" content="Edit photos online for free with Pikora. Apply filters, crop, rotate and download your images.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090d1a;color:#fff;font-family:Arial,sans-serif}
+header{padding:18px 5%;background:#11182a;border-bottom:1px solid #29334a;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:27px;font-weight:900;letter-spacing:2px}
+.logo span{color:#a394ff}
+a{color:#b9adff;text-decoration:none}
+main{width:min(1150px,94%);margin:35px auto}
+h1{text-align:center;font-size:34px}
+.intro{text-align:center;color:#adb6ca;margin-bottom:25px}
+.layout{display:grid;grid-template-columns:310px 1fr;gap:20px}
+.panel,.workspace{background:#131a2b;border:1px solid #29334a;border-radius:15px;padding:20px}
+h2{font-size:19px;margin-top:0}
+.group{border-bottom:1px solid #29334a;padding:14px 0}
+.group:last-child{border:0}
+label{display:block;font-size:13px;color:#c5cadd;margin:12px 0 5px}
+input[type=range]{width:100%;accent-color:#917cff}
+select,input[type=file]{width:100%;background:#202a40;color:white;padding:10px;border:1px solid #3b4761;border-radius:7px}
+button{border:0;border-radius:8px;padding:11px 13px;background:#7965ed;color:white;font-weight:bold;cursor:pointer;margin:5px 3px 5px 0}
+button:hover{background:#9584ff}
+button.secondary{background:#303b55}
+button:disabled{opacity:.4;cursor:not-allowed}
+.workspace{text-align:center;min-height:450px}
+.canvas-wrap{background:#090d1a;border:1px dashed #495573;border-radius:10px;min-height:330px;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
+canvas{max-width:100%;max-height:650px;object-fit:contain}
+#empty{color:#8994ac;padding:50px 15px}
+.actions{margin-top:18px}
+.note{color:#929db4;font-size:12px;margin-top:15px}
+@media(max-width:750px){.layout{grid-template-columns:1fr}.workspace{min-height:300px}header{padding:15px 4%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">PIKO<span>RA</span></div>
+  <a href="index.html">← Back to Home</a>
+</header>
+
+<main>
+<h1>Free Online Photo Editor</h1>
+<p class="intro">Upload a photo, edit it and download your creation. No account or watermark.</p>
+
+<div class="layout">
+<section class="panel">
+<h2>Photo Editing Tools</h2>
+
+<div class="group">
+<label for="upload">1. Upload your photo</label>
+<input type="file" id="upload" accept="image/jpeg,image/png,image/webp">
+</div>
+
+<div class="group">
+<h2>2. Adjustments</h2>
+<label>Brightness: <span id="brightnessValue">100</span>%</label>
+<input id="brightness" type="range" min="0" max="200" value="100">
+
+<label>Contrast: <span id="contrastValue">100</span>%</label>
+<input id="contrast" type="range" min="0" max="200" value="100">
+
+<label>Saturation: <span id="saturationValue">100</span>%</label>
+<input id="saturation" type="range" min="0" max="200" value="100">
+</div>
+
+<div class="group">
+<h2>3. Filters</h2>
+<select id="filter">
+<option value="none">Original</option>
+<option value="grayscale(100%)">Black & White</option>
+<option value="sepia(100%)">Sepia</option>
+<option value="contrast(125%) saturate(130%)">Vivid</option>
+<option value="brightness(110%) saturate(80%)">Soft</option>
+<option value="hue-rotate(35deg)">Warm</option>
+<option value="invert(100%)">Invert</option>
+</select>
+</div>
+
+<div class="group">
+<h2>4. Crop Photo</h2>
+<button class="secondary" onclick="cropPhoto(1)">Square 1:1</button>
+<button class="secondary" onclick="cropPhoto(4/3)">4:3</button>
+<button class="secondary" onclick="cropPhoto(16/9)">16:9</button>
+<button class="secondary" onclick="cropPhoto(0)">Reset Crop</button>
+</div>
+
+<div class="group">
+<h2>5. Rotate & Flip</h2>
+<button class="secondary" onclick="rotate(-90)">↶ Rotate Left</button>
+<button class="secondary" onclick="rotate(90)">↷ Rotate Right</button>
+<button class="secondary" onclick="flip('h')">↔ Flip</button>
+<button class="secondary" onclick="flip('v')">↕ Flip</button>
+</div>
+
+<div class="group">
+<h2>6. Download</h2>
+<label>Image format</label>
+<select id="format">
+<option value="image/png">PNG</option>
+<option value="image/jpeg">JPG</option>
+<option value="image/webp">WebP</option>
+</select>
+<button id="download" disabled onclick="downloadPhoto()">Download Photo</button>
+<button class="secondary" onclick="resetEditor()">Reset All</button>
+</div>
+<p class="note">Your selected image is processed locally in your browser.</p>
+</section>
+
+<section class="workspace">
+<h2>Your Editing Workspace</h2>
+<div class="canvas-wrap">
+<div id="empty">🖼️<br><br>Upload a photo to start editing.</div>
+<canvas id="canvas" hidden></canvas>
+</div>
+<div class="actions">
+<button class="secondary" onclick="document.getElementById('upload').click()">Choose Another Photo</button>
+</div>
+<p class="note">Pikora Photo Editor — Free creative tools for everyone.</p>
+</section>
+</div>
+</main>
+
+<script>
+const upload=document.getElementById('upload');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const empty=document.getElementById('empty');
+const downloadBtn=document.getElementById('download');
+
+let img=null;
+let crop={x:0,y:0,w:0,h:0};
+let angle=0,flipH=1,flipV=1;
+
+function currentCrop(){
+  return crop.w>0?crop:{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+}
+
+upload.addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){alert('Please select an image file.');return;}
+  const url=URL.createObjectURL(file);
+  const newImg=new Image();
+  newImg.onload=()=>{
+    if(img)URL.revokeObjectURL(img.src);
+    img=newImg;
+    crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+    angle=0;flipH=1;flipV=1;
+    document.getElementById('brightness').value=100;
+    document.getElementById('contrast').value=100;
+    document.getElementById('saturation').value=100;
+    document.getElementById('filter').value='none';
+    updateLabels();
+    canvas.hidden=false;
+    empty.hidden=true;
+    downloadBtn.disabled=false;
+    render();
+    URL.revokeObjectURL(url);
+  };
+  newImg.onerror=()=>{alert('Could not open this image. Please try another file.');URL.revokeObjectURL(url);};
+  newImg.src=url;
+});
+
+['brightness','contrast','saturation','filter'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    updateLabels();
+    render();
+  });
+});
+
+function updateLabels(){
+  ['brightness','contrast','saturation'].forEach(id=>{
+    document.getElementById(id+'Value').textContent=document.getElementById(id).value;
+  });
+}
+
+function render(){
+  if(!img)return;
+  const c=currentCrop();
+  const rotated=Math.abs(angle%180)===90;
+  canvas.width=rotated?c.h:c.w;
+  canvas.height=rotated?c.w:c.h;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width/2,canvas.height/2);
+  ctx.rotate(angle*Math.PI/180);
+  ctx.scale(flipH,flipV);
+  ctx.filter=
+    `brightness(${document.getElementById('brightness').value}%) `+
+    `contrast(${document.getElementById('contrast').value}%) `+
+    `saturate(${document.getElementById('saturation').value}%) `+
+    document.getElementById('filter').value;
+  ctx.drawImage(img,c.x,c.y,c.w,c.h,-c.w/2,-c.h/2,c.w,c.h);
+  ctx.restore();
+  ctx.filter='none';
+}
+
+function cropPhoto(ratio){
+  if(!img){alert('Upload a photo first.');return;}
+  if(ratio===0){crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};}
+  else{
+    const w=img.naturalWidth,h=img.naturalHeight;
+    let cw=w,ch=h;
+    if(w/h>ratio)cw=h*ratio;
+    else ch=w/ratio;
+    crop={x:(w-cw)/2,y:(h-ch)/2,w:cw,h:ch};
+  }
+  render();
+}
+
+function rotate(degrees){
+  if(!img){alert('Upload a photo first.');return;}
+  angle=(angle+degrees+360)%360;
+  render();
+}
+
+function flip(direction){
+  if(!img){alert('Upload a photo first.');return;}
+  if(direction==='h')flipH*=-1;
+  else flipV*=-1;
+  render();
+}
+
+function resetEditor(){
+  if(!img){alert('Upload a photo first.');return;}
+  crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+  angle=0;flipH=1;flipV=1;
+  document.getElementById('brightness').value=100;
+  document.getElementById('contrast').value=100;
+  document.getElementById('saturation').value=100;
+  document.getElementById('filter').value='none';
+  updateLabels();
+  render();
+}
+
+function downloadPhoto(){
+  if(!img)return;
+  const format=document.getElementById('format').value;
+  const quality=format==='image/png'?undefined:0.92;
+  const link=document.createElement('a');
+  link.download='pikora-edited-photo.'+
+    (format==='image/jpeg'?'jpg':format==='image/webp'?'webp':'png');
+  link.href=canvas.toDataURL(format,quality);
+  link.click();
+}
+</script>
+</body>
+</html>
