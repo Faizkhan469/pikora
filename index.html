@@ -1,0 +1,449 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Pikora - Free Online Photo & Video Editor</title>
+  <meta name="description" content="Pikora is your free creative studio for photo editing, video editing, filters, effects and more. No subscription or watermark.">
+  <meta name="theme-color" content="#090d1a">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #090d1a;
+      color: #ffffff;
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      width: min(1120px, 90%);
+      margin: auto;
+    }
+
+    header {
+      padding: 22px 0;
+      border-bottom: 1px solid #20283c;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 29px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffffff;
+    }
+
+    .logo span {
+      color: #8b7cff;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 25px;
+      color: #c4c8d5;
+      font-size: 14px;
+    }
+
+    .nav-links a:hover {
+      color: #a99cff;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 100px 15px 85px;
+      background:
+        radial-gradient(ellipse at 50% 0%, #30265d 0%, transparent 60%);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 7px 15px;
+      border: 1px solid #51468c;
+      border-radius: 30px;
+      color: #c5baff;
+      font-size: 13px;
+      margin-bottom: 25px;
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 7vw, 70px);
+      line-height: 1.12;
+      margin-bottom: 22px;
+      letter-spacing: -2px;
+    }
+
+    .hero h1 span {
+      color: #a394ff;
+    }
+
+    .hero p {
+      max-width: 650px;
+      margin: 0 auto 32px;
+      color: #b8bfd0;
+      font-size: 18px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 13px 25px;
+      border-radius: 9px;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: #7965ed;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #907fff;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      border: 1px solid #454d65;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #1b2235;
+    }
+
+    .benefits {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 25px;
+      margin-top: 38px;
+      color: #aeb6c8;
+      font-size: 14px;
+    }
+
+    .section {
+      padding: 75px 0;
+    }
+
+    .section-heading {
+      text-align: center;
+      margin-bottom: 42px;
+    }
+
+    .section-heading h2 {
+      font-size: 34px;
+      margin-bottom: 10px;
+    }
+
+    .section-heading p {
+      color: #aeb6c8;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .tool-card {
+      background: #131a2b;
+      border: 1px solid #252e45;
+      border-radius: 16px;
+      padding: 28px;
+      transition: 0.25s;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-5px);
+      border-color: #7965ed;
+    }
+
+    .tool-icon {
+      font-size: 38px;
+      margin-bottom: 15px;
+    }
+
+    .tool-card h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .tool-card p {
+      color: #aeb6c8;
+      font-size: 14px;
+      margin-bottom: 17px;
+    }
+
+    .status {
+      display: inline-block;
+      font-size: 12px;
+      color: #c5baff;
+      background: #29234b;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+
+    .promise {
+      background: #11182a;
+      border-top: 1px solid #252e45;
+      border-bottom: 1px solid #252e45;
+    }
+
+    .promise-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      text-align: center;
+    }
+
+    .promise-item h3 {
+      color: #b2a5ff;
+      font-size: 19px;
+      margin-bottom: 8px;
+    }
+
+    .promise-item p {
+      color: #aeb6c8;
+      font-size: 14px;
+    }
+
+    .about {
+      max-width: 760px;
+      margin: auto;
+      text-align: center;
+    }
+
+    .about p {
+      color: #b8bfd0;
+      margin-top: 15px;
+    }
+
+    footer {
+      border-top: 1px solid #252e45;
+      padding: 30px 0;
+      text-align: center;
+      color: #8992a7;
+      font-size: 13px;
+    }
+
+    footer a {
+      color: #b9adff;
+      margin: 0 8px;
+    }
+
+    @media (max-width: 750px) {
+      .tools {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .promise-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-links {
+        gap: 12px;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .tools {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding-top: 70px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="container">
+      <nav>
+        <a href="#" class="logo">PIKO<span>RA</span></a>
+
+        <div class="nav-links">
+          <a href="#tools">Tools</a>
+          <a href="#features">Why Pikora</a>
+          <a href="#about">About</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <div class="tag">Your Free Creative Studio</div>
+
+      <h1>Create Something<br><span>Beautiful with Pikora.</span></h1>
+
+      <p>
+        Edit photos, create videos, add effects and bring your
+        creative ideas to life. Your creative journey starts here.
+      </p>
+
+      <div class="buttons">
+        <a href="#tools" class="btn btn-primary">Explore Editing Tools</a>
+        <a href="#about" class="btn btn-secondary">Discover Pikora</a>
+      </div>
+
+      <div class="benefits">
+        <span>✓ Free to use</span>
+        <span>✓ No subscription</span>
+        <span>✓ No registration required</span>
+        <span>✓ No watermark on exports</span>
+      </div>
+    </section>
+
+    <section class="section" id="tools">
+      <div class="container">
+
+        <div class="section-heading">
+          <h2>Everything You Need to Create</h2>
+          <p>Explore the creative tools planned for Pikora.</p>
+        </div>
+
+        <div class="tools">
+
+          <div class="tool-card">
+            <div class="tool-icon">🖼️</div>
+            <h3>Photo Editor</h3>
+            <p>Crop, resize, adjust colours, apply filters, add text and create beautiful images.</p>
+            <span class="status">In development</span>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-icon">🎬</div>
+            <h3>Video Editor</h3>
+            <p>Trim, split, merge and edit videos with a proper editing timeline.</p>
+            <span class="status">In development</span>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-icon">🎵</div>
+            <h3>Audio & Music</h3>
+            <p>Add music, adjust volume, mute original audio and extract sound.</p>
+            <span class="status">In development</span>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-icon">✨</div>
+            <h3>AI Photo Tools</h3>
+            <p>Explore background removal, image enhancement and other smart editing tools.</p>
+            <span class="status">Planned</span>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-icon">⚡</div>
+            <h3>AI Video Tools</h3>
+            <p>Explore automatic captions, smart clipping and video enhancement.</p>
+            <span class="status">Planned</span>
+          </div>
+
+          <div class="tool-card">
+            <div class="tool-icon">📱</div>
+            <h3>Social Media Creator</h3>
+            <p>Prepare creative content for YouTube, Instagram, TikTok and more.</p>
+            <span class="status">Planned</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="section promise" id="features">
+      <div class="container">
+        <div class="section-heading">
+          <h2>Creativity Without Limits</h2>
+          <p>Our commitment to making creative tools accessible.</p>
+        </div>
+
+        <div class="promise-grid">
+
+          <div class="promise-item">
+            <h3>Always Free</h3>
+            <p>Our goal is to keep the editing tools free for everyone.</p>
+          </div>
+
+          <div class="promise-item">
+            <h3>No Watermarks</h3>
+            <p>Download your creations without a Pikora watermark.</p>
+          </div>
+
+          <div class="promise-item">
+            <h3>Made for Everyone</h3>
+            <p>A creative platform designed for users around the world.</p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container">
+        <div class="about">
+          <h2>About Pikora</h2>
+          <p>
+            Pikora is being developed as a free online creative studio
+            for photo and video editing. Our mission is to make useful
+            creative tools accessible to everyone, without subscriptions
+            or unnecessary barriers.
+          </p>
+          <p>
+            We are building Pikora step by step, with a focus on useful
+            features, simple design and a smooth editing experience.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 Pikora. Create. Edit. Share.</p>
+      <p style="margin-top: 8px;">
+        Your Free Creative Studio
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
