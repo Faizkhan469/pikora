@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Photo Editor | Pikora</title>
-<meta name="description" content="Free online photo editor with editable text, text opacity, text alignment, backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
+<meta name="description" content="Free online photo editor with editable text, text shadow, opacity, alignment, backgrounds, stickers, shapes, filters, crop, resize, undo, redo and downloads.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#eef2ff;font-family:Arial,sans-serif}
@@ -183,6 +183,28 @@ No text selected. Click text on your photo to select it, or double-click to edit
 
 <hr style="border:0;border-top:1px solid #263453;margin:14px 0">
 
+<h2>Text Shadow</h2>
+<div class="checkline">
+<input type="checkbox" id="textShadowEnabled">
+<label for="textShadowEnabled">Enable text shadow</label>
+</div>
+
+<label>Shadow Colour</label>
+<input type="color" id="textShadowColor" value="#000000">
+
+<label>Shadow Blur <span class="range-value" id="textShadowBlurValue">8px</span></label>
+<input type="range" id="textShadowBlur" min="0" max="30" value="8">
+
+<label>Horizontal Position <span class="range-value" id="textShadowXValue">4px</span></label>
+<input type="range" id="textShadowX" min="-30" max="30" value="4">
+
+<label>Vertical Position <span class="range-value" id="textShadowYValue">4px</span></label>
+<input type="range" id="textShadowY" min="-30" max="30" value="4">
+
+<p class="note" style="margin:-5px 0 12px">Enable the shadow and adjust its colour, softness and position. Shadow is included in your downloaded photo.</p>
+
+<hr style="border:0;border-top:1px solid #263453;margin:14px 0">
+
 <h2>Text Background</h2>
 <div class="checkline">
 <input type="checkbox" id="textBgEnabled">
@@ -309,6 +331,7 @@ let dragOffsetX=0;
 let dragOffsetY=0;
 let activePointer=null;
 let opacityEditStarted=false;
+let shadowEditStarted=false;
 
 function setStatus(message){
   statusText.textContent=message;
@@ -553,6 +576,23 @@ function drawOverlays(context){
         );
       }
 
+      const shadowEnabled=!!item.shadowEnabled;
+
+      if(shadowEnabled){
+        context.shadowColor=item.shadowColor||"#000000";
+        context.shadowBlur=Math.max(0,Number(item.shadowBlur)||0);
+        context.shadowOffsetX=Number(item.shadowOffsetX)||0;
+        context.shadowOffsetY=Number(item.shadowOffsetY)||0;
+
+        context.fillStyle=item.color;
+        context.fillText(item.text,item.x,item.y);
+
+        context.shadowColor="transparent";
+        context.shadowBlur=0;
+        context.shadowOffsetX=0;
+        context.shadowOffsetY=0;
+      }
+
       if(item.outlineWidth>0){
         context.strokeStyle=item.outlineColor;
         context.lineWidth=item.outlineWidth;
@@ -677,6 +717,15 @@ function updateRangeLabels(){
 
   document.getElementById("textOpacityValue").textContent=
     document.getElementById("textOpacity").value+"%";
+
+  document.getElementById("textShadowBlurValue").textContent=
+    document.getElementById("textShadowBlur").value+"px";
+
+  document.getElementById("textShadowXValue").textContent=
+    document.getElementById("textShadowX").value+"px";
+
+  document.getElementById("textShadowYValue").textContent=
+    document.getElementById("textShadowY").value+"px";
 }
 
 upload.addEventListener("change",event=>{
@@ -703,6 +752,7 @@ upload.addEventListener("change",event=>{
       outputWidth=0;
       outputHeight=0;
       opacityEditStarted=false;
+      shadowEditStarted=false;
 
       document.getElementById("crop").value="original";
       document.getElementById("brightness").value=100;
@@ -773,6 +823,48 @@ textOpacityControl.addEventListener("pointercancel",()=>{
   opacityEditStarted=false;
 });
 
+const shadowControls=[
+  "textShadowBlur",
+  "textShadowX",
+  "textShadowY"
+];
+
+shadowControls.forEach(id=>{
+  const control=document.getElementById(id);
+
+  control.addEventListener("pointerdown",()=>{
+    if(img)shadowEditStarted=false;
+  });
+
+  control.addEventListener("input",()=>{
+    updateRangeLabels();
+
+    const item=overlays[selectedIndex];
+
+    if(!img||!item||item.type!=="text")return;
+
+    if(!shadowEditStarted){
+      saveSnapshot();
+      shadowEditStarted=true;
+    }
+
+    item.shadowBlur=Number(document.getElementById("textShadowBlur").value);
+    item.shadowOffsetX=Number(document.getElementById("textShadowX").value);
+    item.shadowOffsetY=Number(document.getElementById("textShadowY").value);
+
+    render();
+    setStatus("Text shadow adjusted. You can undo this change.");
+  });
+
+  control.addEventListener("change",()=>{
+    shadowEditStarted=false;
+  });
+
+  control.addEventListener("pointercancel",()=>{
+    shadowEditStarted=false;
+  });
+});
+
 document.getElementById("filter").addEventListener("change",()=>{
   if(!img)return;
   saveSnapshot();
@@ -825,6 +917,11 @@ function getTextStyleFromControls(){
     italic:document.getElementById("textItalic").checked,
     size:Math.max(8,Math.min(300,Number(document.getElementById("textSize").value)||45)),
     opacity:Number(document.getElementById("textOpacity").value),
+    shadowEnabled:document.getElementById("textShadowEnabled").checked,
+    shadowColor:document.getElementById("textShadowColor").value,
+    shadowBlur:Number(document.getElementById("textShadowBlur").value),
+    shadowOffsetX:Number(document.getElementById("textShadowX").value),
+    shadowOffsetY:Number(document.getElementById("textShadowY").value),
     backgroundEnabled:document.getElementById("textBgEnabled").checked,
     backgroundColor:document.getElementById("textBgColor").value
   };
@@ -875,6 +972,13 @@ function loadSelectedTextIntoControls(){
   document.getElementById("textItalic").checked=item.italic;
   document.getElementById("textSize").value=item.size;
   document.getElementById("textOpacity").value=item.opacity===undefined?100:item.opacity;
+
+  document.getElementById("textShadowEnabled").checked=!!item.shadowEnabled;
+  document.getElementById("textShadowColor").value=item.shadowColor||"#000000";
+  document.getElementById("textShadowBlur").value=item.shadowBlur===undefined?8:item.shadowBlur;
+  document.getElementById("textShadowX").value=item.shadowOffsetX===undefined?4:item.shadowOffsetX;
+  document.getElementById("textShadowY").value=item.shadowOffsetY===undefined?4:item.shadowOffsetY;
+
   document.getElementById("textBgEnabled").checked=!!item.backgroundEnabled;
   document.getElementById("textBgColor").value=item.backgroundColor||"#000000";
 
@@ -905,7 +1009,7 @@ document.getElementById("updateText").addEventListener("click",()=>{
   Object.assign(item,style,{x,y,type:"text"});
 
   render();
-  setStatus("Selected text, alignment, opacity and background updated successfully!");
+  setStatus("Selected text, shadow, alignment, opacity and background updated successfully!");
 });
 
 document.getElementById("deleteSelected").addEventListener("click",()=>{
@@ -1159,6 +1263,7 @@ document.getElementById("resetAll").addEventListener("click",()=>{
   outputWidth=0;
   outputHeight=0;
   opacityEditStarted=false;
+  shadowEditStarted=false;
 
   document.getElementById("brightness").value=100;
   document.getElementById("contrast").value=100;
