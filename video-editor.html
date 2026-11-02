@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Free Video Editor | Pikora</title>
-<meta name="description" content="Free online video editor with visual timeline, thumbnails, drag and drop, trimming, split, transitions, text, music and WebM export.">
+<meta name="description" content="Free browser-based video editor with separate video and audio tracks, waveform, timeline zoom, trimming, text, music and WebM export.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#f4f5ff;font-family:Arial,sans-serif}
@@ -47,30 +47,46 @@ video{width:100%;max-height:470px;background:#05070d;border-radius:10px;display:
 hr{border:0;border-top:1px solid #293654;margin:17px 0}
 a{color:#b9a5ff}
 
-/* Visual timeline */
+/* Separate timeline tracks */
 .timeline-shell{background:#0d1529;border:1px solid #344365;border-radius:12px;padding:12px;overflow:hidden}
 .timeline-top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-.timeline-scroll{overflow-x:auto;padding-bottom:8px}
-.timeline-ruler{height:25px;position:relative;min-width:100%;border-bottom:1px solid #344365;margin-bottom:9px}
+.timeline-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:8px}
+.timeline-ruler{height:27px;position:relative;border-bottom:1px solid #344365;margin-bottom:8px}
 .ruler-mark{position:absolute;bottom:0;font-size:10px;color:#8492b2;transform:translateX(-50%)}
 .ruler-mark:after{content:"";display:block;height:7px;border-left:1px solid #586581;margin:auto;width:1px}
-.timeline-track{display:flex;align-items:stretch;gap:7px;min-height:93px;position:relative}
-.timeline-card{width:160px;min-width:160px;border:2px solid #344365;border-radius:9px;background:#17223d;overflow:hidden;cursor:grab;position:relative}
+.track-row{display:flex;gap:9px;margin-bottom:10px;align-items:stretch}
+.track-label{width:76px;min-width:76px;display:flex;align-items:center;justify-content:center;text-align:center;background:#182440;border:1px solid #344365;border-radius:8px;color:#c4b5fd;font-size:11px;font-weight:bold;padding:5px}
+.track-content{position:relative;min-height:91px;background:#101a30;border:1px solid #344365;border-radius:8px;overflow:hidden}
+.timeline-track{display:flex;align-items:stretch;gap:7px;min-height:89px;position:relative}
+.timeline-card{min-width:110px;border:2px solid #344365;border-radius:8px;background:#17223d;overflow:hidden;cursor:grab;position:relative;flex-shrink:0}
 .timeline-card.active{border-color:#a78bfa;box-shadow:0 0 0 2px #7854e855}
 .timeline-card.dragging{opacity:.4}
 .timeline-card.dragover{border-color:#6ee7b7}
-.timeline-card canvas{width:100%;height:65px;display:block;background:#05070d;object-fit:cover}
-.timeline-card .tc-info{padding:5px 7px;font-size:11px;color:#dce2f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tc-number{position:absolute;top:5px;left:5px;background:#090e1dce;padding:3px 6px;border-radius:5px;font-size:10px}
-.timeline-empty{color:#8794b2;font-size:12px;padding:20px;text-align:center;width:100%}
+.timeline-card canvas{width:100%;height:59px;display:block;background:#05070d;object-fit:cover}
+.timeline-card .tc-info{padding:5px 7px;font-size:10px;color:#dce2f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-number{position:absolute;top:4px;left:4px;background:#090e1dce;padding:3px 5px;border-radius:5px;font-size:9px;z-index:1}
+.timeline-empty{color:#8794b2;font-size:12px;padding:28px 12px;text-align:center}
+.audio-track-content{min-height:76px;background:#10253a;border:1px solid #31516b;border-radius:8px;position:relative;overflow:hidden}
+#audioWaveform{display:block;height:74px}
+.audio-track-name{position:absolute;left:8px;top:7px;background:#07182bcc;padding:4px 7px;border-radius:5px;font-size:10px;color:#a5f3fc;z-index:1;pointer-events:none}
+.audio-empty{height:74px;display:flex;align-items:center;padding:10px;color:#8492b2;font-size:11px}
+.timeline-help{font-size:11px;color:#8492b2;margin-top:8px}
+.zoom-control{display:flex;align-items:center;gap:8px;min-width:180px}
+.zoom-control input{margin:0;min-width:90px}
+.zoom-control span{font-size:11px;color:#aab3cc;white-space:nowrap}
 .trim-visual{background:#0d1529;border:1px solid #344365;border-radius:10px;padding:12px;margin-top:12px}
 .trim-track{height:20px;background:#293653;border-radius:7px;position:relative;margin:12px 0;overflow:hidden}
 .trim-selected{position:absolute;height:100%;background:#7956e8;border-radius:5px;left:0;width:100%}
 .trim-playhead{position:absolute;top:-5px;height:30px;width:3px;background:#fff;z-index:2;pointer-events:none}
 .trim-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .trim-controls input{margin-bottom:4px}
-.timeline-help{font-size:11px;color:#8492b2;margin-top:8px}
-@media(max-width:800px){.layout{grid-template-columns:1fr}header{padding:15px}.clipgrid{grid-template-columns:1fr}.timeline-card{width:135px;min-width:135px}.trim-controls{grid-template-columns:1fr}}
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}
+ header{padding:15px}
+ .clipgrid{grid-template-columns:1fr}
+ .trim-controls{grid-template-columns:1fr}
+ .track-label{width:60px;min-width:60px;font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -81,7 +97,7 @@ a{color:#b9a5ff}
 
 <main>
 <h1>Free Video Editor</h1>
-<p class="sub">Edit multiple clips with a visual timeline, thumbnails, trimming, transitions, text and music. Your editing happens in your browser.</p>
+<p class="sub">Edit multiple clips with separate video and audio tracks, waveform previews, timeline zoom, trimming, transitions, text and music. Editing happens in your browser.</p>
 
 <div class="layout">
 <section>
@@ -101,17 +117,42 @@ a{color:#b9a5ff}
 
 <div class="panel">
 <div class="timeline-top">
-<h2 style="margin:0">Visual Timeline</h2>
+<h2 style="margin:0">Multitrack Visual Timeline</h2>
 <span class="small" id="timelineDuration">0.0 seconds</span>
 </div>
+
+<div class="timeline-top">
+<div class="zoom-control">
+<span>Timeline zoom</span>
+<input type="range" id="timelineZoom" min="50" max="180" value="100" step="10">
+<span id="zoomValue">100%</span>
+</div>
+<span class="small">Scroll horizontally to see more</span>
+</div>
+
 <div class="timeline-shell">
 <div class="timeline-scroll" id="timelineScroll">
 <div class="timeline-ruler" id="timelineRuler"></div>
+
+<div class="track-row">
+<div class="track-label">VIDEO</div>
+<div class="track-content" id="videoTrackContent">
 <div class="timeline-track" id="timelineTrack">
 <div class="timeline-empty">Add video clips to build your timeline.</div>
 </div>
 </div>
-<p class="timeline-help">Drag clips left or right to change their order. Select a clip to edit it. Thumbnail previews are generated in your browser.</p>
+</div>
+
+<div class="track-row">
+<div class="track-label">AUDIO</div>
+<div class="audio-track-content" id="audioTrackContent">
+<div class="audio-empty" id="audioEmpty">Choose a music file to display its waveform here.</div>
+<canvas id="audioWaveform" style="display:none"></canvas>
+<div class="audio-track-name" id="audioTrackName" style="display:none"></div>
+</div>
+</div>
+</div>
+<p class="timeline-help">The video and music tracks are displayed separately. Drag video clips to reorder them. The audio waveform is generated locally from your selected music file.</p>
 </div>
 
 <div class="trim-visual">
@@ -215,6 +256,8 @@ a{color:#b9a5ff}
 <input type="number" id="musicFadeOut" min="0" max="20" step=".5" value="2">
 <label>Original video volume</label>
 <input type="range" id="videoVolume" min="0" max="1" step=".05" value="1">
+<p class="small" id="audioInfo">No background music selected.</p>
+<button class="secondary" id="removeMusic" type="button">Remove Background Music</button>
 </div>
 
 <div class="panel">
@@ -239,6 +282,9 @@ a{color:#b9a5ff}
 <div class="panel">
 <h2>5. Editing Tips</h2>
 <p class="small">• Drag timeline clips to reorder them.</p>
+<p class="small">• Video and audio are displayed on separate tracks.</p>
+<p class="small">• Use timeline zoom to adjust the visible scale.</p>
+<p class="small">• The music waveform is generated in your browser.</p>
 <p class="small">• Select a thumbnail to preview and edit that clip.</p>
 <p class="small">• Use the visual trim sliders or time fields.</p>
 <p class="small">• Split the clip at the current preview position.</p>
@@ -252,14 +298,24 @@ a{color:#b9a5ff}
 <script>
 const $=id=>document.getElementById(id);
 const preview=$("preview");
-let clips=[],selected=-1,texts=[],selectedText=-1,musicURL=null,exporting=false;
-let dragIndex=-1,thumbJobs=new Set();
+let clips=[],selected=-1,texts=[],selectedText=-1,musicURL=null;
+let musicFileName="",musicDuration=0,musicWaveData=null;
+let exporting=false,dragIndex=-1,thumbJobs=new Set();
+let zoom=1;
 
 function durationOf(c){return Math.max(.1,(c.end-c.start)/c.speed)}
 function totalDuration(){return clips.reduce((s,c)=>s+durationOf(c),0)}
 function selectedClip(){return clips[selected]}
 function fmt(n){return Number(n||0).toFixed(1)}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function timelineScale(){return 100*zoom}
+
+$("timelineZoom").addEventListener("input",()=>{
+ zoom=Number($("timelineZoom").value)/100;
+ $("zoomValue").textContent=$("timelineZoom").value+"%";
+ renderTimeline();
+ renderAudioTrack();
+});
 
 $("videoFiles").addEventListener("change",async e=>{
  const files=[...e.target.files];e.target.value="";
@@ -315,7 +371,14 @@ function makeThumbnail(c){
  }
 }
 
-function renderAll(){renderClips();renderTimeline();renderTexts();updateTrimUI()}
+function renderAll(){
+ renderClips();
+ renderTimeline();
+ renderAudioTrack();
+ renderTexts();
+ updateTrimUI();
+}
+
 function renderClips(){
  $("clipsList").innerHTML=clips.map((c,i)=>`
  <div class="clip ${i===selected?"active":""}">
@@ -327,34 +390,47 @@ function renderClips(){
 
 function renderTimeline(){
  const track=$("timelineTrack"),ruler=$("timelineRuler");
- const total=totalDuration();
+ const total=totalDuration(),scale=timelineScale();
  $("timelineDuration").textContent=fmt(total)+" seconds";
  if(!clips.length){
   track.innerHTML='<div class="timeline-empty">Add video clips to build your timeline.</div>';
+  track.style.width="100%";
   ruler.innerHTML="";
+  ruler.style.width="100%";
   return;
  }
- const width=clips.length*167;
+
+ const widths=clips.map(c=>Math.max(110,durationOf(c)*scale));
+ const width=widths.reduce((a,b)=>a+b,0)+Math.max(0,clips.length-1)*7;
  track.style.width=width+"px";
  track.innerHTML=clips.map((c,i)=>`
- <div class="timeline-card ${i===selected?"active":""}" draggable="true" data-index="${i}" onclick="selectClip(${i})">
+ <div class="timeline-card ${i===selected?"active":""}" draggable="true" data-index="${i}" style="width:${widths[i]}px">
  <span class="tc-number">CLIP ${i+1}</span>
  <canvas id="thumb${i}" width="240" height="100"></canvas>
  <div class="tc-info">${esc(c.name)} · ${fmt(durationOf(c))}s</div>
  </div>`).join("");
+
  clips.forEach((c,i)=>{
   if(c.thumb){
    const canvas=$("thumb"+i);
-   if(canvas){const ctx=canvas.getContext("2d");const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,240,100);img.src=c.thumb}
+   if(canvas){
+    const ctx=canvas.getContext("2d");
+    const img=new Image();
+    img.onload=()=>ctx.drawImage(img,0,0,240,100);
+    img.src=c.thumb;
+   }
   }else makeThumbnail(c);
  });
+
  ruler.style.width=width+"px";
- const marks=Math.max(1,Math.ceil(total/5));
+ const interval=zoom>=1.4?2:zoom>=.8?5:10;
+ const marks=Math.max(1,Math.ceil(total/interval));
  ruler.innerHTML=Array.from({length:marks+1},(_,i)=>{
-  const t=Math.min(i*5,total);
-  const left=total?((t/total)*width):0;
+  const t=Math.min(i*interval,total);
+  const left=t*scale;
   return `<span class="ruler-mark" style="left:${left}px">${fmt(t)}s</span>`;
  }).join("");
+
  track.querySelectorAll(".timeline-card").forEach(card=>{
   card.addEventListener("dragstart",e=>{
    dragIndex=Number(card.dataset.index);
@@ -378,6 +454,62 @@ function renderTimeline(){
  });
 }
 
+function renderAudioTrack(){
+ const canvas=$("audioWaveform");
+ const empty=$("audioEmpty");
+ const name=$("audioTrackName");
+ const total=totalDuration();
+ const width=Math.max(300,total*timelineScale());
+ const height=74;
+ const container=$("audioTrackContent");
+
+ if(!musicURL||!musicWaveData){
+  canvas.style.display="none";
+  name.style.display="none";
+  empty.style.display="flex";
+  container.style.width="100%";
+  return;
+ }
+
+ container.style.width=width+"px";
+ empty.style.display="none";
+ canvas.style.display="block";
+ name.style.display="block";
+ name.textContent="♫ "+musicFileName+" · "+fmt(musicDuration)+"s";
+ canvas.width=Math.max(1,Math.ceil(width));
+ canvas.height=height;
+ canvas.style.width=width+"px";
+ canvas.style.height=height+"px";
+
+ const ctx=canvas.getContext("2d");
+ ctx.clearRect(0,0,canvas.width,height);
+ ctx.fillStyle="#10253a";
+ ctx.fillRect(0,0,canvas.width,height);
+
+ const data=musicWaveData;
+ const middle=height/2;
+ const step=Math.max(1,Math.floor(data.length/Math.max(1,width)));
+ const samplesPerPixel=Math.max(1,Math.floor(data.length/Math.max(1,width)));
+
+ ctx.fillStyle="#45c6c8";
+ for(let x=0;x<width;x++){
+  const start=x*samplesPerPixel;
+  let min=1,max=-1;
+  for(let j=start;j<Math.min(start+samplesPerPixel,data.length);j++){
+   if(data[j]<min)min=data[j];
+   if(data[j]>max)max=data[j];
+  }
+  if(max<min){min=0;max=0}
+  const y1=middle-max*28;
+  const y2=middle-min*28;
+  ctx.fillRect(x,y1,1,Math.max(1,y2-y1));
+ }
+ ctx.strokeStyle="#a5f3fc";
+ ctx.globalAlpha=.35;
+ ctx.beginPath();ctx.moveTo(0,middle);ctx.lineTo(width,middle);ctx.stroke();
+ ctx.globalAlpha=1;
+}
+
 function selectClip(i){selected=i;loadSelected();renderAll()}
 function loadSelected(){
  const c=selectedClip();if(!c)return;
@@ -385,9 +517,12 @@ function loadSelected(){
  preview.onloadedmetadata=()=>{
   preview.currentTime=Math.min(c.start,Math.max(0,preview.duration-.05));
   preview.playbackRate=c.speed;
-  $("trimStart").value=fmt(c.start);$("trimEnd").value=fmt(c.end);
-  $("speed").value=c.speed;$("filter").value=c.filter;
-  $("transition").value=c.transition;$("transitionDuration").value=c.transitionDuration;
+  $("trimStart").value=fmt(c.start);
+  $("trimEnd").value=fmt(c.end);
+  $("speed").value=c.speed;
+  $("filter").value=c.filter;
+  $("transition").value=c.transition;
+  $("transitionDuration").value=c.transitionDuration;
   $("fadeOut").value=c.fadeOut;
   updateTimeInfo();updateTrimUI();
  };
@@ -403,7 +538,8 @@ function moveClip(d){
 $("deleteClip").onclick=()=>{
  if(selected<0)return;
  URL.revokeObjectURL(clips[selected].url);
- clips.splice(selected,1);selected=Math.min(selected,clips.length-1);
+ clips.splice(selected,1);
+ selected=Math.min(selected,clips.length-1);
  if(selected>=0)loadSelected();
  else{preview.pause();preview.removeAttribute("src");preview.load()}
  renderAll();
@@ -415,12 +551,15 @@ function applyTrim(a,b){
  b=Math.max(0,Math.min(Number(b),c.duration));
  if(b<=a+.05)return;
  c.start=a;c.end=b;
- $("trimStart").value=fmt(a);$("trimEnd").value=fmt(b);
- $("startRange").value=a;$("endRange").value=b;
+ $("trimStart").value=fmt(a);
+ $("trimEnd").value=fmt(b);
+ $("startRange").value=a;
+ $("endRange").value=b;
  updateTrimUI();renderClips();renderTimeline();
 }
 $("startRange").oninput=()=>applyTrim(Number($("startRange").value),Number($("endRange").value));
 $("endRange").oninput=()=>applyTrim(Number($("startRange").value),Number($("endRange").value));
+
 function updateTrimUI(){
  const c=selectedClip();
  if(!c){
@@ -447,11 +586,13 @@ $("applyClip").onclick=()=>{
  let a=Number($("trimStart").value),b=Number($("trimEnd").value);
  if(a<0||b>c.duration||b<=a)return alert("Please enter valid trim times.");
  c.start=a;c.end=b;c.speed=Number($("speed").value);c.filter=$("filter").value;
- c.transition=$("transition").value;c.transitionDuration=Math.max(.1,Number($("transitionDuration").value)||1);
+ c.transition=$("transition").value;
+ c.transitionDuration=Math.max(.1,Number($("transitionDuration").value)||1);
  c.fadeOut=Math.max(0,Number($("fadeOut").value)||0);
  preview.currentTime=c.start;preview.playbackRate=c.speed;
  renderAll();updateTimeInfo();
 };
+
 $("splitClip").onclick=()=>{
  const c=selectedClip();if(!c)return alert("Select a clip first.");
  const cut=preview.currentTime;
@@ -465,9 +606,11 @@ $("splitClip").onclick=()=>{
 $("playBtn").onclick=()=>preview.play();
 $("pauseBtn").onclick=()=>preview.pause();
 $("stopBtn").onclick=()=>{preview.pause();if(selected>=0)preview.currentTime=clips[selected].start};
+
 preview.addEventListener("timeupdate",()=>{
  updateTimeInfo();updatePreviewText();updatePlayhead();
 });
+
 function updateTimeInfo(){
  const c=selectedClip();if(!c)return;
  $("timeInfo").textContent=`Clip position: ${fmt(preview.currentTime)}s / ${fmt(c.end)}s`;
@@ -510,9 +653,12 @@ $("deleteText").onclick=()=>{
  if(selectedText<0)return;
  texts.splice(selectedText,1);selectedText=-1;renderTexts();updatePreviewText();
 };
+
 function timelineAtPreview(){
- let t=0;for(let i=0;i<selected;i++)t+=durationOf(clips[i]);
- const c=selectedClip();return t+(preview.currentTime-(c?.start||0))/(c?.speed||1);
+ let t=0;
+ for(let i=0;i<selected;i++)t+=durationOf(clips[i]);
+ const c=selectedClip();
+ return t+(preview.currentTime-(c?.start||0))/(c?.speed||1);
 }
 function updatePreviewText(){
  const t=timelineAtPreview();
@@ -520,9 +666,56 @@ function updatePreviewText(){
  $("previewText").innerHTML=active.map(x=>`<div style="position:absolute;left:${x.x*100}%;top:${x.y*100}%;transform:translate(-50%,-50%);color:${x.color};font-size:${Math.min(x.size,80)}px;font-weight:bold;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere">${esc(x.text)}</div>`).join("");
 }
 
-$("musicFile").onchange=e=>{
+async function loadMusicWaveform(file){
+ musicWaveData=null;musicDuration=0;
+ $("audioInfo").textContent="Reading audio file and creating waveform...";
+ $("audioEmpty").textContent="Generating audio waveform...";
+ try{
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)throw new Error("Audio decoding is not supported by this browser.");
+  const ctx=new AudioCtx();
+  const buffer=await file.arrayBuffer();
+  const decoded=await ctx.decodeAudioData(buffer.slice(0));
+  musicDuration=decoded.duration;
+  const channel=decoded.getChannelData(0);
+  const points= Math.min(12000,channel.length);
+  const block=Math.max(1,Math.floor(channel.length/points));
+  const data=new Float32Array(points);
+  for(let i=0;i<points;i++){
+   let peak=0;
+   const from=i*block,to=Math.min(channel.length,from+block);
+   for(let j=from;j<to;j++){
+    const val=Math.abs(channel[j]);
+    if(val>peak)peak=val;
+   }
+   data[i]=peak;
+  }
+  musicWaveData=data;
+  $("audioInfo").textContent="Music loaded: "+musicFileName+" · "+fmt(musicDuration)+" seconds";
+  $("audioEmpty").textContent="Choose a music file to display its waveform here.";
+  renderAudioTrack();
+  await ctx.close();
+ }catch(err){
+  $("audioInfo").textContent="Music selected, but waveform could not be generated: "+err.message;
+  $("audioEmpty").textContent="Waveform preview is unavailable for this file.";
+  renderAudioTrack();
+ }
+}
+
+$("musicFile").onchange=async e=>{
+ const file=e.target.files[0];
+ if(!file)return;
  if(musicURL)URL.revokeObjectURL(musicURL);
- if(e.target.files[0])musicURL=URL.createObjectURL(e.target.files[0]);
+ musicURL=URL.createObjectURL(file);
+ musicFileName=file.name;
+ await loadMusicWaveform(file);
+};
+$("removeMusic").onclick=()=>{
+ if(musicURL)URL.revokeObjectURL(musicURL);
+ musicURL=null;musicFileName="";musicDuration=0;musicWaveData=null;
+ $("musicFile").value="";
+ $("audioInfo").textContent="No background music selected.";
+ renderAudioTrack();
 };
 
 function canvasSize(){
@@ -534,6 +727,7 @@ function canvasSize(){
  else if(a==="original"&&preview.videoWidth){w=preview.videoWidth;h=preview.videoHeight}
  return [w,h];
 }
+
 function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress){
  ctx.save();ctx.globalAlpha=alpha;ctx.filter=filter==="none"?"none":filter;
  let scale=fit==="cover"?Math.max(w/v.videoWidth,h/v.videoHeight):Math.min(w/v.videoWidth,h/v.videoHeight);
@@ -546,6 +740,7 @@ function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress){
  ctx.drawImage(v,x,y,dw,dh);
  ctx.restore();
 }
+
 function drawOverlayText(ctx,t,time,w,h){
  if(time<t.start||time>t.end)return;
  let alpha=1,scale=1,offset=0;
@@ -556,9 +751,11 @@ function drawOverlayText(ctx,t,time,w,h){
  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=t.color;ctx.font=`bold ${t.size}px Arial`;
  ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor="#000";ctx.shadowBlur=5;
  ctx.translate(w*t.x,h*t.y+offset);ctx.scale(scale,scale);
- const words=t.text.split("\n");words.forEach((line,i)=>ctx.fillText(line,0,(i-(words.length-1)/2)*t.size*1.25,w*.9));
+ const words=t.text.split("\n");
+ words.forEach((line,i)=>ctx.fillText(line,0,(i-(words.length-1)/2)*t.size*1.25,w*.9));
  ctx.restore();
 }
+
 function wait(ms){return new Promise(r=>setTimeout(r,ms))}
 
 async function exportVideo(){
@@ -566,66 +763,114 @@ async function exportVideo(){
  if(!clips.length)return alert("Add at least one video clip.");
  for(const c of clips){if(c.end<=c.start)return alert("One clip has invalid trim settings.")}
  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)return alert("Video export is not supported by this browser.");
+
  const [w,h]=canvasSize();
  const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
  const ctx=canvas.getContext("2d");
  const stream=canvas.captureStream(30);
  let audioCtx=null,dest=null,musicEl=null;
  const audioEls=[];
+
  try{
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)throw new Error("Audio is not supported.");
+  audioCtx=new AudioCtx();
   dest=audioCtx.createMediaStreamDestination();
+
   for(const c of clips){
-   const el=document.createElement("video");el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;
+   const el=document.createElement("video");
+   el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;
    el.playsInline=true;
-   await new Promise((resolve,reject)=>{el.onloadedmetadata=resolve;el.onerror=reject;el.load()});
+   await new Promise((resolve,reject)=>{
+    el.onloadedmetadata=resolve;el.onerror=reject;el.load();
+   });
    const src=audioCtx.createMediaElementSource(el);
    const gain=audioCtx.createGain();gain.gain.value=Number($("videoVolume").value);
-   src.connect(gain);gain.connect(dest);audioEls.push({el,gain});
+   src.connect(gain);gain.connect(dest);
+   audioEls.push({el,gain});
   }
+
   if(musicURL){
-   musicEl=new Audio(musicURL);musicEl.loop=false;
-   await new Promise(resolve=>{musicEl.onloadedmetadata=resolve;musicEl.onerror=resolve;musicEl.load()});
+   musicEl=new Audio(musicURL);musicEl.loop=true;
+   await new Promise(resolve=>{
+    musicEl.onloadedmetadata=resolve;musicEl.onerror=resolve;musicEl.load();
+   });
    const ms=audioCtx.createMediaElementSource(musicEl);
-   const mg=audioCtx.createGain();ms.connect(mg);mg.connect(dest);musicEl._gain=mg;
+   const mg=audioCtx.createGain();ms.connect(mg);mg.connect(dest);
+   musicEl._gain=mg;
   }
+
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
- }catch(err){console.warn("Audio setup issue",err)}
+ }catch(err){
+  console.warn("Audio setup issue",err);
+ }
+
  const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
- if(!mime){alert("This browser does not support WebM recording.");stream.getTracks().forEach(t=>t.stop());return}
+ if(!mime){
+  alert("This browser does not support WebM recording.");
+  stream.getTracks().forEach(t=>t.stop());return;
+ }
+
  let recorder;
- try{recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000})}
- catch(e){alert("Could not start export: "+e.message);stream.getTracks().forEach(t=>t.stop());return}
+ try{
+  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000});
+ }catch(e){
+  alert("Could not start export: "+e.message);
+  stream.getTracks().forEach(t=>t.stop());return;
+ }
+
  const chunks=[];
  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
  const done=new Promise(resolve=>recorder.onstop=resolve);
- exporting=true;$("exportBtn").disabled=true;$("status").textContent="Preparing export...";
- $("downloadLink").style.display="none";$("progressBar").style.width="0%";
- const total=totalDuration();let elapsed=0;
+
+ exporting=true;
+ $("exportBtn").disabled=true;
+ $("status").textContent="Preparing export...";
+ $("downloadLink").style.display="none";
+ $("progressBar").style.width="0%";
+
+ const total=totalDuration();
+ let elapsed=0;
+
  try{
   if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();
-  if(musicEl){musicEl.currentTime=0;musicEl.volume=1;await musicEl.play().catch(()=>{});}
+  if(musicEl){musicEl.currentTime=0;await musicEl.play().catch(()=>{})}
   recorder.start(250);
+
   for(let i=0;i<clips.length;i++){
    const c=clips[i],v=audioEls[i]?.el||document.createElement("video");
+
    if(!audioEls[i]){
     v.src=c.url;v.muted=true;
     await new Promise(resolve=>{v.onloadedmetadata=resolve;v.load()});
    }
-   v.muted=!audioEls[i];v.volume=1;v.playbackRate=c.speed;
+
+   v.muted=!audioEls[i];
+   v.volume=1;
+   v.playbackRate=c.speed;
    v.currentTime=c.start;
-   await new Promise(resolve=>{if(v.readyState>=2)resolve();else{v.onseeked=resolve;v.onerror=resolve}});
+
+   await new Promise(resolve=>{
+    if(v.readyState>=2)resolve();
+    else{v.onseeked=resolve;v.onerror=resolve}
+   });
+
    if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value);
    await v.play().catch(()=>{});
-   const clipDur=durationOf(c),transition=c.transition;
+
+   const clipDur=durationOf(c);
+   const transition=c.transition;
    const transDur=transition==="cut"?0:Math.min(c.transitionDuration,clipDur/2);
+
    while((v.currentTime<c.end-.025)&&!v.ended){
     const local=(v.currentTime-c.start)/c.speed;
     const progress=transDur?Math.min(1,local/transDur):1;
     let alpha=1;
     if(transDur&&local<transDur&&transition==="fade")alpha=progress;
+
     const fade=c.fadeOut>0?Math.min(1,Math.max(0,(clipDur-local)/c.fadeOut)):1;
     if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value)*fade;
+
     if(musicEl&&musicEl._gain){
      const mi=Number($("musicFadeIn").value),mo=Number($("musicFadeOut").value);
      const mg=Number($("musicVolume").value);
@@ -633,39 +878,54 @@ async function exportVideo(){
      if(mo>0)ma=Math.min(ma,Math.max(0,(total-elapsed)/mo));
      musicEl._gain.gain.value=mg*ma;
     }
+
     ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
     drawVideo(ctx,v,w,h,$("fit").value,c.filter,alpha,transition,progress);
+
     if(c.fadeOut>0&&local>clipDur-c.fadeOut){
-     ctx.save();ctx.globalAlpha=Math.min(1,(local-(clipDur-c.fadeOut))/c.fadeOut);ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);ctx.restore();
+     ctx.save();
+     ctx.globalAlpha=Math.min(1,(local-(clipDur-c.fadeOut))/c.fadeOut);
+     ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
+     ctx.restore();
     }
+
     for(const t of texts)drawOverlayText(ctx,t,elapsed+local,w,h);
+
     await wait(30);
     elapsed=clips.slice(0,i).reduce((s,x)=>s+durationOf(x),0)+local;
     $("progressBar").style.width=Math.min(99,elapsed/total*100)+"%";
     $("status").textContent=`Exporting clip ${i+1} of ${clips.length} · ${fmt(elapsed)} / ${fmt(total)} seconds`;
    }
-   v.pause();if(audioEls[i])audioEls[i].gain.gain.value=0;
+
+   v.pause();
+   if(audioEls[i])audioEls[i].gain.gain.value=0;
    elapsed=clips.slice(0,i+1).reduce((s,x)=>s+durationOf(x),0);
   }
-  recorder.stop();await done;
+
+  recorder.stop();
+  await done;
   const blob=new Blob(chunks,{type:"video/webm"});
   const url=URL.createObjectURL(blob);
-  $("downloadLink").href=url;$("downloadLink").style.display="inline-block";
+  $("downloadLink").href=url;
+  $("downloadLink").style.display="inline-block";
   $("downloadLink").textContent="⬇ Download your finished video";
   $("progressBar").style.width="100%";
   $("status").textContent="Export completed successfully! Your WebM video is ready.";
+
  }catch(err){
   if(recorder.state!=="inactive")recorder.stop();
   await done;
   $("status").textContent="Export error: "+err.message;
  }finally{
-  exporting=false;$("exportBtn").disabled=false;
+  exporting=false;
+  $("exportBtn").disabled=false;
   if(musicEl)musicEl.pause();
   audioEls.forEach(x=>{x.el.pause();x.el.remove()});
   if(audioCtx)audioCtx.close().catch(()=>{});
   stream.getTracks().forEach(t=>t.stop());
  }
 }
+
 $("exportBtn").onclick=exportVideo;
 renderAll();
 </script>
