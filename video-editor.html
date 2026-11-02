@@ -4,8 +4,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Free Video Editor | Pikora</title>
-<meta name="description" content="Free browser-based video editor with multitrack timeline, audio waveform, video and text keyframe animation, trimming, music and WebM export.">
+
+<title>Free Online Video Editor – Edit Videos Without Watermarks | Pikora</title>
+<meta name="description" content="Edit videos online for free with Pikora. Combine multiple clips, trim videos, add animated text, transitions and background music, then export in WebM format. No registration, subscription or watermark.">
+<meta name="keywords" content="free online video editor, video editor online, edit videos free, video trimming, merge video clips, animated text video editor, add music to video, browser video editor, WebM video export, Pikora">
+<meta name="author" content="Pikora">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0b1020">
+
+<link rel="canonical" href="https://pikora.pages.dev/video-editor.html">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Online Video Editor – Pikora">
+<meta property="og:description" content="Edit video clips, add animated text, transitions and background music, and export your video for free with Pikora. No registration or watermark.">
+<meta property="og:url" content="https://pikora.pages.dev/video-editor.html">
+<meta property="og:site_name" content="Pikora">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Online Video Editor – Pikora">
+<meta name="twitter:description" content="Edit videos online for free. Trim clips, add animated text, transitions and music, and export in WebM format with Pikora.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Pikora Free Online Video Editor",
+  "applicationCategory": "MultimediaApplication",
+  "applicationSubCategory": "Video Editing Software",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires a modern web browser with JavaScript enabled.",
+  "description": "A free browser-based video editor for combining and trimming video clips, adding animated text, transitions and background music, and exporting videos in WebM format.",
+  "url": "https://pikora.pages.dev/video-editor.html",
+  "featureList": [
+    "Combine multiple video clips",
+    "Visual multitrack timeline",
+    "Video trimming and splitting",
+    "Clip reordering",
+    "Video filters and transitions",
+    "Animated video keyframes",
+    "Animated text overlays",
+    "Background music and audio waveform",
+    "Audio volume and fade controls",
+    "Video aspect ratio settings",
+    "WebM video export",
+    "Browser-based editing"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#f4f5ff;font-family:Arial,sans-serif}
@@ -105,8 +156,8 @@ a{color:#b9a5ff}
 </header>
 
 <main>
-<h1>Free Video Editor</h1>
-<p class="sub">Edit multiple clips with separate video and audio tracks, waveform previews, animated video and text keyframes, trimming, transitions and music. Editing happens in your browser.</p>
+<h1>Free Online Video Editor</h1>
+<p class="sub">Edit multiple video clips with a visual timeline, separate audio track, animated video and text keyframes, trimming, transitions and background music. Export your finished video in WebM format. Editing happens in your browser without registration or a watermark.</p>
 
 <div class="layout">
 <section>
@@ -196,8 +247,10 @@ a{color:#b9a5ff}
 </div>
 <label>Clip transition into this clip</label>
 <select id="transition"><option value="cut">Cut</option><option value="fade">Fade from black</option><option value="zoom">Zoom in</option><option value="slide">Slide in</option><option value="wipe">Wipe in</option></select>
-<label>Transition duration (seconds)</label><input type="number" id="transitionDuration" value="1" min=".1" max="5" step=".1">
-<label>Fade out at end of clip (seconds)</label><input type="number" id="fadeOut" value="0" min="0" max="5" step=".1">
+<label>Transition duration (seconds)</label>
+<input type="number" id="transitionDuration" value="1" min=".1" max="5" step=".1">
+<label>Fade out at end of clip (seconds)</label>
+<input type="number" id="fadeOut" value="0" min="0" max="5" step=".1">
 
 <div class="keyframe-box">
 <span class="keyframe-badge">VIDEO KEYFRAME 1 · START</span>
