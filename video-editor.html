@@ -3,520 +3,460 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Video Editor | Pikora</title>
-<meta name="description" content="Free online video editor with multiple clips, speed control, audio fading, timed text, filters and WebM export.">
+<meta name="description" content="Free online video editor with multiple clips, split, trim, transitions, text overlays, music, filters and WebM export.">
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0b1020;color:#f5f5ff;font-family:Arial,sans-serif}
-header{padding:18px 5%;background:#111832;border-bottom:1px solid #29345b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.logo{font-size:25px;font-weight:bold;color:#b99aff;text-decoration:none}
-header a:last-child{color:#ddd;text-decoration:none}
-main{max-width:1250px;margin:auto;padding:22px}
-h1{margin:5px 0 8px;font-size:30px}
-h2{font-size:18px;margin:0 0 13px}
-h3{font-size:15px;color:#d5c6ff;margin:16px 0 7px}
-.sub{color:#aeb8d8;margin-bottom:22px}
-.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr);gap:20px}
-.panel{background:#131c36;border:1px solid #29365e;border-radius:15px;padding:17px;margin-bottom:17px}
-.preview{background:#050812;border-radius:12px;overflow:hidden;min-height:220px;display:flex;align-items:center;justify-content:center}
-canvas{width:100%;max-height:550px;display:block;object-fit:contain}
-.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
-button{border:0;border-radius:9px;padding:11px 14px;background:#7955d9;color:white;font-weight:bold;cursor:pointer}
-button:hover{background:#9575ed}
-button.secondary{background:#29365e}
-button.danger{background:#a33b58}
+body{margin:0;background:#0b1020;color:#f4f5ff;font-family:Arial,sans-serif}
+header{padding:18px 5%;background:#111831;border-bottom:1px solid #293454;display:flex;justify-content:space-between;align-items:center;gap:15px}
+.logo{font-size:25px;font-weight:bold;color:#a78bfa;text-decoration:none;letter-spacing:1px}
+header a.back{color:#ddd;text-decoration:none}
+main{max-width:1250px;margin:auto;padding:24px 16px}
+h1{font-size:29px;margin:0 0 8px}
+.sub{color:#aab3cc;margin-bottom:24px}
+.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(290px,1fr);gap:20px}
+.panel{background:#141d35;border:1px solid #293654;border-radius:15px;padding:17px;margin-bottom:17px}
+h2{font-size:18px;margin:0 0 14px;color:#c4b5fd}
+h3{font-size:15px;margin:0 0 12px;color:#ddd}
+button,.filebtn{border:0;border-radius:8px;padding:10px 13px;background:#7854e8;color:white;font-weight:bold;cursor:pointer;font-size:13px}
+button:hover,.filebtn:hover{background:#9675ff}
+button.secondary{background:#293653}
+button.danger{background:#a83e55}
 button:disabled{opacity:.4;cursor:not-allowed}
-input,select{width:100%;padding:10px;border:1px solid #39476e;border-radius:8px;background:#0b1329;color:white;margin-top:6px}
-input[type=range]{padding:0}
-label{display:block;font-size:13px;color:#c9d2f0;margin-top:13px}
-small,.muted{color:#9daacb}
-.fieldgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.clip{background:#0b142c;border:1px solid #35436b;border-radius:10px;padding:12px;margin-top:10px}
-.clip.active{border-color:#b18bff}
-.cliptop{display:flex;justify-content:space-between;gap:8px;align-items:center}
-.clipname{font-weight:bold;overflow-wrap:anywhere}
-.clipactions{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
-.clipactions button{padding:7px 10px;font-size:12px}
-.status{font-size:13px;color:#bda8ff;margin-top:10px;min-height:18px}
-.timeline{height:12px;background:#273456;border-radius:20px;margin-top:12px;overflow:hidden}
-#progress{height:100%;width:0;background:#a47cff}
-.notice{font-size:12px;line-height:1.6;color:#aeb8d8}
-hr{border:0;border-top:1px solid #29365e;margin:16px 0}
-footer{text-align:center;color:#8995b5;padding:25px;font-size:13px}
-@media(max-width:850px){.layout{grid-template-columns:1fr}main{padding:14px}.preview{min-height:180px}}
+input,select,textarea{width:100%;padding:9px;border-radius:7px;border:1px solid #3b496b;background:#0d1529;color:#fff;margin-top:6px;margin-bottom:12px}
+input[type=range]{padding:0;accent-color:#9b7bff}
+input[type=checkbox]{width:auto;margin-right:6px}
+label{display:block;font-size:12px;color:#c5cce0;margin-bottom:3px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1}
+.small{font-size:12px;color:#9ba8c4}
+video{width:100%;max-height:470px;background:#05070d;border-radius:10px;display:block}
+#previewWrap{position:relative}
+#previewText{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.clip{padding:12px;border:1px solid #344365;border-radius:9px;margin-bottom:9px;background:#10182d}
+.clip.active{border-color:#a78bfa;background:#202044}
+.clip strong{font-size:13px}
+.clip button{padding:7px 9px;margin:3px 2px}
+.clipgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.textitem{padding:9px;border:1px solid #354263;border-radius:8px;margin-bottom:8px;background:#10182d}
+.textitem.active{border-color:#a78bfa}
+#status{color:#b9a5ff;font-size:13px;margin-top:12px;white-space:pre-wrap}
+.progress{height:8px;background:#27334d;border-radius:10px;overflow:hidden;margin-top:10px}
+#progressBar{height:100%;width:0;background:#9b7bff}
+hr{border:0;border-top:1px solid #293654;margin:17px 0}
+a{color:#b9a5ff}
+@media(max-width:800px){.layout{grid-template-columns:1fr}header{padding:15px}.clipgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
 <a class="logo" href="index.html">PIKORA</a>
-<a href="index.html">← Back to Home</a>
+<a class="back" href="index.html">← Back to Home</a>
 </header>
+
 <main>
 <h1>Free Video Editor</h1>
-<p class="sub">Edit multiple clips, control speed, add music, timed text and filters — free in your browser.</p>
+<p class="sub">Edit multiple clips, split, trim, add transitions, text and music. Your editing happens in your browser.</p>
 
 <div class="layout">
 <section>
 <div class="panel">
 <h2>Video Preview</h2>
-<div class="preview"><canvas id="canvas" width="1280" height="720"></canvas></div>
-<div class="controls">
-<button id="playBtn">▶ Play Preview</button>
-<button class="secondary" id="pauseBtn">Ⅱ Pause</button>
-<button class="secondary" id="stopBtn">↺ Stop</button>
+<div id="previewWrap">
+<video id="preview" controls playsinline></video>
+<div id="previewText"></div>
 </div>
-<div class="timeline"><div id="progress"></div></div>
-<div class="status" id="status">Add video clips to begin editing.</div>
+<div class="row" style="margin-top:12px">
+<button class="secondary" id="playBtn">Play</button>
+<button class="secondary" id="pauseBtn">Pause</button>
+<button class="secondary" id="stopBtn">Stop</button>
 </div>
-
-<div class="panel">
-<h2>1. Multiple Video Clips</h2>
-<label>Select video files</label>
-<input id="videoFiles" type="file" accept="video/*" multiple>
-<div id="clipList"></div>
-<div class="controls"><button class="secondary" id="clearClips">Remove All Clips</button></div>
-<p class="notice">Add several clips, select them, change their order and trim their start and end times.</p>
+<p class="small" id="timeInfo">Select a clip to preview it.</p>
 </div>
 
 <div class="panel">
-<h2>2. Clip Settings</h2>
-<p class="muted" id="selectedName">Select a clip from your timeline.</p>
-<div class="fieldgrid">
-<div><label>Trim start (seconds)</label><input id="trimStart" type="number" min="0" step=".1" value="0"></div>
-<div><label>Trim end (seconds)</label><input id="trimEnd" type="number" min="0" step=".1" value="0"></div>
+<h2>1. Video Clips</h2>
+<label>Add video files (you can select multiple)</label>
+<input type="file" id="videoFiles" accept="video/*" multiple>
+<p class="small">Supported formats depend on your browser. Clips are processed locally.</p>
+<div id="clipsList"></div>
+<div class="row">
+<button class="secondary" id="moveUp">Move Up</button>
+<button class="secondary" id="moveDown">Move Down</button>
+<button class="danger" id="deleteClip">Delete Clip</button>
 </div>
-<label>Playback speed</label>
-<select id="speed">
-<option value=".5">0.5× Slow motion</option>
-<option value=".75">0.75×</option>
-<option value="1" selected>1× Normal</option>
-<option value="1.5">1.5×</option>
-<option value="2">2× Fast</option>
-</select>
-<label>Transition into this clip</label>
+<hr>
+<h3>Selected Clip Settings</h3>
+<div class="clipgrid">
+<div><label>Trim start (seconds)</label><input type="number" id="trimStart" min="0" step=".1" value="0"></div>
+<div><label>Trim end (seconds)</label><input type="number" id="trimEnd" min="0" step=".1" value="0"></div>
+<div><label>Playback speed</label>
+<select id="speed"><option value=".5">0.5x</option><option value=".75">0.75x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div>
+<div><label>Video filter</label>
+<select id="filter">
+<option value="none">Original</option><option value="grayscale(1)">Black & White</option>
+<option value="sepia(.7) contrast(1.1)">Vintage</option>
+<option value="contrast(1.2) saturate(1.2)">Cinematic</option>
+<option value="saturate(1.8)">Vivid</option><option value="sepia(.25) saturate(1.3)">Warm</option>
+<option value="contrast(1.6)">High Contrast</option><option value="blur(2px)">Blur</option>
+</select></div>
+</div>
+<label>Clip transition into this clip</label>
 <select id="transition">
-<option value="cut">Cut</option>
-<option value="fade">Fade in</option>
+<option value="cut">Cut</option><option value="fade">Fade from black</option>
+<option value="zoom">Zoom in</option><option value="slide">Slide in</option>
+<option value="wipe">Wipe in</option>
 </select>
-<label>Transition duration</label>
-<input id="transitionDuration" type="number" min=".1" max="3" step=".1" value=".7">
-<div class="controls"><button id="saveClip">Apply Clip Settings</button></div>
+<label>Transition duration (seconds)</label>
+<input type="number" id="transitionDuration" value="1" min=".1" max="5" step=".1">
+<label>Fade out at end of clip (seconds)</label>
+<input type="number" id="fadeOut" value="0" min="0" max="5" step=".1">
+<div class="row">
+<button id="applyClip">Apply Clip Settings</button>
+<button class="secondary" id="splitClip">Split at Preview Position</button>
+</div>
+<p class="small">To split: play or seek the selected clip to the desired position, pause, then press Split.</p>
 </div>
 
 <div class="panel">
-<h2>3. Text and Timing</h2>
-<label>Text to display</label>
-<input id="overlayText" placeholder="Write your video text">
-<div class="fieldgrid">
-<div><label>Text colour</label><input id="textColor" type="color" value="#ffffff"></div>
-<div><label>Font size</label><input id="textSize" type="number" min="12" max="150" value="54"></div>
+<h2>2. Text Overlays</h2>
+<label>Text to add</label>
+<input id="textInput" placeholder="Type your text here">
+<div class="clipgrid">
+<div><label>Text colour</label><input type="color" id="textColor" value="#ffffff"></div>
+<div><label>Font size</label><input type="number" id="textSize" value="42" min="10" max="150"></div>
+<div><label>Horizontal position</label><select id="textX"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
+<div><label>Vertical position</label><select id="textY"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
+<div><label>Start time (whole video seconds)</label><input type="number" id="textStart" value="0" min="0" step=".1"></div>
+<div><label>End time (whole video seconds)</label><input type="number" id="textEnd" value="10" min=".1" step=".1"></div>
 </div>
-<label>Text position</label>
-<select id="textPosition">
-<option value="center">Center</option>
-<option value="top">Top</option>
-<option value="bottom">Bottom</option>
-</select>
 <label>Text animation</label>
-<select id="textAnimation">
-<option value="none">None</option>
-<option value="fade">Fade in</option>
-<option value="zoom">Zoom in</option>
-<option value="slide">Slide up</option>
-</select>
-<div class="fieldgrid">
-<div><label>Show text from (seconds)</label><input id="textStart" type="number" min="0" step=".1" value="0"></div>
-<div><label>Hide text at (seconds)</label><input id="textEnd" type="number" min="0" step=".1" value="9999"></div>
+<select id="textAnimation"><option value="none">None</option><option value="fade">Fade in</option><option value="zoom">Zoom in</option><option value="slide">Slide up</option></select>
+<div class="row">
+<button id="addText">Add Text Overlay</button>
+<button class="secondary" id="updateText">Update Selected</button>
+<button class="danger" id="deleteText">Delete Selected</button>
 </div>
-<div class="controls">
-<button id="addText">Add / Update Text</button>
-<button class="secondary" id="removeText">Remove Text</button>
-</div>
-<p class="notice">Text timing uses the total edited video timeline, starting at zero.</p>
+<div id="textList"></div>
+<p class="small">Add multiple overlays with different start and end times. Times refer to the full exported video timeline.</p>
 </div>
 </section>
 
 <aside>
 <div class="panel">
-<h2>4. Background Music</h2>
-<label>Choose music file</label>
-<input id="musicFile" type="file" accept="audio/*">
-<label>Music volume: <span id="musicValue">35%</span></label>
-<input id="musicVolume" type="range" min="0" max="100" value="35">
-<label>Original video volume: <span id="videoValue">100%</span></label>
-<input id="videoVolume" type="range" min="0" max="100" value="100">
-<h3>Music Fade Effects</h3>
-<div class="fieldgrid">
-<div><label>Fade in (seconds)</label><input id="fadeIn" type="number" min="0" max="20" step=".5" value="2"></div>
-<div><label>Fade out (seconds)</label><input id="fadeOut" type="number" min="0" max="20" step=".5" value="2"></div>
-</div>
-<div class="controls"><button class="secondary" id="removeMusic">Remove Music</button></div>
-<p class="notice">Music loops during export. Fade effects are applied to the music track.</p>
+<h2>3. Background Music</h2>
+<label>Choose music or audio</label>
+<input type="file" id="musicFile" accept="audio/*">
+<label>Music volume</label>
+<input type="range" id="musicVolume" min="0" max="1" step=".05" value=".35">
+<label>Music fade in (seconds)</label>
+<input type="number" id="musicFadeIn" min="0" max="20" step=".5" value="1">
+<label>Music fade out (seconds)</label>
+<input type="number" id="musicFadeOut" min="0" max="20" step=".5" value="2">
+<label>Original video volume</label>
+<input type="range" id="videoVolume" min="0" max="1" step=".05" value="1">
 </div>
 
 <div class="panel">
-<h2>5. Video Filters</h2>
-<label>Choose a filter</label>
-<select id="filter">
-<option value="none">Original</option>
-<option value="grayscale(100%)">Black & White</option>
-<option value="sepia(80%)">Vintage</option>
-<option value="contrast(125%) saturate(130%)">Cinematic</option>
-<option value="saturate(160%)">Vivid</option>
-<option value="brightness(110%) sepia(20%)">Warm</option>
-<option value="contrast(120%) brightness(105%)">High Contrast</option>
-<option value="blur(2px)">Soft Blur</option>
-</select>
-<label>Brightness: <span id="brightnessValue">100%</span></label>
-<input id="brightness" type="range" min="50" max="150" value="100">
-<label>Contrast: <span id="contrastValue">100%</span></label>
-<input id="contrast" type="range" min="50" max="150" value="100">
-</div>
-
-<div class="panel">
-<h2>6. Video Position and Size</h2>
-<label>Canvas format</label>
+<h2>4. Export Settings</h2>
+<label>Video aspect ratio</label>
 <select id="aspect">
-<option value="16:9">16:9 Landscape</option>
-<option value="9:16">9:16 Portrait</option>
-<option value="1:1">1:1 Square</option>
+<option value="original">Original</option><option value="16:9">16:9 Landscape</option>
+<option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option>
+<option value="4:5">4:5 Social</option>
 </select>
 <label>Video positioning</label>
-<select id="fit">
-<option value="contain">Fit entire video</option>
-<option value="cover">Fill / Crop edges</option>
-</select>
-<p class="notice">Fill / Crop edges fills the selected canvas and may cut off parts of the original video.</p>
-</div>
-
-<div class="panel">
-<h2>7. Export Video</h2>
+<select id="fit"><option value="contain">Fit (show full video)</option><option value="cover">Fill (crop edges)</option></select>
 <label>Export quality</label>
-<select id="quality">
-<option value="high">High quality</option>
-<option value="standard" selected>Standard quality</option>
-<option value="small">Smaller file</option>
-</select>
-<button id="exportBtn" style="width:100%;margin-top:14px">⬇ Export Video (WebM)</button>
-<div class="status" id="exportStatus"></div>
-<p class="notice">Export runs in real time. Keep this page open until the download finishes. This version exports WebM, not MP4.</p>
-<hr>
-<button class="secondary" id="resetAll" style="width:100%">Reset Editor</button>
+<select id="quality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Very High</option></select>
+<button id="exportBtn" style="width:100%;margin-top:8px">Export Video (WebM)</button>
+<div class="progress"><div id="progressBar"></div></div>
+<div id="status">Ready to edit.</div>
+<p class="small">Export takes approximately the length of your finished video. Keep this tab open until export finishes. WebM format is used where supported by your browser.</p>
+<a id="downloadLink" style="display:none" download="pikora-video.webm">Download your video</a>
 </div>
 
 <div class="panel">
-<h2>Privacy</h2>
-<p class="notice">Your video and music files are processed locally in your browser. Pikora does not upload them to its server.</p>
+<h2>5. Editing Tips</h2>
+<p class="small">• Select a clip to edit its trim and effects.</p>
+<p class="small">• Split the clip at the current preview position to create two clips.</p>
+<p class="small">• Delete a clip to remove it from your project.</p>
+<p class="small">• Add multiple text overlays and set their timing.</p>
+<p class="small">• Fade out and transitions are applied during export.</p>
+<p class="small">• Export is processed on your device; large videos may need more memory.</p>
 </div>
 </aside>
 </div>
 </main>
-<footer>© 2026 Pikora · Free online editing · No registration · No watermark</footer>
 
 <script>
 const $=id=>document.getElementById(id);
-const canvas=$("canvas"),ctx=canvas.getContext("2d");
-const video=document.createElement("video");
-video.playsInline=true;video.preload="auto";
-let clips=[],selected=-1,playing=false,exporting=false;
-let music=null,musicURL=null,playToken=0;
-let textOverlay={text:"",color:"#ffffff",size:54,position:"center",animation:"none",start:0,end:9999};
-let previewStart=0;
+const preview=$("preview");
+let clips=[],selected=-1,texts=[],selectedText=-1,musicURL=null,exporting=false;
 
-function status(s){$("status").textContent=s}
-function exportStatus(s){$("exportStatus").textContent=s}
-function timeText(n){return Math.floor(n/60)+":"+String(Math.floor(n%60)).padStart(2,"0")}
-function currentClip(){return clips[selected]||null}
-function totalDuration(){return clips.reduce((s,c)=>s+(c.end-c.start)/c.speed,0)}
-function progressWidth(v){$("progress").style.width=Math.max(0,Math.min(100,v))+"%"}
-function canvasSize(){
-const a=$("aspect").value;
-if(a==="9:16")return[720,1280];
-if(a==="1:1")return[900,900];
-return[1280,720];
-}
-function resizeCanvas(){const [w,h]=canvasSize();canvas.width=w;canvas.height=h;drawFrame()}
-function filterValue(){
-const f=$("filter").value;
-const b=$("brightness").value,c=$("contrast").value;
-return (f==="none"?"":f+" ")+`brightness(${b}%) contrast(${c}%)`;
-}
-function drawFrame(globalTime=0,fade=1){
-const w=canvas.width,h=canvas.height;
-ctx.fillStyle="#050812";ctx.fillRect(0,0,w,h);
-if(video.readyState>=2&&video.videoWidth){
-const scale=$("fit").value==="cover"?Math.max(w/video.videoWidth,h/video.videoHeight):Math.min(w/video.videoWidth,h/video.videoHeight);
-const dw=video.videoWidth*scale,dh=video.videoHeight*scale;
-ctx.save();ctx.filter=filterValue();ctx.globalAlpha=fade;
-ctx.drawImage(video,(w-dw)/2,(h-dh)/2,dw,dh);ctx.restore();
-}else{
-ctx.fillStyle="#b99aff";ctx.font="bold 34px Arial";ctx.textAlign="center";ctx.fillText("PIKORA",w/2,h/2-12);
-ctx.fillStyle="#aab5d5";ctx.font="20px Arial";ctx.fillText(clips.length?"Ready to preview":"Add video clips to begin",w/2,h/2+30);
-}
-drawText(globalTime);
-}
-function drawText(t){
-const o=textOverlay;if(!o.text||t<o.start||t>o.end)return;
-const elapsed=t-o.start;
-let alpha=1,scale=1,y=canvas.height/2;
-if(o.animation==="fade")alpha=Math.min(1,elapsed/.8);
-if(o.animation==="zoom")scale=.5+.5*Math.min(1,elapsed/.8);
-if(o.animation==="slide")y+=Math.max(0,1-elapsed/.8)*100;
-if(o.position==="top")y=canvas.height*.14;
-if(o.position==="bottom")y=canvas.height*.88;
-ctx.save();ctx.globalAlpha=alpha;ctx.translate(canvas.width/2,y);ctx.scale(scale,scale);
-ctx.font="bold "+o.size+"px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
-ctx.lineWidth=Math.max(3,o.size/14);ctx.strokeStyle="rgba(0,0,0,.75)";
-ctx.strokeText(o.text,0,0);ctx.fillStyle=o.color;ctx.fillText(o.text,0,0);
-ctx.restore();
-}
+function durationOf(c){return Math.max(.1,(c.end-c.start)/c.speed)}
+function totalDuration(){return clips.reduce((s,c)=>s+durationOf(c),0)}
+function selectedClip(){return clips[selected]}
+function fmt(n){return Number(n||0).toFixed(1)}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+$("videoFiles").addEventListener("change",e=>{
+ for(const f of e.target.files){
+  const url=URL.createObjectURL(f);
+  clips.push({name:f.name,url,start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,fadeOut:0});
+ }
+ e.target.value="";
+ if(clips.length){selected=clips.length-1;loadSelected()}
+ renderClips();
+});
+
 function renderClips(){
-const list=$("clipList");list.innerHTML="";
-clips.forEach((c,i)=>{
-const box=document.createElement("div");box.className="clip"+(i===selected?" active":"");
-const top=document.createElement("div");top.className="cliptop";
-const name=document.createElement("div");name.className="clipname";name.textContent=(i+1)+". "+c.name;
-const dur=document.createElement("small");dur.textContent=timeText((c.end-c.start)/c.speed);
-top.append(name,dur);box.append(top);
-const actions=document.createElement("div");actions.className="clipactions";
-function btn(label,fn,cls=""){const b=document.createElement("button");b.textContent=label;b.className=cls;b.onclick=fn;actions.append(b)}
-btn("Select",()=>selectClip(i));
-btn("↑",()=>moveClip(i,-1),"secondary");
-btn("↓",()=>moveClip(i,1),"secondary");
-btn("Delete",()=>deleteClip(i),"danger");
-box.append(actions);list.append(box);
-});
+ $("clipsList").innerHTML=clips.map((c,i)=>`
+ <div class="clip ${i===selected?"active":""}">
+ <strong>${i+1}. ${esc(c.name)}</strong>
+ <div class="small">Trim ${fmt(c.start)}–${fmt(c.end)}s · ${c.speed}x · ${fmt(durationOf(c))}s</div>
+ <button class="secondary" onclick="selectClip(${i})">Select</button>
+ </div>`).join("")||'<p class="small">No clips added yet.</p>';
 }
-function selectClip(i){
-selected=i;const c=currentClip();if(!c)return;
-$("selectedName").textContent=c.name+" · "+timeText(c.duration);
-$("trimStart").value=c.start;$("trimEnd").value=c.end;
-$("speed").value=String(c.speed);$("transition").value=c.transition;
-$("transitionDuration").value=c.transitionDuration;
-video.pause();video.src=c.url;video.load();
-video.onloadedmetadata=()=>{video.currentTime=c.start;drawFrame()};
-renderClips();status("Selected: "+c.name);
+function selectClip(i){selected=i;loadSelected();renderClips()}
+function loadSelected(){
+ const c=selectedClip();if(!c)return;
+ preview.src=c.url;preview.load();
+ preview.onloadedmetadata=()=>{
+  if(!c.duration){c.duration=preview.duration;c.end=preview.duration}
+  $("trimStart").value=fmt(c.start);$("trimEnd").value=fmt(c.end);
+  $("speed").value=c.speed;$("filter").value=c.filter;
+  $("transition").value=c.transition;$("transitionDuration").value=c.transitionDuration;
+  $("fadeOut").value=c.fadeOut;
+  preview.playbackRate=c.speed;
+  updateTimeInfo();
+ };
 }
-function moveClip(i,d){
-const j=i+d;if(j<0||j>=clips.length)return;
-[clips[i],clips[j]]=[clips[j],clips[i]];selected=j;renderClips();selectClip(j);
+$("moveUp").onclick=()=>moveClip(-1);
+$("moveDown").onclick=()=>moveClip(1);
+function moveClip(d){
+ const j=selected+d;if(j<0||j>=clips.length)return;
+ [clips[selected],clips[j]]=[clips[j],clips[selected]];selected=j;loadSelected();renderClips();
 }
-function deleteClip(i){
-URL.revokeObjectURL(clips[i].url);clips.splice(i,1);
-selected=clips.length?Math.min(i,clips.length-1):-1;renderClips();
-if(selected>=0)selectClip(selected);
-else{video.pause();video.removeAttribute("src");video.load();$("selectedName").textContent="Select a clip from your timeline.";drawFrame()}
+$("deleteClip").onclick=()=>{
+ if(selected<0)return;
+ URL.revokeObjectURL(clips[selected].url);
+ clips.splice(selected,1);selected=Math.min(selected,clips.length-1);
+ if(selected>=0)loadSelected();else{preview.removeAttribute("src");preview.load()}
+ renderClips();
+};
+$("applyClip").onclick=()=>{
+ const c=selectedClip();if(!c)return alert("Select a clip first.");
+ let a=Number($("trimStart").value),b=Number($("trimEnd").value);
+ if(a<0||b>c.duration||b<=a)return alert("Please enter valid trim times.");
+ c.start=a;c.end=b;c.speed=Number($("speed").value);c.filter=$("filter").value;
+ c.transition=$("transition").value;c.transitionDuration=Math.max(.1,Number($("transitionDuration").value)||1);
+ c.fadeOut=Math.max(0,Number($("fadeOut").value)||0);
+ preview.currentTime=c.start;preview.playbackRate=c.speed;renderClips();updateTimeInfo();
+};
+$("splitClip").onclick=()=>{
+ const c=selectedClip();if(!c)return alert("Select a clip first.");
+ const cut=preview.currentTime;
+ if(cut<=c.start+.05||cut>=c.end-.05)return alert("Move the playhead inside the clip, away from its beginning and end.");
+ const second={...c,name:c.name+" (split)",start:cut,end:c.end,transition:"cut",transitionDuration:1,fadeOut:c.fadeOut};
+ c.end=cut;c.fadeOut=0;
+ clips.splice(selected+1,0,second);
+ renderClips();$("status").textContent="Clip split successfully.";
+};
+$("playBtn").onclick=()=>preview.play();
+$("pauseBtn").onclick=()=>preview.pause();
+$("stopBtn").onclick=()=>{preview.pause();if(selected>=0)preview.currentTime=clips[selected].start};
+preview.addEventListener("timeupdate",updateTimeInfo);
+function updateTimeInfo(){
+ const c=selectedClip();if(!c)return;
+ $("timeInfo").textContent=`Clip position: ${fmt(preview.currentTime)}s / ${fmt(c.end)}s`;
 }
-$("videoFiles").onchange=e=>{
-[...e.target.files].forEach(file=>{
-if(!file.type.startsWith("video/"))return;
-const url=URL.createObjectURL(file);
-const c={url,name:file.name,start:0,end:0,duration:0,speed:1,transition:"cut",transitionDuration:.7};
-const temp=document.createElement("video");temp.preload="metadata";temp.src=url;
-temp.onloadedmetadata=()=>{
-c.duration=temp.duration;c.end=temp.duration;
-if(selected<0){selected=clips.indexOf(c);selectClip(selected)}
-renderClips();
-};
-clips.push(c);
-});
-renderClips();e.target.value="";
-};
-$("saveClip").onclick=()=>{
-const c=currentClip();if(!c)return alert("Select a clip first.");
-const s=Number($("trimStart").value),e=Number($("trimEnd").value);
-if(!Number.isFinite(s)||!Number.isFinite(e)||s<0||e>c.duration||e<=s)return alert("Enter valid trim times.");
-c.start=s;c.end=e;c.speed=Number($("speed").value);
-c.transition=$("transition").value;c.transitionDuration=Math.max(.1,Math.min(3,Number($("transitionDuration").value)||.7));
-renderClips();selectClip(selected);status("Clip settings applied.");
-};
-$("clearClips").onclick=()=>{
-stopPreview();clips.forEach(c=>URL.revokeObjectURL(c.url));clips=[];selected=-1;
-video.removeAttribute("src");video.load();renderClips();drawFrame();
-$("selectedName").textContent="Select a clip from your timeline.";
-};
-$("addText").onclick=()=>{
-const s=Number($("textStart").value),e=Number($("textEnd").value);
-if(s<0||e<=s)return alert("Text end time must be greater than its start time.");
-textOverlay={text:$("overlayText").value,color:$("textColor").value,size:Math.max(12,Math.min(150,Number($("textSize").value)||54)),position:$("textPosition").value,animation:$("textAnimation").value,start:s,end:e};
-drawFrame();status("Text and timing updated.");
-};
-$("removeText").onclick=()=>{textOverlay.text="";drawFrame()};
-$("aspect").onchange=resizeCanvas;
-["fit","filter","brightness","contrast"].forEach(id=>$(id).addEventListener("input",()=>{
-$("brightnessValue").textContent=$("brightness").value+"%";
-$("contrastValue").textContent=$("contrast").value+"%";drawFrame();
-}));
-$("musicFile").onchange=e=>{
-const f=e.target.files[0];if(!f)return;
-if(musicURL)URL.revokeObjectURL(musicURL);
-musicURL=URL.createObjectURL(f);
-if(!music)music=new Audio();
-music.src=musicURL;music.loop=true;music.load();status("Background music loaded.");
-};
-$("removeMusic").onclick=()=>{
-if(music){music.pause();music.src=""}
-if(musicURL)URL.revokeObjectURL(musicURL);
-music=null;musicURL=null;$("musicFile").value="";status("Music removed.");
-};
-function updateVolumeLabels(){
-$("musicValue").textContent=$("musicVolume").value+"%";
-$("videoValue").textContent=$("videoVolume").value+"%";
-}
-$("musicVolume").oninput=updateVolumeLabels;
-$("videoVolume").oninput=updateVolumeLabels;
 
-function stopPreview(){
-playing=false;playToken++;video.pause();if(music)music.pause();drawFrame();progressWidth(0);
+function renderTexts(){
+ $("textList").innerHTML=texts.map((t,i)=>`
+ <div class="textitem ${i===selectedText?"active":""}">
+ <strong>${esc(t.text)}</strong><div class="small">${fmt(t.start)}s – ${fmt(t.end)}s</div>
+ <button class="secondary" onclick="selectText(${i})">Select</button>
+ </div>`).join("")||'<p class="small">No text overlays yet.</p>';
 }
-$("pauseBtn").onclick=()=>{playing=false;playToken++;video.pause();if(music)music.pause();status("Preview paused.");drawFrame()};
-$("stopBtn").onclick=()=>{stopPreview();status("Preview stopped.")};
-$("playBtn").onclick=async()=>{
-if(!clips.length)return alert("Add video clips first.");
-if(playing)return;
-playing=true;const token=++playToken;
-let global=0;
-if(music){music.currentTime=0;music.play().catch(()=>{})}
-for(let i=0;i<clips.length&&playing&&token===playToken;i++){
-const c=clips[i];selected=i;renderClips();
-video.pause();video.src=c.url;video.load();
-await new Promise(resolve=>{
-video.onloadedmetadata=()=>{video.currentTime=c.start};
-video.onseeked=async()=>{
-video.playbackRate=c.speed;video.volume=Number($("videoVolume").value)/100;
-try{await video.play();resolve()}catch(e){resolve()}
+function selectText(i){
+ selectedText=i;const t=texts[i];if(!t)return;
+ $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;
+ $("textX").value=t.x;$("textY").value=t.y;$("textStart").value=t.start;$("textEnd").value=t.end;
+ $("textAnimation").value=t.animation;renderTexts();
+}
+function readText(){
+ return {text:$("textInput").value.trim(),color:$("textColor").value,size:Number($("textSize").value),
+ x:Number($("textX").value),y:Number($("textY").value),start:Number($("textStart").value),
+ end:Number($("textEnd").value),animation:$("textAnimation").value};
+}
+$("addText").onclick=()=>{
+ const t=readText();if(!t.text)return alert("Enter some text.");
+ if(t.start<0||t.end<=t.start)return alert("Enter a valid text start and end time.");
+ texts.push(t);selectedText=texts.length-1;renderTexts();updatePreviewText();
 };
-video.onerror=resolve;
-});
-if(!playing||token!==playToken)break;
-const duration=(c.end-c.start)/c.speed;
-const start=performance.now();
-await new Promise(resolve=>{
-function tick(){
-if(!playing||token!==playToken){resolve();return}
-const elapsed=(performance.now()-start)/1000;
-const t=Math.min(c.end,c.start+elapsed*c.speed);
-if(video.currentTime<t-.15)video.currentTime=t;
-const fade=c.transition==="fade"?Math.min(1,elapsed/c.transitionDuration):1;
-drawFrame(global+elapsed,fade);
-progressWidth((global+elapsed)/totalDuration()*100);
-if(elapsed>=duration||video.ended){video.pause();resolve();return}
-requestAnimationFrame(tick);
-}
-tick();
-});
-global+=duration;
-}
-if(token===playToken){playing=false;if(music)music.pause();progressWidth(100);status("Preview finished.");drawFrame(global)}
+$("updateText").onclick=()=>{
+ if(selectedText<0)return alert("Select a text overlay first.");
+ const t=readText();if(!t.text||t.end<=t.start)return alert("Check your text and timing.");
+ texts[selectedText]=t;renderTexts();updatePreviewText();
 };
+$("deleteText").onclick=()=>{
+ if(selectedText<0)return;
+ texts.splice(selectedText,1);selectedText=-1;renderTexts();updatePreviewText();
+};
+function timelineAtPreview(){
+ let t=0;for(let i=0;i<selected;i++)t+=durationOf(clips[i]);
+ const c=selectedClip();return t+(preview.currentTime-(c?.start||0))/(c?.speed||1);
+}
+function updatePreviewText(){
+ const t=timelineAtPreview();
+ const active=texts.filter(x=>t>=x.start&&t<=x.end);
+ $("previewText").innerHTML=active.map(x=>`<div style="position:absolute;left:${x.x*100}%;top:${x.y*100}%;transform:translate(-50%,-50%);color:${x.color};font-size:${Math.min(x.size,80)}px;font-weight:bold;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere">${esc(x.text)}</div>`).join("");
+}
+preview.addEventListener("timeupdate",updatePreviewText);
+
+$("musicFile").onchange=e=>{
+ if(musicURL)URL.revokeObjectURL(musicURL);
+ if(e.target.files[0])musicURL=URL.createObjectURL(e.target.files[0]);
+};
+function canvasSize(){
+ const c=clips[0];let w=1280,h=720;
+ if(c){
+  const v=document.createElement("video");v.src=c.url;
+  // Default output is 16:9 unless original aspect is selected.
+ }
+ const a=$("aspect").value;
+ if(a==="9:16"){w=720;h=1280}
+ else if(a==="1:1"){w=1080;h=1080}
+ else if(a==="4:5"){w=864;h=1080}
+ else if(a==="original"&&preview.videoWidth){w=preview.videoWidth;h=preview.videoHeight}
+ return [w,h];
+}
+function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress){
+ ctx.save();ctx.globalAlpha=alpha;ctx.filter=filter==="none"?"none":filter;
+ let scale=fit==="cover"?Math.max(w/v.videoWidth,h/v.videoHeight):Math.min(w/v.videoWidth,h/v.videoHeight);
+ let dw=v.videoWidth*scale,dh=v.videoHeight*scale;
+ let x=(w-dw)/2,y=(h-dh)/2;
+ if(transition==="zoom"){let z=1+.12*(1-progress);dw*=z;dh*=z;x=(w-dw)/2;y=(h-dh)/2}
+ if(transition==="slide")x+=(1-progress)*w;
+ ctx.drawImage(v,x,y,dw,dh);
+ ctx.restore();
+}
+function drawOverlayText(ctx,t,time,w,h){
+ if(time<t.start||time>t.end)return;
+ let alpha=1,scale=1,offset=0;
+ const elapsed=time-t.start;
+ if(t.animation==="fade")alpha=Math.min(1,elapsed/.6);
+ if(t.animation==="zoom")scale=Math.min(1,Math.max(.1,elapsed/.6));
+ if(t.animation==="slide")offset=(1-Math.min(1,elapsed/.6))*50;
+ ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=t.color;ctx.font=`bold ${t.size}px Arial`;
+ ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor="#000";ctx.shadowBlur=5;
+ ctx.translate(w*t.x,h*t.y+offset);ctx.scale(scale,scale);
+ const words=t.text.split("\n");words.forEach((line,i)=>ctx.fillText(line,0,(i-(words.length-1)/2)*t.size*1.25,w*.9));
+ ctx.restore();
+}
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
 async function exportVideo(){
-if(exporting)return;
-if(!clips.length)return alert("Add video clips first.");
-if(!window.MediaRecorder||!canvas.captureStream)return alert("WebM export is not supported in this browser. Try the latest Chrome or Edge.");
-const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(x=>MediaRecorder.isTypeSupported(x));
-if(!mime)return alert("This browser does not support WebM recording.");
-exporting=true;$("exportBtn").disabled=true;stopPreview();
-let recorder,stream,chunks=[];
-try{
-exportStatus("Preparing export...");
-const canvasStream=canvas.captureStream(30);
-stream=new MediaStream([...canvasStream.getVideoTracks()]);
-const audioTracks=[];
-let audioContext=null,musicSource=null,videoSource=null,musicGain=null,videoGain=null,destination=null;
-if(music){
-try{
-audioContext=new(window.AudioContext||window.webkitAudioContext)();
-destination=audioContext.createMediaStreamDestination();
-musicSource=audioContext.createMediaElementSource(music);
-musicGain=audioContext.createGain();musicSource.connect(musicGain);musicGain.connect(destination);
-videoSource=audioContext.createMediaElementSource(video);
-videoGain=audioContext.createGain();videoSource.connect(videoGain);videoGain.connect(destination);
-destination.stream.getAudioTracks().forEach(t=>audioTracks.push(t));
-if(audioContext.state==="suspended")await audioContext.resume();
-}catch(err){console.warn("Audio mixing unavailable",err)}
-}
-audioTracks.forEach(t=>stream.addTrack(t));
-const bitrate=$("quality").value==="high"?6000000:$("quality").value==="small"?1200000:3000000;
-recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:bitrate});
-recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-const finished=new Promise(resolve=>recorder.onstop=resolve);
-recorder.start(500);
-const total=totalDuration();let global=0;
-if(music){music.currentTime=0;music.loop=true;music.volume=audioContext?1:Number($("musicVolume").value)/100;await music.play().catch(()=>{})}
-for(let i=0;i<clips.length;i++){
-if(!exporting)break;
-const c=clips[i];exportStatus("Exporting clip "+(i+1)+" of "+clips.length+"...");
-video.pause();video.src=c.url;video.load();
-await new Promise((resolve,reject)=>{
-video.onloadedmetadata=()=>{video.currentTime=c.start};
-video.onseeked=async()=>{
-try{
-video.playbackRate=c.speed;video.volume=Number($("videoVolume").value)/100;
-if(audioContext&&videoGain)videoGain.gain.value=Number($("videoVolume").value)/100;
-await video.play();resolve();
-}catch(err){reject(err)}
-};
-video.onerror=()=>reject(new Error("Unable to load "+c.name));
-});
-const duration=(c.end-c.start)/c.speed,started=performance.now();
-await new Promise(resolve=>{
-function frame(){
-if(!exporting){resolve();return}
-const elapsed=(performance.now()-started)/1000;
-const t=Math.min(c.end,c.start+elapsed*c.speed);
-if(video.currentTime<t-.15)video.currentTime=t;
-const fade=c.transition==="fade"?Math.min(1,elapsed/c.transitionDuration):1;
-const timeline=global+elapsed;
-drawFrame(timeline,fade);
-if(music){
-const fadeIn=Math.max(0,Number($("fadeIn").value)||0);
-const fadeOut=Math.max(0,Number($("fadeOut").value)||0);
-let vol=Number($("musicVolume").value)/100;
-if(fadeIn>0&&timeline<fadeIn)vol*=timeline/fadeIn;
-if(fadeOut>0&&timeline>total-fadeOut)vol*=Math.max(0,(total-timeline)/fadeOut);
-if(audioContext&&musicGain)musicGain.gain.value=vol;
-else music.volume=vol;
-}
-progressWidth((global+elapsed)/total*100);
-if(elapsed>=duration||video.ended){video.pause();resolve();return}
-requestAnimationFrame(frame);
-}
-frame();
-});
-global+=duration;
-}
-if(music)music.pause();
-if(recorder.state!=="inactive")recorder.stop();
-await finished;
-if(chunks.length){
-const blob=new Blob(chunks,{type:mime}),url=URL.createObjectURL(blob);
-const a=document.createElement("a");a.href=url;a.download="pikora-video.webm";a.click();
-setTimeout(()=>URL.revokeObjectURL(url),60000);
-exportStatus("Export complete! Your WebM video has been downloaded.");
-progressWidth(100);
-}else exportStatus("No video data was recorded.");
-if(audioContext)await audioContext.close().catch(()=>{});
-}catch(err){
-if(recorder&&recorder.state!=="inactive")recorder.stop();
-exportStatus("Export error: "+err.message);
-}finally{
-if(music)music.pause();
-if(stream)stream.getTracks().forEach(t=>t.stop());
-exporting=false;$("exportBtn").disabled=false;drawFrame();
-}
+ if(exporting)return;
+ if(!clips.length)return alert("Add at least one video clip.");
+ for(const c of clips){if(c.end<=c.start)return alert("One clip has invalid trim settings.")}
+ const [w,h]=canvasSize();
+ const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+ const ctx=canvas.getContext("2d");
+ const stream=canvas.captureStream(30);
+ let audioCtx=null,dest=null,musicEl=null,musicSource=null;
+ const audioEls=[];
+ try{
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  dest=audioCtx.createMediaStreamDestination();
+  for(const c of clips){
+   const el=document.createElement("video");el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;
+   el.playsInline=true;await new Promise((resolve,reject)=>{el.onloadedmetadata=resolve;el.onerror=reject;el.load()});
+   const src=audioCtx.createMediaElementSource(el);const gain=audioCtx.createGain();gain.gain.value=Number($("videoVolume").value);
+   src.connect(gain);gain.connect(dest);audioEls.push({el,gain});
+  }
+  if(musicURL){
+   musicEl=new Audio(musicURL);musicEl.loop=false;
+   await new Promise(resolve=>{musicEl.onloadedmetadata=resolve;musicEl.onerror=resolve;musicEl.load()});
+   musicSource=audioCtx.createMediaElementSource(musicEl);
+   const mg=audioCtx.createGain();musicSource.connect(mg);mg.connect(dest);
+   musicEl.volume=1;musicEl._gain=mg;
+  }
+  for(const tr of dest.stream.getAudioTracks())stream.addTrack(tr);
+ }catch(err){console.warn("Audio setup issue",err)}
+ const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
+ if(!mime){alert("This browser does not support WebM recording.");return}
+ let recorder;
+ try{recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000})}
+ catch(e){alert("Could not start export: "+e.message);return}
+ const chunks=[];
+ recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ const done=new Promise(resolve=>recorder.onstop=resolve);
+ exporting=true;$("exportBtn").disabled=true;$("status").textContent="Preparing export...";
+ $("downloadLink").style.display="none";$("progressBar").style.width="0%";
+ const total=totalDuration();let elapsed=0;
+ try{
+  if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();
+  if(musicEl){musicEl.currentTime=0;musicEl.volume=1;await musicEl.play().catch(()=>{});}
+  recorder.start(250);
+  for(let i=0;i<clips.length;i++){
+   const c=clips[i],v=audioEls[i]?.el||document.createElement("video");
+   if(!audioEls[i]){v.src=c.url;v.muted=true;await new Promise(resolve=>{v.onloadedmetadata=resolve;v.load()})}
+   v.muted=!audioEls[i];v.volume=1;v.playbackRate=c.speed;
+   v.currentTime=c.start;
+   await new Promise(resolve=>{if(v.readyState>=2)resolve();else v.onseeked=resolve});
+   if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value);
+   await v.play().catch(()=>{});
+   const clipDur=durationOf(c),transition=c.transition;
+   const transDur=transition==="cut"?0:Math.min(c.transitionDuration,clipDur/2);
+   const startTime=performance.now();
+   while((v.currentTime<c.end-.025)&&!v.ended){
+    const local=(v.currentTime-c.start)/c.speed;
+    const progress=transDur?Math.min(1,local/transDur):1;
+    let alpha=1;
+    if(transDur&&local<transDur&&transition==="fade")alpha=progress;
+    let fade=c.fadeOut>0?Math.min(1,Math.max(0,(clipDur-local)/c.fadeOut)):1;
+    if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value)*fade;
+    if(musicEl&&musicEl._gain){
+     const mi=Number($("musicFadeIn").value),mo=Number($("musicFadeOut").value);
+     const mg=Number($("musicVolume").value);
+     let ma=mi>0?Math.min(1,elapsed/mi):1;
+     if(mo>0)ma=Math.min(ma,Math.max(0,(total-elapsed)/mo));
+     musicEl._gain.gain.value=mg*ma;
+    }
+    ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
+    drawVideo(ctx,v,w,h,$("fit").value,c.filter,alpha,transition,progress);
+    for(const t of texts)drawOverlayText(ctx,t,elapsed+local,w,h);
+    await wait(30);
+    elapsed=clips.slice(0,i).reduce((s,x)=>s+durationOf(x),0)+local;
+    $("progressBar").style.width=Math.min(99,elapsed/total*100)+"%";
+    $("status").textContent=`Exporting clip ${i+1} of ${clips.length} · ${fmt(elapsed)} / ${fmt(total)} seconds`;
+   }
+   v.pause();if(audioEls[i])audioEls[i].gain.gain.value=0;
+   elapsed=clips.slice(0,i+1).reduce((s,x)=>s+durationOf(x),0);
+  }
+  recorder.stop();await done;
+  const blob=new Blob(chunks,{type:"video/webm"});
+  const url=URL.createObjectURL(blob);
+  $("downloadLink").href=url;$("downloadLink").style.display="inline-block";
+  $("downloadLink").textContent="⬇ Download your finished video";
+  $("progressBar").style.width="100%";
+  $("status").textContent="Export completed successfully! Your WebM video is ready.";
+ }catch(err){
+  if(recorder.state!=="inactive")recorder.stop();
+  await done;
+  $("status").textContent="Export error: "+err.message;
+ }finally{
+  exporting=false;$("exportBtn").disabled=false;
+  if(musicEl)musicEl.pause();
+  audioEls.forEach(x=>{x.el.pause();x.el.remove()});
+  if(audioCtx)audioCtx.close().catch(()=>{});
+  stream.getTracks().forEach(t=>t.stop());
+ }
 }
 $("exportBtn").onclick=exportVideo;
-$("resetAll").onclick=()=>{
-if(!confirm("Reset the entire editor?"))return;
-stopPreview();clips.forEach(c=>URL.revokeObjectURL(c.url));clips=[];selected=-1;
-if(music)music.pause();if(musicURL)URL.revokeObjectURL(musicURL);
-music=null;musicURL=null;textOverlay={text:"",color:"#ffffff",size:54,position:"center",animation:"none",start:0,end:9999};
-$("videoFiles").value="";$("musicFile").value="";$("overlayText").value="";
-$("clipList").innerHTML="";$("selectedName").textContent="Select a clip from your timeline.";
-$("exportStatus").textContent="";progressWidth(0);drawFrame();status("Editor reset.");
-};
-resizeCanvas();updateVolumeLabels();drawFrame();
+renderClips();renderTexts();
 </script>
 </body>
 </html>
