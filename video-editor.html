@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Free Video Editor | Pikora</title>
-<meta name="description" content="Free browser-based video editor with multitrack timeline, audio waveform, keyframe text animation, trimming, music and WebM export.">
+<meta name="description" content="Free browser-based video editor with multitrack timeline, audio waveform, video and text keyframe animation, trimming, music and WebM export.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#f4f5ff;font-family:Arial,sans-serif}
@@ -31,8 +31,9 @@ label{display:block;font-size:12px;color:#c5cce0;margin-bottom:3px}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .row>*{flex:1}
 .small{font-size:12px;color:#9ba8c4}
-video{width:100%;max-height:470px;background:#05070d;border-radius:10px;display:block}
-#previewWrap{position:relative}
+video{width:100%;max-height:470px;background:#05070d;border-radius:10px;display:block;object-fit:contain}
+#previewWrap{position:relative;overflow:hidden;background:#05070d;border-radius:10px}
+#preview{transform-origin:center center;will-change:transform,opacity}
 #previewText{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 #previewText .preview-overlay{position:absolute;transform:translate(-50%,-50%);font-weight:bold;text-align:center;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere;white-space:pre-wrap}
 .clip{padding:12px;border:1px solid #344365;border-radius:9px;margin-bottom:9px;background:#10182d}
@@ -54,8 +55,6 @@ a{color:#b9a5ff}
 .keyframe-grid input,.keyframe-grid select{margin-bottom:8px}
 .keyframe-note{font-size:11px;color:#91a2c3;line-height:1.5}
 .keyframe-badge{display:inline-block;background:#153c4b;color:#a5f3fc;border-radius:5px;padding:4px 7px;font-size:10px;margin-bottom:8px}
-
-/* Timeline */
 .timeline-shell{background:#0d1529;border:1px solid #344365;border-radius:12px;padding:12px;overflow:hidden}
 .timeline-top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
 .timeline-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:8px}
@@ -88,6 +87,8 @@ a{color:#b9a5ff}
 .trim-playhead{position:absolute;top:-5px;height:30px;width:3px;background:#fff;z-index:2;pointer-events:none}
 .trim-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .trim-controls input{margin-bottom:4px}
+.preset-row{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.preset-row button{flex:1;min-width:120px}
 @media(max-width:800px){
  .layout{grid-template-columns:1fr}
  header{padding:15px}
@@ -105,7 +106,7 @@ a{color:#b9a5ff}
 
 <main>
 <h1>Free Video Editor</h1>
-<p class="sub">Edit multiple clips with separate video and audio tracks, waveform previews, keyframe text animation, trimming, transitions and music. Editing happens in your browser.</p>
+<p class="sub">Edit multiple clips with separate video and audio tracks, waveform previews, animated video and text keyframes, trimming, transitions and music. Editing happens in your browser.</p>
 
 <div class="layout">
 <section>
@@ -162,21 +163,14 @@ a{color:#b9a5ff}
 <div class="trim-visual">
 <h3>Visual Trim Controls</h3>
 <div class="trim-controls">
-<div>
-<label>Trim start: <span id="startReadout">0.0s</span></label>
-<input type="range" id="startRange" min="0" max="1" step=".1" value="0">
-</div>
-<div>
-<label>Trim end: <span id="endReadout">0.0s</span></label>
-<input type="range" id="endRange" min="0" max="1" step=".1" value="1">
-</div>
+<div><label>Trim start: <span id="startReadout">0.0s</span></label><input type="range" id="startRange" min="0" max="1" step=".1" value="0"></div>
+<div><label>Trim end: <span id="endReadout">0.0s</span></label><input type="range" id="endRange" min="0" max="1" step=".1" value="1"></div>
 </div>
 <div class="trim-track">
 <div class="trim-selected" id="trimSelected"></div>
 <div class="trim-playhead" id="trimPlayhead" style="left:0"></div>
 </div>
 <p class="small">Use the sliders to adjust the selected clip's start and end points.</p>
-</div>
 </div>
 
 <div class="panel">
@@ -195,27 +189,48 @@ a{color:#b9a5ff}
 <div class="clipgrid">
 <div><label>Trim start (seconds)</label><input type="number" id="trimStart" min="0" step=".1" value="0"></div>
 <div><label>Trim end (seconds)</label><input type="number" id="trimEnd" min="0" step=".1" value="0"></div>
-<div><label>Playback speed</label>
-<select id="speed"><option value=".5">0.5x</option><option value=".75">0.75x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div>
-<div><label>Video filter</label>
-<select id="filter">
-<option value="none">Original</option><option value="grayscale(1)">Black & White</option>
-<option value="sepia(.7) contrast(1.1)">Vintage</option>
-<option value="contrast(1.2) saturate(1.2)">Cinematic</option>
-<option value="saturate(1.8)">Vivid</option><option value="sepia(.25) saturate(1.3)">Warm</option>
-<option value="contrast(1.6)">High Contrast</option><option value="blur(2px)">Blur</option>
+<div><label>Playback speed</label><select id="speed"><option value=".5">0.5x</option><option value=".75">0.75x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div>
+<div><label>Video filter</label><select id="filter">
+<option value="none">Original</option><option value="grayscale(1)">Black & White</option><option value="sepia(.7) contrast(1.1)">Vintage</option><option value="contrast(1.2) saturate(1.2)">Cinematic</option><option value="saturate(1.8)">Vivid</option><option value="sepia(.25) saturate(1.3)">Warm</option><option value="contrast(1.6)">High Contrast</option><option value="blur(2px)">Blur</option>
 </select></div>
 </div>
 <label>Clip transition into this clip</label>
-<select id="transition">
-<option value="cut">Cut</option><option value="fade">Fade from black</option>
-<option value="zoom">Zoom in</option><option value="slide">Slide in</option>
-<option value="wipe">Wipe in</option>
-</select>
-<label>Transition duration (seconds)</label>
-<input type="number" id="transitionDuration" value="1" min=".1" max="5" step=".1">
-<label>Fade out at end of clip (seconds)</label>
-<input type="number" id="fadeOut" value="0" min="0" max="5" step=".1">
+<select id="transition"><option value="cut">Cut</option><option value="fade">Fade from black</option><option value="zoom">Zoom in</option><option value="slide">Slide in</option><option value="wipe">Wipe in</option></select>
+<label>Transition duration (seconds)</label><input type="number" id="transitionDuration" value="1" min=".1" max="5" step=".1">
+<label>Fade out at end of clip (seconds)</label><input type="number" id="fadeOut" value="0" min="0" max="5" step=".1">
+
+<div class="keyframe-box">
+<span class="keyframe-badge">VIDEO KEYFRAME 1 · START</span>
+<h3>Starting video appearance</h3>
+<div class="keyframe-grid">
+<div><label>Horizontal position (%)</label><input type="number" id="videoX1" min="-100" max="100" value="0"></div>
+<div><label>Vertical position (%)</label><input type="number" id="videoY1" min="-100" max="100" value="0"></div>
+<div><label>Scale</label><input type="number" id="videoScale1" min=".1" max="3" step=".1" value="1"></div>
+<div><label>Rotation (degrees)</label><input type="number" id="videoRotation1" min="-360" max="360" value="0"></div>
+<div><label>Opacity (%)</label><input type="number" id="videoOpacity1" min="0" max="100" value="100"></div>
+</div>
+</div>
+<div class="keyframe-box">
+<span class="keyframe-badge">VIDEO KEYFRAME 2 · END</span>
+<h3>Ending video appearance</h3>
+<div class="keyframe-grid">
+<div><label>Horizontal position (%)</label><input type="number" id="videoX2" min="-100" max="100" value="0"></div>
+<div><label>Vertical position (%)</label><input type="number" id="videoY2" min="-100" max="100" value="0"></div>
+<div><label>Scale</label><input type="number" id="videoScale2" min=".1" max="3" step=".1" value="1"></div>
+<div><label>Rotation (degrees)</label><input type="number" id="videoRotation2" min="-360" max="360" value="0"></div>
+<div><label>Opacity (%)</label><input type="number" id="videoOpacity2" min="0" max="100" value="100"></div>
+</div>
+</div>
+<label>Video animation easing</label>
+<select id="videoEasing"><option value="linear">Linear</option><option value="ease">Smooth ease</option><option value="ease-in">Ease in</option><option value="ease-out">Ease out</option></select>
+<div class="preset-row">
+<button class="secondary" id="videoPresetMove">Move Right</button>
+<button class="secondary" id="videoPresetZoom">Zoom In</button>
+<button class="secondary" id="videoPresetRotate">Rotate In</button>
+<button class="secondary" id="videoPresetFade">Fade In</button>
+<button class="secondary" id="videoPresetCombo">Dynamic Combo</button>
+</div>
+<p class="keyframe-note">The first keyframe controls the clip's appearance at its trimmed start. The second controls its appearance at its trimmed end. Position is measured as a percentage of the video frame. Presets fill in the controls; press Apply Clip Settings to save them.</p>
 <div class="row">
 <button id="applyClip">Apply Clip Settings</button>
 <button class="secondary" id="splitClip">Split at Preview Position</button>
@@ -225,69 +240,41 @@ a{color:#b9a5ff}
 
 <div class="panel">
 <h2>2. Text Overlays & Keyframe Animation</h2>
-<label>Text to add</label>
-<input id="textInput" placeholder="Type your text here">
+<label>Text to add</label><input id="textInput" placeholder="Type your text here">
 <div class="clipgrid">
 <div><label>Text colour</label><input type="color" id="textColor" value="#ffffff"></div>
 <div><label>Font size (pixels)</label><input type="number" id="textSize" value="42" min="10" max="150"></div>
 <div><label>Start time (whole video seconds)</label><input type="number" id="textStart" value="0" min="0" step=".1"></div>
 <div><label>End time (whole video seconds)</label><input type="number" id="textEnd" value="10" min=".1" step=".1"></div>
 </div>
-
 <div class="keyframe-box">
-<span class="keyframe-badge">KEYFRAME 1 · START</span>
-<h3>Starting appearance</h3>
+<span class="keyframe-badge">KEYFRAME 1 · START</span><h3>Starting appearance</h3>
 <div class="keyframe-grid">
-<div><label>Starting horizontal position</label>
-<select id="textX"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
-<div><label>Starting vertical position</label>
-<select id="textY"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
-<div><label>Starting scale</label>
-<input type="number" id="textScaleStart" min=".1" max="3" step=".1" value="1"></div>
-<div><label>Starting opacity (%)</label>
-<input type="number" id="textOpacityStart" min="0" max="100" value="0"></div>
+<div><label>Starting horizontal position</label><select id="textX"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
+<div><label>Starting vertical position</label><select id="textY"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
+<div><label>Starting scale</label><input type="number" id="textScaleStart" min=".1" max="3" step=".1" value="1"></div>
+<div><label>Starting opacity (%)</label><input type="number" id="textOpacityStart" min="0" max="100" value="0"></div>
 </div>
 </div>
-
 <div class="keyframe-box">
-<span class="keyframe-badge">KEYFRAME 2 · END</span>
-<h3>Ending appearance</h3>
+<span class="keyframe-badge">KEYFRAME 2 · END</span><h3>Ending appearance</h3>
 <div class="keyframe-grid">
-<div><label>Ending horizontal position</label>
-<select id="textXEnd"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
-<div><label>Ending vertical position</label>
-<select id="textYEnd"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
-<div><label>Ending scale</label>
-<input type="number" id="textScaleEnd" min=".1" max="3" step=".1" value="1"></div>
-<div><label>Ending opacity (%)</label>
-<input type="number" id="textOpacityEnd" min="0" max="100" value="100"></div>
+<div><label>Ending horizontal position</label><select id="textXEnd"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
+<div><label>Ending vertical position</label><select id="textYEnd"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
+<div><label>Ending scale</label><input type="number" id="textScaleEnd" min=".1" max="3" step=".1" value="1"></div>
+<div><label>Ending opacity (%)</label><input type="number" id="textOpacityEnd" min="0" max="100" value="100"></div>
 </div>
 </div>
-
 <label>Animation interpolation</label>
-<select id="textEasing">
-<option value="linear">Linear</option>
-<option value="ease">Smooth ease</option>
-<option value="ease-in">Ease in</option>
-<option value="ease-out">Ease out</option>
-</select>
+<select id="textEasing"><option value="linear">Linear</option><option value="ease">Smooth ease</option><option value="ease-in">Ease in</option><option value="ease-out">Ease out</option></select>
 <label>Additional entrance effect</label>
-<select id="textAnimation">
-<option value="none">None</option>
-<option value="fade">Fade entrance</option>
-<option value="zoom">Zoom entrance</option>
-<option value="slide">Slide entrance</option>
-</select>
-<p class="keyframe-note">Keyframe 1 defines how the text looks when it first appears. Keyframe 2 defines its appearance when the text timing ends. Pikora smoothly animates the position, size and opacity between these settings.</p>
+<select id="textAnimation"><option value="none">None</option><option value="fade">Fade entrance</option><option value="zoom">Zoom entrance</option><option value="slide">Slide entrance</option></select>
+<p class="keyframe-note">Keyframe 1 defines how the text looks when it first appears. Keyframe 2 defines its appearance when the text timing ends.</p>
 <div class="row">
-<button id="addText">Add Animated Text</button>
-<button class="secondary" id="updateText">Update Selected</button>
-<button class="danger" id="deleteText">Delete Selected</button>
+<button id="addText">Add Animated Text</button><button class="secondary" id="updateText">Update Selected</button><button class="danger" id="deleteText">Delete Selected</button>
 </div>
 <div class="row" style="margin-top:8px">
-<button class="secondary" id="textPresetMove">Preset: Move Across</button>
-<button class="secondary" id="textPresetZoom">Preset: Zoom In</button>
-<button class="secondary" id="textPresetFade">Preset: Fade In</button>
+<button class="secondary" id="textPresetMove">Preset: Move Across</button><button class="secondary" id="textPresetZoom">Preset: Zoom In</button><button class="secondary" id="textPresetFade">Preset: Fade In</button>
 </div>
 <div id="textList" style="margin-top:12px"></div>
 <p class="small">Text timing refers to the complete exported video timeline. Preview and export both use the keyframe settings.</p>
@@ -297,39 +284,26 @@ a{color:#b9a5ff}
 <aside>
 <div class="panel">
 <h2>3. Background Music</h2>
-<label>Choose music or audio</label>
-<input type="file" id="musicFile" accept="audio/*">
-<label>Music volume</label>
-<input type="range" id="musicVolume" min="0" max="1" step=".05" value=".35">
-<label>Music fade in (seconds)</label>
-<input type="number" id="musicFadeIn" min="0" max="20" step=".5" value="1">
-<label>Music fade out (seconds)</label>
-<input type="number" id="musicFadeOut" min="0" max="20" step=".5" value="2">
-<label>Original video volume</label>
-<input type="range" id="videoVolume" min="0" max="1" step=".05" value="1">
+<label>Choose music or audio</label><input type="file" id="musicFile" accept="audio/*">
+<label>Music volume</label><input type="range" id="musicVolume" min="0" max="1" step=".05" value=".35">
+<label>Music fade in (seconds)</label><input type="number" id="musicFadeIn" min="0" max="20" step=".5" value="1">
+<label>Music fade out (seconds)</label><input type="number" id="musicFadeOut" min="0" max="20" step=".5" value="2">
+<label>Original video volume</label><input type="range" id="videoVolume" min="0" max="1" step=".05" value="1">
 <p class="small" id="audioInfo">No background music selected.</p>
 <button class="secondary" id="removeMusic" type="button">Remove Background Music</button>
 </div>
-
 <div class="panel">
 <h2>4. Export Settings</h2>
 <label>Video aspect ratio</label>
-<select id="aspect">
-<option value="original">Original</option><option value="16:9">16:9 Landscape</option>
-<option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option>
-<option value="4:5">4:5 Social</option>
-</select>
-<label>Video positioning</label>
-<select id="fit"><option value="contain">Fit (show full video)</option><option value="cover">Fill (crop edges)</option></select>
-<label>Export quality</label>
-<select id="quality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Very High</option></select>
+<select id="aspect"><option value="original">Original</option><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Social</option></select>
+<label>Video positioning</label><select id="fit"><option value="contain">Fit (show full video)</option><option value="cover">Fill (crop edges)</option></select>
+<label>Export quality</label><select id="quality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Very High</option></select>
 <button id="exportBtn" style="width:100%;margin-top:8px">Export Video (WebM)</button>
 <div class="progress"><div id="progressBar"></div></div>
 <div id="status">Ready to edit.</div>
 <p class="small">Export takes approximately the length of your finished video. Keep this tab open until export finishes. WebM format is used where supported by your browser.</p>
 <a id="downloadLink" style="display:none" download="pikora-video.webm">Download your video</a>
 </div>
-
 <div class="panel">
 <h2>5. Editing Tips</h2>
 <p class="small">• Drag timeline clips to reorder them.</p>
@@ -339,7 +313,7 @@ a{color:#b9a5ff}
 <p class="small">• Select a thumbnail to preview and edit that clip.</p>
 <p class="small">• Use the visual trim sliders or time fields.</p>
 <p class="small">• Split the clip at the current preview position.</p>
-<p class="small">• Animate text between two keyframes.</p>
+<p class="small">• Animate text and video clips between two keyframes.</p>
 <p class="small">• Export is processed on your device; large videos may need more memory.</p>
 </div>
 </aside>
@@ -347,12 +321,12 @@ a{color:#b9a5ff}
 </main>
 
 <script>
+"use strict";
 const $=id=>document.getElementById(id);
 const preview=$("preview");
 let clips=[],selected=-1,texts=[],selectedText=-1,musicURL=null;
 let musicFileName="",musicDuration=0,musicWaveData=null;
-let exporting=false,dragIndex=-1,thumbJobs=new Set();
-let zoom=1;
+let exporting=false,dragIndex=-1,thumbJobs=new Set(),zoom=1;
 
 function durationOf(c){return Math.max(.1,(c.end-c.start)/c.speed)}
 function totalDuration(){return clips.reduce((s,c)=>s+durationOf(c),0)}
@@ -361,6 +335,70 @@ function fmt(n){return Number(n||0).toFixed(1)}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function timelineScale(){return 100*zoom}
+
+function defaultVideoKeys(){
+ return {x1:0,y1:0,x2:0,y2:0,scale1:1,scale2:1,rotation1:0,rotation2:0,opacity1:100,opacity2:100,easing:"linear"};
+}
+function ensureKeys(c){
+ if(!c.videoKeys)c.videoKeys=defaultVideoKeys();
+}
+function readVideoKeys(){
+ return {
+  x1:clamp(Number($("videoX1").value)||0,-100,100),
+  y1:clamp(Number($("videoY1").value)||0,-100,100),
+  x2:clamp(Number($("videoX2").value)||0,-100,100),
+  y2:clamp(Number($("videoY2").value)||0,-100,100),
+  scale1:clamp(Number($("videoScale1").value)||1,.1,3),
+  scale2:clamp(Number($("videoScale2").value)||1,.1,3),
+  rotation1:clamp(Number($("videoRotation1").value)||0,-360,360),
+  rotation2:clamp(Number($("videoRotation2").value)||0,-360,360),
+  opacity1:clamp(Number($("videoOpacity1").value),0,100),
+  opacity2:clamp(Number($("videoOpacity2").value),0,100),
+  easing:$("videoEasing").value
+ };
+}
+function loadVideoKeys(k){
+ $("videoX1").value=k.x1;$("videoY1").value=k.y1;
+ $("videoX2").value=k.x2;$("videoY2").value=k.y2;
+ $("videoScale1").value=k.scale1;$("videoScale2").value=k.scale2;
+ $("videoRotation1").value=k.rotation1;$("videoRotation2").value=k.rotation2;
+ $("videoOpacity1").value=k.opacity1;$("videoOpacity2").value=k.opacity2;
+ $("videoEasing").value=k.easing||"linear";
+}
+function videoKeyState(c,localProgress){
+ ensureKeys(c);
+ const k=c.videoKeys,p=easeProgress(localProgress,k.easing);
+ return {
+  x:k.x1+(k.x2-k.x1)*p,
+  y:k.y1+(k.y2-k.y1)*p,
+  scale:k.scale1+(k.scale2-k.scale1)*p,
+  rotation:k.rotation1+(k.rotation2-k.rotation1)*p,
+  opacity:(k.opacity1+(k.opacity2-k.opacity1)*p)/100
+ };
+}
+function applyVideoPreset(type){
+ const presets={
+  move:{x1:-35,y1:0,x2:35,y2:0,scale1:1,scale2:1,rotation1:0,rotation2:0,opacity1:100,opacity2:100},
+  zoom:{x1:0,y1:0,x2:0,y2:0,scale1:.5,scale2:1.35,rotation1:0,rotation2:0,opacity1:100,opacity2:100},
+  rotate:{x1:0,y1:0,x2:0,y2:0,scale1:1,scale2:1,rotation1:-90,rotation2:0,opacity1:100,opacity2:100},
+  fade:{x1:0,y1:0,x2:0,y2:0,scale1:1,scale2:1,rotation1:0,rotation2:0,opacity1:0,opacity2:100},
+  combo:{x1:-25,y1:12,x2:0,y2:0,scale1:.65,scale2:1,rotation1:-25,rotation2:0,opacity1:0,opacity2:100}
+ };
+ const p=presets[type];if(!p)return;
+ $("videoX1").value=p.x1;$("videoY1").value=p.y1;
+ $("videoX2").value=p.x2;$("videoY2").value=p.y2;
+ $("videoScale1").value=p.scale1;$("videoScale2").value=p.scale2;
+ $("videoRotation1").value=p.rotation1;$("videoRotation2").value=p.rotation2;
+ $("videoOpacity1").value=p.opacity1;$("videoOpacity2").value=p.opacity2;
+ $("videoEasing").value="ease";
+ updatePreviewVideo();
+ $("status").textContent="Video animation preset loaded. Press Apply Clip Settings to save it.";
+}
+$("videoPresetMove").onclick=()=>applyVideoPreset("move");
+$("videoPresetZoom").onclick=()=>applyVideoPreset("zoom");
+$("videoPresetRotate").onclick=()=>applyVideoPreset("rotate");
+$("videoPresetFade").onclick=()=>applyVideoPreset("fade");
+$("videoPresetCombo").onclick=()=>applyVideoPreset("combo");
 
 $("timelineZoom").addEventListener("input",()=>{
  zoom=Number($("timelineZoom").value)/100;
@@ -372,7 +410,7 @@ $("videoFiles").addEventListener("change",async e=>{
  const files=[...e.target.files];e.target.value="";
  for(const f of files){
   const url=URL.createObjectURL(f);
-  const c={name:f.name,url,start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,fadeOut:0,thumb:null};
+  const c={name:f.name,url,start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,fadeOut:0,thumb:null,videoKeys:defaultVideoKeys()};
   clips.push(c);await getDuration(c);
  }
  if(clips.length){selected=clips.length-1;loadSelected()}
@@ -381,8 +419,7 @@ $("videoFiles").addEventListener("change",async e=>{
 
 function getDuration(c){
  return new Promise(resolve=>{
-  const v=document.createElement("video");
-  v.preload="metadata";v.muted=true;v.src=c.url;
+  const v=document.createElement("video");v.preload="metadata";v.muted=true;v.src=c.url;
   v.onloadedmetadata=()=>{
    c.duration=Number.isFinite(v.duration)?v.duration:0;c.end=c.duration||0;
    v.removeAttribute("src");v.load();resolve();
@@ -390,12 +427,10 @@ function getDuration(c){
   v.onerror=()=>{c.duration=0;c.end=0;resolve()};
  });
 }
-
 function makeThumbnail(c){
  if(c.thumb||thumbJobs.has(c.url))return;
  thumbJobs.add(c.url);
- const v=document.createElement("video");
- v.preload="auto";v.muted=true;v.src=c.url;
+ const v=document.createElement("video");v.preload="auto";v.muted=true;v.src=c.url;
  v.onloadedmetadata=()=>{try{v.currentTime=Math.min(1,Math.max(0,v.duration*.15))}catch(e){finish()}};
  v.onseeked=()=>{
   try{
@@ -403,16 +438,14 @@ function makeThumbnail(c){
    const ctx=canvas.getContext("2d");
    const scale=Math.max(240/v.videoWidth,100/v.videoHeight);
    const w=v.videoWidth*scale,h=v.videoHeight*scale;
-   ctx.drawImage(v,(240-w)/2,(100-h)/2,w,h);
-   c.thumb=canvas.toDataURL("image/jpeg",.65);
+   ctx.drawImage(v,(240-w)/2,(100-h)/2,w,h);c.thumb=canvas.toDataURL("image/jpeg",.65);
   }catch(e){}
   finish();
  };
  v.onerror=finish;
  function finish(){thumbJobs.delete(c.url);v.removeAttribute("src");v.load();renderTimeline()}
 }
-
-function renderAll(){renderClips();renderTimeline();renderAudioTrack();renderTexts();updateTrimUI()}
+function renderAll(){renderClips();renderTimeline();renderAudioTrack();renderTexts();updateTrimUI();updatePreviewVideo()}
 
 function renderClips(){
  $("clipsList").innerHTML=clips.map((c,i)=>`
@@ -422,10 +455,8 @@ function renderClips(){
  <button class="secondary" onclick="selectClip(${i})">Select</button>
  </div>`).join("")||'<p class="small">No clips added yet.</p>';
 }
-
 function renderTimeline(){
- const track=$("timelineTrack"),ruler=$("timelineRuler");
- const total=totalDuration(),scale=timelineScale();
+ const track=$("timelineTrack"),ruler=$("timelineRuler"),total=totalDuration(),scale=timelineScale();
  $("timelineDuration").textContent=fmt(total)+" seconds";
  if(!clips.length){
   track.innerHTML='<div class="timeline-empty">Add video clips to build your timeline.</div>';
@@ -436,22 +467,18 @@ function renderTimeline(){
  track.style.width=width+"px";
  track.innerHTML=clips.map((c,i)=>`
  <div class="timeline-card ${i===selected?"active":""}" draggable="true" data-index="${i}" style="width:${widths[i]}px">
- <span class="tc-number">CLIP ${i+1}</span>
- <canvas id="thumb${i}" width="240" height="100"></canvas>
- <div class="tc-info">${esc(c.name)} · ${fmt(durationOf(c))}s</div>
- </div>`).join("");
+ <span class="tc-number">CLIP ${i+1}</span><canvas id="thumb${i}" width="240" height="100"></canvas>
+ <div class="tc-info">${esc(c.name)} · ${fmt(durationOf(c))}s</div></div>`).join("");
  clips.forEach((c,i)=>{
   if(c.thumb){
    const canvas=$("thumb"+i);
-   if(canvas){const ctx=canvas.getContext("2d");const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,240,100);img.src=c.thumb}
+   if(canvas){const ctx=canvas.getContext("2d"),img=new Image();img.onload=()=>ctx.drawImage(img,0,0,240,100);img.src=c.thumb}
   }else makeThumbnail(c);
  });
  ruler.style.width=width+"px";
- const interval=zoom>=1.4?2:zoom>=.8?5:10;
- const marks=Math.max(1,Math.ceil(total/interval));
+ const interval=zoom>=1.4?2:zoom>=.8?5:10,marks=Math.max(1,Math.ceil(total/interval));
  ruler.innerHTML=Array.from({length:marks+1},(_,i)=>{
-  const t=Math.min(i*interval,total);
-  return `<span class="ruler-mark" style="left:${t*scale}px">${fmt(t)}s</span>`;
+  const t=Math.min(i*interval,total);return `<span class="ruler-mark" style="left:${t*scale}px">${fmt(t)}s</span>`;
  }).join("");
  track.querySelectorAll(".timeline-card").forEach(card=>{
   card.addEventListener("dragstart",e=>{
@@ -469,90 +496,68 @@ function renderTimeline(){
   });
  });
 }
-
 function renderAudioTrack(){
  const canvas=$("audioWaveform"),empty=$("audioEmpty"),name=$("audioTrackName");
- const total=totalDuration(),width=Math.max(300,total*timelineScale()),height=74;
- const container=$("audioTrackContent");
+ const total=totalDuration(),width=Math.max(300,total*timelineScale()),height=74,container=$("audioTrackContent");
  if(!musicURL||!musicWaveData){
-  canvas.style.display="none";name.style.display="none";empty.style.display="flex";
-  container.style.width="100%";return;
+  canvas.style.display="none";name.style.display="none";empty.style.display="flex";container.style.width="100%";return;
  }
- container.style.width=width+"px";empty.style.display="none";
- canvas.style.display="block";name.style.display="block";
+ container.style.width=width+"px";empty.style.display="none";canvas.style.display="block";name.style.display="block";
  name.textContent="♫ "+musicFileName+" · "+fmt(musicDuration)+"s";
- canvas.width=Math.max(1,Math.ceil(width));canvas.height=height;
- canvas.style.width=width+"px";canvas.style.height=height+"px";
- const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,height);
- ctx.fillStyle="#10253a";ctx.fillRect(0,0,canvas.width,height);
- const data=musicWaveData,middle=height/2;
- const samplesPerPixel=Math.max(1,Math.floor(data.length/Math.max(1,width)));
+ canvas.width=Math.max(1,Math.ceil(width));canvas.height=height;canvas.style.width=width+"px";canvas.style.height=height+"px";
+ const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,height);ctx.fillStyle="#10253a";ctx.fillRect(0,0,canvas.width,height);
+ const data=musicWaveData,middle=height/2,samplesPerPixel=Math.max(1,Math.floor(data.length/Math.max(1,width)));
  ctx.fillStyle="#45c6c8";
  for(let x=0;x<width;x++){
   const start=x*samplesPerPixel;let min=1,max=-1;
   for(let j=start;j<Math.min(start+samplesPerPixel,data.length);j++){if(data[j]<min)min=data[j];if(data[j]>max)max=data[j]}
-  if(max<min){min=0;max=0}
-  ctx.fillRect(x,middle-max*28,1,Math.max(1,(max-min)*28));
+  if(max<min){min=0;max=0}ctx.fillRect(x,middle-max*28,1,Math.max(1,(max-min)*28));
  }
- ctx.strokeStyle="#a5f3fc";ctx.globalAlpha=.35;ctx.beginPath();
- ctx.moveTo(0,middle);ctx.lineTo(width,middle);ctx.stroke();ctx.globalAlpha=1;
+ ctx.strokeStyle="#a5f3fc";ctx.globalAlpha=.35;ctx.beginPath();ctx.moveTo(0,middle);ctx.lineTo(width,middle);ctx.stroke();ctx.globalAlpha=1;
 }
-
 function selectClip(i){selected=i;loadSelected();renderAll()}
 function loadSelected(){
  const c=selectedClip();if(!c)return;
- preview.pause();preview.src=c.url;preview.load();
+ ensureKeys(c);preview.pause();preview.src=c.url;preview.load();
  preview.onloadedmetadata=()=>{
-  preview.currentTime=Math.min(c.start,Math.max(0,preview.duration-.05));
-  preview.playbackRate=c.speed;
+  preview.currentTime=Math.min(c.start,Math.max(0,preview.duration-.05));preview.playbackRate=c.speed;
   $("trimStart").value=fmt(c.start);$("trimEnd").value=fmt(c.end);
-  $("speed").value=c.speed;$("filter").value=c.filter;
-  $("transition").value=c.transition;$("transitionDuration").value=c.transitionDuration;
-  $("fadeOut").value=c.fadeOut;updateTimeInfo();updateTrimUI();updatePreviewText();
+  $("speed").value=c.speed;$("filter").value=c.filter;$("transition").value=c.transition;
+  $("transitionDuration").value=c.transitionDuration;$("fadeOut").value=c.fadeOut;
+  loadVideoKeys(c.videoKeys);updateTimeInfo();updateTrimUI();updatePreviewText();updatePreviewVideo();
  };
 }
-
 $("moveUp").onclick=()=>moveClip(-1);
 $("moveDown").onclick=()=>moveClip(1);
 function moveClip(d){
  const j=selected+d;if(j<0||j>=clips.length)return;
- [clips[selected],clips[j]]=[clips[j],clips[selected]];
- selected=j;loadSelected();renderAll();
+ [clips[selected],clips[j]]=[clips[j],clips[selected]];selected=j;loadSelected();renderAll();
 }
 $("deleteClip").onclick=()=>{
  if(selected<0)return;
- URL.revokeObjectURL(clips[selected].url);clips.splice(selected,1);
- selected=Math.min(selected,clips.length-1);
- if(selected>=0)loadSelected();
- else{preview.pause();preview.removeAttribute("src");preview.load()}
+ URL.revokeObjectURL(clips[selected].url);clips.splice(selected,1);selected=Math.min(selected,clips.length-1);
+ if(selected>=0)loadSelected();else{preview.pause();preview.removeAttribute("src");preview.load();preview.style.transform="none";preview.style.opacity="1"}
  renderAll();
 };
-
 function applyTrim(a,b){
  const c=selectedClip();if(!c)return;
  a=clamp(Number(a),0,c.duration);b=clamp(Number(b),0,c.duration);
  if(b<=a+.05)return;
- c.start=a;c.end=b;
- $("trimStart").value=fmt(a);$("trimEnd").value=fmt(b);
- $("startRange").value=a;$("endRange").value=b;
- updateTrimUI();renderClips();renderTimeline();
+ c.start=a;c.end=b;$("trimStart").value=fmt(a);$("trimEnd").value=fmt(b);
+ $("startRange").value=a;$("endRange").value=b;updateTrimUI();renderClips();renderTimeline();updatePreviewVideo();
 }
 $("startRange").oninput=()=>applyTrim(Number($("startRange").value),Number($("endRange").value));
 $("endRange").oninput=()=>applyTrim(Number($("startRange").value),Number($("endRange").value));
-
 function updateTrimUI(){
  const c=selectedClip();
  if(!c){
-  $("startRange").disabled=true;$("endRange").disabled=true;
-  $("startReadout").textContent="0.0s";$("endReadout").textContent="0.0s";
+  $("startRange").disabled=true;$("endRange").disabled=true;$("startReadout").textContent="0.0s";$("endReadout").textContent="0.0s";
   $("trimSelected").style.left="0";$("trimSelected").style.width="100%";return;
  }
- $("startRange").disabled=false;$("endRange").disabled=false;
- $("startRange").max=c.duration;$("endRange").max=c.duration;
+ $("startRange").disabled=false;$("endRange").disabled=false;$("startRange").max=c.duration;$("endRange").max=c.duration;
  $("startRange").value=c.start;$("endRange").value=c.end;
  $("startReadout").textContent=fmt(c.start)+"s";$("endReadout").textContent=fmt(c.end)+"s";
- const left=c.duration?c.start/c.duration*100:0;
- const width=c.duration?(c.end-c.start)/c.duration*100:100;
+ const left=c.duration?c.start/c.duration*100:0,width=c.duration?(c.end-c.start)/c.duration*100:100;
  $("trimSelected").style.left=left+"%";$("trimSelected").style.width=width+"%";
 }
 $("trimStart").addEventListener("change",()=>applyTrim(Number($("trimStart").value),Number($("trimEnd").value)));
@@ -562,30 +567,27 @@ $("applyClip").onclick=()=>{
  const c=selectedClip();if(!c)return alert("Select a clip first.");
  let a=Number($("trimStart").value),b=Number($("trimEnd").value);
  if(a<0||b>c.duration||b<=a)return alert("Please enter valid trim times.");
- c.start=a;c.end=b;c.speed=Number($("speed").value);c.filter=$("filter").value;
- c.transition=$("transition").value;
+ c.start=a;c.end=b;c.speed=Number($("speed").value);c.filter=$("filter").value;c.transition=$("transition").value;
  c.transitionDuration=Math.max(.1,Number($("transitionDuration").value)||1);
  c.fadeOut=Math.max(0,Number($("fadeOut").value)||0);
+ c.videoKeys=readVideoKeys();
  preview.currentTime=c.start;preview.playbackRate=c.speed;
- renderAll();updateTimeInfo();
+ renderAll();updateTimeInfo();$("status").textContent="Clip settings and video keyframes applied.";
 };
-
 $("splitClip").onclick=()=>{
  const c=selectedClip();if(!c)return alert("Select a clip first.");
  const cut=preview.currentTime;
  if(cut<=c.start+.05||cut>=c.end-.05)return alert("Move the playhead inside the clip, away from its beginning and end.");
- const second={...c,name:c.name+" (split)",start:cut,end:c.end,transition:"cut",transitionDuration:1,fadeOut:c.fadeOut,thumb:c.thumb};
- c.end=cut;c.fadeOut=0;clips.splice(selected+1,0,second);
- renderAll();$("status").textContent="Clip split successfully.";
+ const second={...c,name:c.name+" (split)",start:cut,end:c.end,transition:"cut",transitionDuration:1,fadeOut:c.fadeOut,thumb:c.thumb,videoKeys:JSON.parse(JSON.stringify(c.videoKeys||defaultVideoKeys()))};
+ c.end=cut;c.fadeOut=0;clips.splice(selected+1,0,second);renderAll();$("status").textContent="Clip split successfully.";
 };
-
 $("playBtn").onclick=()=>preview.play();
 $("pauseBtn").onclick=()=>preview.pause();
 $("stopBtn").onclick=()=>{preview.pause();if(selected>=0)preview.currentTime=clips[selected].start};
-
 preview.addEventListener("timeupdate",()=>{
- updateTimeInfo();updatePreviewText();updatePlayhead();
+ updateTimeInfo();updatePreviewText();updatePlayhead();updatePreviewVideo();
 });
+preview.addEventListener("seeked",()=>{updatePreviewVideo();updatePreviewText();updatePlayhead()});
 function updateTimeInfo(){
  const c=selectedClip();if(!c)return;
  $("timeInfo").textContent=`Clip position: ${fmt(preview.currentTime)}s / ${fmt(c.end)}s`;
@@ -594,12 +596,21 @@ function updatePlayhead(){
  const c=selectedClip();if(!c||!c.duration)return;
  $("trimPlayhead").style.left=(preview.currentTime/c.duration*100)+"%";
 }
+function updatePreviewVideo(){
+ const c=selectedClip();
+ if(!c||!preview.videoWidth){preview.style.transform="none";preview.style.opacity="1";preview.style.filter="none";return}
+ ensureKeys(c);
+ const progress=clamp((preview.currentTime-c.start)/Math.max(.001,c.end-c.start),0,1);
+ const s=videoKeyState(c,progress);
+ preview.style.transform=`translate(${s.x}%,${s.y}%) scale(${s.scale}) rotate(${s.rotation}deg)`;
+ preview.style.opacity=s.opacity;
+ preview.style.filter=c.filter==="none"?"none":c.filter;
+}
 
-/* Text keyframe controls */
+/* Text animation */
 function readText(){
- const t={
-  text:$("textInput").value.trim(),
-  color:$("textColor").value,
+ return {
+  text:$("textInput").value.trim(),color:$("textColor").value,
   size:clamp(Number($("textSize").value)||42,10,150),
   x:Number($("textX").value),y:Number($("textY").value),
   x2:Number($("textXEnd").value),y2:Number($("textYEnd").value),
@@ -610,74 +621,50 @@ function readText(){
   start:Number($("textStart").value),end:Number($("textEnd").value),
   easing:$("textEasing").value,animation:$("textAnimation").value
  };
- return t;
 }
-
 function loadTextControls(t){
  $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;
- $("textX").value=String(t.x);$("textY").value=String(t.y);
- $("textXEnd").value=String(t.x2);$("textYEnd").value=String(t.y2);
+ $("textX").value=String(t.x);$("textY").value=String(t.y);$("textXEnd").value=String(t.x2);$("textYEnd").value=String(t.y2);
  $("textScaleStart").value=t.scale1;$("textScaleEnd").value=t.scale2;
  $("textOpacityStart").value=t.opacity1;$("textOpacityEnd").value=t.opacity2;
- $("textStart").value=t.start;$("textEnd").value=t.end;
- $("textEasing").value=t.easing||"linear";$("textAnimation").value=t.animation||"none";
+ $("textStart").value=t.start;$("textEnd").value=t.end;$("textEasing").value=t.easing||"linear";$("textAnimation").value=t.animation||"none";
 }
-
 function renderTexts(){
  $("textList").innerHTML=texts.map((t,i)=>`
  <div class="textitem ${i===selectedText?"active":""}">
- <strong>${esc(t.text)}</strong>
- <div class="small">${fmt(t.start)}s – ${fmt(t.end)}s · ${fmt(t.scale1)}x to ${fmt(t.scale2)}x · ${t.opacity1}% to ${t.opacity2}% opacity</div>
- <button class="secondary" onclick="selectText(${i})">Select</button>
- </div>`).join("")||'<p class="small">No text overlays yet.</p>';
+ <strong>${esc(t.text)}</strong><div class="small">${fmt(t.start)}s – ${fmt(t.end)}s · ${fmt(t.scale1)}x to ${fmt(t.scale2)}x · ${t.opacity1}% to ${t.opacity2}% opacity</div>
+ <button class="secondary" onclick="selectText(${i})">Select</button></div>`).join("")||'<p class="small">No text overlays yet.</p>';
 }
-function selectText(i){
- selectedText=i;const t=texts[i];if(!t)return;
- loadTextControls(t);renderTexts();updatePreviewText();
-}
+function selectText(i){selectedText=i;const t=texts[i];if(!t)return;loadTextControls(t);renderTexts();updatePreviewText()}
 $("addText").onclick=()=>{
- const t=readText();
- if(!t.text)return alert("Enter some text.");
+ const t=readText();if(!t.text)return alert("Enter some text.");
  if(t.start<0||t.end<=t.start)return alert("Enter a valid text start and end time.");
- texts.push(t);selectedText=texts.length-1;renderTexts();updatePreviewText();
- $("status").textContent="Animated text added.";
+ texts.push(t);selectedText=texts.length-1;renderTexts();updatePreviewText();$("status").textContent="Animated text added.";
 };
 $("updateText").onclick=()=>{
  if(selectedText<0)return alert("Select a text overlay first.");
  const t=readText();if(!t.text||t.end<=t.start)return alert("Check your text and timing.");
- texts[selectedText]=t;renderTexts();updatePreviewText();
- $("status").textContent="Text keyframes updated.";
+ texts[selectedText]=t;renderTexts();updatePreviewText();$("status").textContent="Text keyframes updated.";
 };
-$("deleteText").onclick=()=>{
- if(selectedText<0)return;
- texts.splice(selectedText,1);selectedText=-1;renderTexts();updatePreviewText();
-};
-
-function setPreset(type){
+$("deleteText").onclick=()=>{if(selectedText<0)return;texts.splice(selectedText,1);selectedText=-1;renderTexts();updatePreviewText()};
+function setTextPreset(type){
  if(type==="move"){
-  $("textX").value=".15";$("textY").value=".5";
-  $("textXEnd").value=".85";$("textYEnd").value=".5";
-  $("textScaleStart").value="1";$("textScaleEnd").value="1";
-  $("textOpacityStart").value="100";$("textOpacityEnd").value="100";
+  $("textX").value=".15";$("textY").value=".5";$("textXEnd").value=".85";$("textYEnd").value=".5";
+  $("textScaleStart").value="1";$("textScaleEnd").value="1";$("textOpacityStart").value="100";$("textOpacityEnd").value="100";
  }
  if(type==="zoom"){
-  $("textX").value=".5";$("textY").value=".5";
-  $("textXEnd").value=".5";$("textYEnd").value=".5";
-  $("textScaleStart").value=".2";$("textScaleEnd").value="1.5";
-  $("textOpacityStart").value="0";$("textOpacityEnd").value="100";
+  $("textX").value=".5";$("textY").value=".5";$("textXEnd").value=".5";$("textYEnd").value=".5";
+  $("textScaleStart").value=".2";$("textScaleEnd").value="1.5";$("textOpacityStart").value="0";$("textOpacityEnd").value="100";
  }
  if(type==="fade"){
-  $("textX").value=".5";$("textY").value=".5";
-  $("textXEnd").value=".5";$("textYEnd").value=".5";
-  $("textScaleStart").value="1";$("textScaleEnd").value="1";
-  $("textOpacityStart").value="0";$("textOpacityEnd").value="100";
+  $("textX").value=".5";$("textY").value=".5";$("textXEnd").value=".5";$("textYEnd").value=".5";
+  $("textScaleStart").value="1";$("textScaleEnd").value="1";$("textOpacityStart").value="0";$("textOpacityEnd").value="100";
  }
- $("textEasing").value="ease";
- updatePreviewText();
+ $("textEasing").value="ease";updatePreviewText();
 }
-$("textPresetMove").onclick=()=>setPreset("move");
-$("textPresetZoom").onclick=()=>setPreset("zoom");
-$("textPresetFade").onclick=()=>setPreset("fade");
+$("textPresetMove").onclick=()=>setTextPreset("move");
+$("textPresetZoom").onclick=()=>setTextPreset("zoom");
+$("textPresetFade").onclick=()=>setTextPreset("fade");
 
 function easeProgress(p,type){
  p=clamp(p,0,1);
@@ -687,29 +674,21 @@ function easeProgress(p,type){
  return p;
 }
 function textState(t,time){
- const raw=clamp((time-t.start)/Math.max(.001,t.end-t.start),0,1);
- const p=easeProgress(raw,t.easing||"linear");
- let x=t.x+(t.x2-t.x)*p;
- let y=t.y+(t.y2-t.y)*p;
- let scale=t.scale1+(t.scale2-t.scale1)*p;
- let opacity=(t.opacity1+(t.opacity2-t.opacity1)*p)/100;
-
+ const raw=clamp((time-t.start)/Math.max(.001,t.end-t.start),0,1),p=easeProgress(raw,t.easing||"linear");
+ let x=t.x+(t.x2-t.x)*p,y=t.y+(t.y2-t.y)*p;
+ let scale=t.scale1+(t.scale2-t.scale1)*p,opacity=(t.opacity1+(t.opacity2-t.opacity1)*p)/100;
  if(t.animation==="fade")opacity*=Math.min(1,raw/.12);
  if(t.animation==="zoom")scale*=Math.min(1,Math.max(.05,raw/.12));
  if(t.animation==="slide")y+=((1-Math.min(1,raw/.12))*.08);
-
  return {x,y,scale,opacity};
 }
-
 function timelineAtPreview(){
- let t=0;
- for(let i=0;i<selected;i++)t+=durationOf(clips[i]);
- const c=selectedClip();
- return t+(preview.currentTime-(c?.start||0))/(c?.speed||1);
+ let t=0;for(let i=0;i<selected;i++)t+=durationOf(clips[i]);
+ const c=selectedClip();return t+(preview.currentTime-(c?.start||0))/(c?.speed||1);
 }
 function updatePreviewText(){
- const time=timelineAtPreview();
- const active=texts.filter(t=>time>=t.start&&time<=t.end);
+ if(selected<0){$("previewText").innerHTML="";return}
+ const time=timelineAtPreview(),active=texts.filter(t=>time>=t.start&&time<=t.end);
  $("previewText").innerHTML=active.map(t=>{
   const s=textState(t,time);
   return `<div class="preview-overlay" style="left:${s.x*100}%;top:${s.y*100}%;color:${t.color};font-size:${Math.min(t.size,100)}px;opacity:${s.opacity};transform:translate(-50%,-50%) scale(${s.scale})">${esc(t.text)}</div>`;
@@ -717,46 +696,35 @@ function updatePreviewText(){
 }
 
 async function loadMusicWaveform(file){
- musicWaveData=null;musicDuration=0;
- $("audioInfo").textContent="Reading audio file and creating waveform...";
+ musicWaveData=null;musicDuration=0;$("audioInfo").textContent="Reading audio file and creating waveform...";
  $("audioEmpty").textContent="Generating audio waveform...";
  try{
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(!AudioCtx)throw new Error("Audio decoding is not supported by this browser.");
-  const ctx=new AudioCtx();
-  const buffer=await file.arrayBuffer();
-  const decoded=await ctx.decodeAudioData(buffer.slice(0));
-  musicDuration=decoded.duration;
-  const channel=decoded.getChannelData(0);
-  const points=Math.min(12000,channel.length);
-  const block=Math.max(1,Math.floor(channel.length/points));
+  const ctx=new AudioCtx(),buffer=await file.arrayBuffer(),decoded=await ctx.decodeAudioData(buffer.slice(0));
+  musicDuration=decoded.duration;const channel=decoded.getChannelData(0),points=Math.min(12000,channel.length),block=Math.max(1,Math.floor(channel.length/points));
   const data=new Float32Array(points);
   for(let i=0;i<points;i++){
    let peak=0;const from=i*block,to=Math.min(channel.length,from+block);
    for(let j=from;j<to;j++){const val=Math.abs(channel[j]);if(val>peak)peak=val}
    data[i]=peak;
   }
-  musicWaveData=data;
-  $("audioInfo").textContent="Music loaded: "+musicFileName+" · "+fmt(musicDuration)+" seconds";
-  $("audioEmpty").textContent="Choose a music file to display its waveform here.";
-  renderAudioTrack();await ctx.close();
+  musicWaveData=data;$("audioInfo").textContent="Music loaded: "+musicFileName+" · "+fmt(musicDuration)+" seconds";
+  $("audioEmpty").textContent="Choose a music file to display its waveform here.";renderAudioTrack();await ctx.close();
  }catch(err){
   $("audioInfo").textContent="Music selected, but waveform could not be generated: "+err.message;
-  $("audioEmpty").textContent="Waveform preview is unavailable for this file.";
-  renderAudioTrack();
+  $("audioEmpty").textContent="Waveform preview is unavailable for this file.";renderAudioTrack();
  }
 }
 $("musicFile").onchange=async e=>{
  const file=e.target.files[0];if(!file)return;
  if(musicURL)URL.revokeObjectURL(musicURL);
- musicURL=URL.createObjectURL(file);musicFileName=file.name;
- await loadMusicWaveform(file);
+ musicURL=URL.createObjectURL(file);musicFileName=file.name;await loadMusicWaveform(file);
 };
 $("removeMusic").onclick=()=>{
  if(musicURL)URL.revokeObjectURL(musicURL);
  musicURL=null;musicFileName="";musicDuration=0;musicWaveData=null;
- $("musicFile").value="";$("audioInfo").textContent="No background music selected.";
- renderAudioTrack();
+ $("musicFile").value="";$("audioInfo").textContent="No background music selected.";renderAudioTrack();
 };
 
 function canvasSize(){
@@ -767,27 +735,28 @@ function canvasSize(){
  else if(a==="original"&&preview.videoWidth){w=preview.videoWidth;h=preview.videoHeight}
  return [w,h];
 }
-function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress){
+function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress,keys){
  if(!v.videoWidth||!v.videoHeight)return;
- ctx.save();ctx.globalAlpha=alpha;ctx.filter=filter==="none"?"none":filter;
+ ctx.save();
+ const k=keys||{x:0,y:0,scale:1,rotation:0,opacity:1};
+ ctx.globalAlpha=clamp(alpha*k.opacity,0,1);
+ ctx.translate(w/2+(k.x/100*w),h/2+(k.y/100*h));
+ ctx.rotate(k.rotation*Math.PI/180);ctx.scale(k.scale,k.scale);
+ ctx.filter=filter==="none"?"none":filter;
  let scale=fit==="cover"?Math.max(w/v.videoWidth,h/v.videoHeight):Math.min(w/v.videoWidth,h/v.videoHeight);
- let dw=v.videoWidth*scale,dh=v.videoHeight*scale;
- let x=(w-dw)/2,y=(h-dh)/2;
- if(transition==="zoom"){let z=1+.12*(1-progress);dw*=z;dh*=z;x=(w-dw)/2;y=(h-dh)/2}
+ let dw=v.videoWidth*scale,dh=v.videoHeight*scale,x=-dw/2,y=-dh/2;
+ if(transition==="zoom"){let z=1+.12*(1-progress);dw*=z;dh*=z;x=-dw/2;y=-dh/2}
  if(transition==="slide")x+=(1-progress)*w;
- ctx.beginPath();
- if(transition==="wipe"){ctx.rect(0,0,w*progress,h);ctx.clip()}
+ if(transition==="wipe"){
+  ctx.beginPath();ctx.rect(-w/2,-h/2,w*progress,h);ctx.clip();
+ }
  ctx.drawImage(v,x,y,dw,dh);ctx.restore();
 }
-
 function drawOverlayText(ctx,t,time,w,h){
  if(time<t.start||time>t.end)return;
- const s=textState(t,time);
- ctx.save();ctx.globalAlpha=s.opacity;
- ctx.fillStyle=t.color;ctx.font=`bold ${t.size}px Arial`;
- ctx.textAlign="center";ctx.textBaseline="middle";
- ctx.shadowColor="#000";ctx.shadowBlur=5;
- ctx.translate(w*s.x,h*s.y);ctx.scale(s.scale,s.scale);
+ const s=textState(t,time);ctx.save();ctx.globalAlpha=s.opacity;ctx.fillStyle=t.color;
+ ctx.font=`bold ${t.size}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";
+ ctx.shadowColor="#000";ctx.shadowBlur=5;ctx.translate(w*s.x,h*s.y);ctx.scale(s.scale,s.scale);
  const words=t.text.split("\n");
  words.forEach((line,i)=>ctx.fillText(line,0,(i-(words.length-1)/2)*t.size*1.25,w*.9));
  ctx.restore();
@@ -800,32 +769,24 @@ async function exportVideo(){
  for(const c of clips){if(c.end<=c.start)return alert("One clip has invalid trim settings.")}
  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)return alert("Video export is not supported by this browser.");
 
- const [w,h]=canvasSize();
- const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
- const ctx=canvas.getContext("2d");
- const stream=canvas.captureStream(30);
- let audioCtx=null,dest=null,musicEl=null;
- const audioEls=[];
-
+ const [w,h]=canvasSize(),canvas=document.createElement("canvas");
+ canvas.width=w;canvas.height=h;const ctx=canvas.getContext("2d"),stream=canvas.captureStream(30);
+ let audioCtx=null,dest=null,musicEl=null;const audioEls=[];
  try{
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(!AudioCtx)throw new Error("Audio is not supported.");
   audioCtx=new AudioCtx();dest=audioCtx.createMediaStreamDestination();
-
   for(const c of clips){
-   const el=document.createElement("video");
-   el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;el.playsInline=true;
+   const el=document.createElement("video");el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;el.playsInline=true;
    await new Promise((resolve,reject)=>{el.onloadedmetadata=resolve;el.onerror=reject;el.load()});
-   const src=audioCtx.createMediaElementSource(el);
-   const gain=audioCtx.createGain();gain.gain.value=Number($("videoVolume").value);
-   src.connect(gain);gain.connect(dest);
-   audioEls.push({el,gain});
+   const src=audioCtx.createMediaElementSource(el),gain=audioCtx.createGain();
+   gain.gain.value=Number($("videoVolume").value);src.connect(gain);gain.connect(dest);audioEls.push({el,gain});
   }
   if(musicURL){
    musicEl=new Audio(musicURL);musicEl.loop=true;
    await new Promise(resolve=>{musicEl.onloadedmetadata=resolve;musicEl.onerror=resolve;musicEl.load()});
-   const ms=audioCtx.createMediaElementSource(musicEl);
-   const mg=audioCtx.createGain();ms.connect(mg);mg.connect(dest);musicEl._gain=mg;
+   const ms=audioCtx.createMediaElementSource(musicEl),mg=audioCtx.createGain();
+   ms.connect(mg);mg.connect(dest);musicEl._gain=mg;
   }
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
  }catch(err){console.warn("Audio setup issue",err)}
@@ -833,29 +794,25 @@ async function exportVideo(){
  const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
  if(!mime){alert("This browser does not support WebM recording.");stream.getTracks().forEach(t=>t.stop());return}
  let recorder;
- try{recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000)}
- catch(e){alert("Could not start export: "+e.message);stream.getTracks().forEach(t=>t.stop());return}
-
- const chunks=[];
- recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ try{
+  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000});
+ }catch(e){
+  alert("Could not start export: "+e.message);stream.getTracks().forEach(t=>t.stop());return;
+ }
+ const chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
  const done=new Promise(resolve=>recorder.onstop=resolve);
-
- exporting=true;$("exportBtn").disabled=true;
- $("status").textContent="Preparing export...";
+ exporting=true;$("exportBtn").disabled=true;$("status").textContent="Preparing export...";
  $("downloadLink").style.display="none";$("progressBar").style.width="0%";
- const total=totalDuration();
- let elapsed=0;
-
+ const total=totalDuration();let elapsed=0;
  try{
   if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();
   if(musicEl){musicEl.currentTime=0;await musicEl.play().catch(()=>{})}
   recorder.start(250);
-
   for(let i=0;i<clips.length;i++){
-   const c=clips[i],v=audioEls[i]?.el||document.createElement("video");
+   const c=clips[i];ensureKeys(c);
+   const v=audioEls[i]?.el||document.createElement("video");
    if(!audioEls[i]){
-    v.src=c.url;v.muted=true;
-    await new Promise(resolve=>{v.onloadedmetadata=resolve;v.load()});
+    v.src=c.url;v.muted=true;await new Promise(resolve=>{v.onloadedmetadata=resolve;v.load()});
    }
    v.muted=!audioEls[i];v.volume=1;v.playbackRate=c.speed;v.currentTime=c.start;
    await new Promise(resolve=>{
@@ -864,52 +821,38 @@ async function exportVideo(){
    });
    if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value);
    await v.play().catch(()=>{});
-
-   const clipDur=durationOf(c),transition=c.transition;
-   const transDur=transition==="cut"?0:Math.min(c.transitionDuration,clipDur/2);
-
+   const clipDur=durationOf(c),transition=c.transition,transDur=transition==="cut"?0:Math.min(c.transitionDuration,clipDur/2);
+   const clipStart=clips.slice(0,i).reduce((s,x)=>s+durationOf(x),0);
    while(v.currentTime<c.end-.025&&!v.ended){
-    const local=(v.currentTime-c.start)/c.speed;
-    const progress=transDur?Math.min(1,local/transDur):1;
-    let alpha=1;
-    if(transDur&&local<transDur&&transition==="fade")alpha=progress;
+    const local=(v.currentTime-c.start)/c.speed,progress=transDur?Math.min(1,local/transDur):1;
+    let alpha=1;if(transDur&&local<transDur&&transition==="fade")alpha=progress;
     const fade=c.fadeOut>0?Math.min(1,Math.max(0,(clipDur-local)/c.fadeOut)):1;
     if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value)*fade;
-
     if(musicEl&&musicEl._gain){
-     const mi=Number($("musicFadeIn").value),mo=Number($("musicFadeOut").value);
-     const mg=Number($("musicVolume").value);
-     let ma=mi>0?Math.min(1,elapsed/mi):1;
-     if(mo>0)ma=Math.min(ma,Math.max(0,(total-elapsed)/mo));
+     const mi=Number($("musicFadeIn").value),mo=Number($("musicFadeOut").value),mg=Number($("musicVolume").value);
+     let ma=mi>0?Math.min(1,elapsed/mi):1;if(mo>0)ma=Math.min(ma,Math.max(0,(total-elapsed)/mo));
      musicEl._gain.gain.value=mg*ma;
     }
-
+    const vk=videoKeyState(c,clamp(local/Math.max(.001,clipDur),0,1));
     ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
-    drawVideo(ctx,v,w,h,$("fit").value,c.filter,alpha,transition,progress);
+    drawVideo(ctx,v,w,h,$("fit").value,c.filter,alpha,transition,progress,vk);
     if(c.fadeOut>0&&local>clipDur-c.fadeOut){
      ctx.save();ctx.globalAlpha=Math.min(1,(local-(clipDur-c.fadeOut))/c.fadeOut);
      ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);ctx.restore();
     }
-    const clipStart=clips.slice(0,i).reduce((s,x)=>s+durationOf(x),0);
     for(const t of texts)drawOverlayText(ctx,t,clipStart+local,w,h);
-
-    await wait(30);
-    elapsed=clipStart+local;
+    await wait(30);elapsed=clipStart+local;
     $("progressBar").style.width=Math.min(99,elapsed/total*100)+"%";
     $("status").textContent=`Exporting clip ${i+1} of ${clips.length} · ${fmt(elapsed)} / ${fmt(total)} seconds`;
    }
-   v.pause();
-   if(audioEls[i])audioEls[i].gain.gain.value=0;
-   elapsed=clips.slice(0,i+1).reduce((s,x)=>s+durationOf(x),0);
+   v.pause();if(audioEls[i])audioEls[i].gain.gain.value=0;
+   elapsed=clipStart+clipDur;
   }
-
   recorder.stop();await done;
-  const blob=new Blob(chunks,{type:"video/webm"});
-  const url=URL.createObjectURL(blob);
+  const blob=new Blob(chunks,{type:"video/webm"}),url=URL.createObjectURL(blob);
   $("downloadLink").href=url;$("downloadLink").style.display="inline-block";
   $("downloadLink").textContent="⬇ Download your finished video";
-  $("progressBar").style.width="100%";
-  $("status").textContent="Export completed successfully! Your WebM video is ready.";
+  $("progressBar").style.width="100%";$("status").textContent="Export completed successfully! Your WebM video is ready.";
  }catch(err){
   if(recorder.state!=="inactive")recorder.stop();
   await done;$("status").textContent="Export error: "+err.message;
@@ -921,7 +864,6 @@ async function exportVideo(){
   stream.getTracks().forEach(t=>t.stop());
  }
 }
-
 $("exportBtn").onclick=exportVideo;
 renderAll();
 </script>
