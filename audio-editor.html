@@ -1,0 +1,572 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free Audio Editor | Pikora</title>
+<meta name="description" content="Free online audio editor. Join audio files, trim, adjust volume, add fade effects and export WAV audio directly in your browser.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f1f5ff;font-family:Arial,sans-serif}
+header{padding:20px 6%;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #26304a;background:#10172b}
+.logo{font-size:23px;font-weight:900;letter-spacing:2px;color:#a78bfa;text-decoration:none}
+.back{color:#c4b5fd;text-decoration:none;font-size:14px}
+main{max-width:1050px;margin:35px auto;padding:0 18px}
+h1{font-size:34px;margin-bottom:8px}
+.subtitle{color:#9caac5;line-height:1.6;margin-bottom:28px}
+.panel{background:#141d33;border:1px solid #293653;border-radius:16px;padding:22px;margin-bottom:20px}
+h2{font-size:18px;margin:0 0 16px}
+.upload{display:block;border:2px dashed #59658b;border-radius:13px;padding:32px 15px;text-align:center;cursor:pointer;color:#c4b5fd;background:#111a30}
+.upload:hover{border-color:#a78bfa;background:#18213b}
+.upload input{display:none}
+.files{margin-top:15px;color:#b7c4df;font-size:14px;line-height:1.9}
+.file-item{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #293653;padding:8px 2px}
+.small{font-size:12px;color:#8f9db8}
+button{border:0;border-radius:9px;padding:11px 17px;background:#7654dc;color:white;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.13)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.secondary{background:#293653;color:#e5eaff}
+.danger{background:#9b344d}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.wavebox{background:#0b1326;border:1px solid #293653;border-radius:12px;padding:10px;overflow:hidden}
+canvas{width:100%;height:180px;display:block}
+.time-row{display:flex;justify-content:space-between;color:#aebbd4;font-size:13px;margin-top:8px}
+.field{margin:19px 0}
+.field label{display:flex;justify-content:space-between;gap:12px;margin-bottom:9px;font-size:14px;color:#dbe4fa}
+input[type=range]{width:100%;accent-color:#a78bfa;cursor:pointer}
+input[type=number]{width:100%;padding:11px;background:#0b1326;color:white;border:1px solid #3b4969;border-radius:8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.note{color:#9eacc6;font-size:13px;line-height:1.6}
+.status{margin-top:13px;color:#a78bfa;font-size:14px;min-height:20px}
+.export{background:linear-gradient(120deg,#6941d9,#a34bd0);padding:14px 24px}
+footer{text-align:center;color:#75839e;padding:30px;font-size:13px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}h1{font-size:28px}.panel{padding:16px}header{padding:17px 5%}}
+</style>
+</head>
+<body>
+<header>
+<a class="logo" href="index.html">PIKORA</a>
+<a class="back" href="index.html">← Back to Home</a>
+</header>
+
+<main>
+<h1>Free Audio Editor</h1>
+<p class="subtitle">Join, trim and edit your audio with simple tools. Your audio is processed locally in your browser.</p>
+
+<section class="panel">
+<h2>1. Upload Audio Files</h2>
+<label class="upload">
+<strong>＋ Choose Audio Files</strong>
+<p>Click to select one or multiple audio files</p>
+<span class="small">MP3, WAV, M4A, AAC, OGG and other browser-supported formats</span>
+<input id="files" type="file" accept="audio/*" multiple>
+</label>
+<div id="fileList" class="files">No audio files selected yet.</div>
+<div class="controls">
+<button id="clearBtn" class="secondary" disabled>Clear All</button>
+</div>
+<p class="note">When you select multiple files, Pikora joins them in the order selected.</p>
+</section>
+
+<section class="panel">
+<h2>2. Audio Waveform</h2>
+<div class="wavebox">
+<canvas id="wave"></canvas>
+<div class="time-row">
+<span id="currentTime">00:00</span>
+<span id="totalTime">00:00</span>
+</div>
+</div>
+<div class="controls">
+<button id="playBtn" disabled>▶ Play</button>
+<button id="pauseBtn" class="secondary" disabled>Ⅱ Pause</button>
+<button id="stopBtn" class="secondary" disabled>■ Stop</button>
+</div>
+<div class="status" id="status">Upload audio files to begin.</div>
+</section>
+
+<section class="panel">
+<h2>3. Trim Audio</h2>
+<div class="grid">
+<div class="field">
+<label for="start">Start time (seconds)</label>
+<input id="start" type="number" min="0" step="0.1" value="0" disabled>
+</div>
+<div class="field">
+<label for="end">End time (seconds)</label>
+<input id="end" type="number" min="0" step="0.1" value="0" disabled>
+</div>
+</div>
+<div class="field">
+<label>Start position <span id="startLabel">0.0 s</span></label>
+<input id="startRange" type="range" min="0" max="100" value="0" step="0.1" disabled>
+</div>
+<div class="field">
+<label>End position <span id="endLabel">0.0 s</span></label>
+<input id="endRange" type="range" min="0" max="100" value="100" step="0.1" disabled>
+</div>
+<p class="note">The selected section will be included in your exported audio.</p>
+</section>
+
+<section class="panel">
+<h2>4. Audio Effects</h2>
+<div class="field">
+<label>Volume <span id="volumeLabel">100%</span></label>
+<input id="volume" type="range" min="0" max="200" value="100" disabled>
+</div>
+<div class="grid">
+<div class="field">
+<label>Fade in (seconds)</label>
+<input id="fadeIn" type="number" min="0" step="0.1" value="0" disabled>
+</div>
+<div class="field">
+<label>Fade out (seconds)</label>
+<input id="fadeOut" type="number" min="0" step="0.1" value="0" disabled>
+</div>
+</div>
+<p class="note">Fade effects gradually increase or decrease the audio volume at the beginning or end of the selected section.</p>
+</section>
+
+<section class="panel">
+<h2>5. Export Edited Audio</h2>
+<p class="note">Export your selected audio section with the volume and fade effects applied. The output format is WAV.</p>
+<div class="controls">
+<button id="exportBtn" class="export" disabled>⬇ Export WAV Audio</button>
+</div>
+<div class="status" id="exportStatus"></div>
+</section>
+
+<section class="panel">
+<h2>Your Privacy</h2>
+<p class="note">Pikora processes audio in your browser. Your selected audio files are not intentionally uploaded to the Pikora server. Exporting can take some time for long recordings.</p>
+</section>
+</main>
+
+<footer>© 2026 Pikora · Free Online Audio Editor</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let audioContext;
+let audioBuffer = null;
+let source = null;
+let playbackGain = null;
+let playing = false;
+let playbackStartedAt = 0;
+let playbackOffset = 0;
+let animationFrame = null;
+let objectUrl = null;
+
+function formatTime(seconds){
+  if(!Number.isFinite(seconds)) seconds = 0;
+  seconds = Math.max(0,seconds);
+  const m = Math.floor(seconds/60);
+  const s = Math.floor(seconds%60);
+  const tenth = Math.floor((seconds%1)*10);
+  return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+tenth;
+}
+
+function setStatus(message){
+  $("status").textContent = message;
+}
+
+function getStart(){
+  return Math.max(0,Math.min(Number($("start").value)||0,audioBuffer?.duration||0));
+}
+
+function getEnd(){
+  return Math.max(0,Math.min(Number($("end").value)||0,audioBuffer?.duration||0));
+}
+
+function selectedDuration(){
+  return Math.max(0,getEnd()-getStart());
+}
+
+function enableControls(enabled){
+  ["playBtn","pauseBtn","stopBtn","start","end","startRange","endRange","volume","fadeIn","fadeOut","exportBtn","clearBtn"].forEach(id=>{
+    $(id).disabled = !enabled;
+  });
+}
+
+async function getContext(){
+  if(!audioContext){
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioContext.state === "suspended") await audioContext.resume();
+  return audioContext;
+}
+
+$("files").addEventListener("change",async event=>{
+  const files = Array.from(event.target.files || []);
+  if(!files.length) return;
+
+  stopAudio();
+  enableControls(false);
+  setStatus("Loading and joining audio files...");
+  $("fileList").textContent = "";
+
+  try{
+    const ctx = await getContext();
+    const buffers = [];
+
+    for(let i=0;i<files.length;i++){
+      setStatus("Loading "+(i+1)+" of "+files.length+": "+files[i].name);
+      const data = await files[i].arrayBuffer();
+      const decoded = await ctx.decodeAudioData(data.slice(0));
+      buffers.push({buffer:decoded,name:files[i].name});
+    }
+
+    const channels = Math.max(...buffers.map(x=>x.buffer.numberOfChannels));
+    const sampleRate = ctx.sampleRate;
+    const totalLength = buffers.reduce((sum,x)=>sum+Math.ceil(x.buffer.duration*sampleRate),0);
+
+    const joined = ctx.createBuffer(channels,totalLength,sampleRate);
+    let offset = 0;
+
+    for(const item of buffers){
+      const b = item.buffer;
+      const length = Math.ceil(b.duration*sampleRate);
+
+      for(let ch=0;ch<channels;ch++){
+        const target = joined.getChannelData(ch);
+        const sourceData = b.getChannelData(Math.min(ch,b.numberOfChannels-1));
+        target.set(sourceData,offset);
+      }
+      offset += length;
+    }
+
+    audioBuffer = joined;
+    playbackOffset = 0;
+
+    $("start").value = 0;
+    $("end").value = audioBuffer.duration.toFixed(1);
+    $("start").max = audioBuffer.duration;
+    $("end").max = audioBuffer.duration;
+
+    $("startRange").max = audioBuffer.duration;
+    $("endRange").max = audioBuffer.duration;
+    $("startRange").value = 0;
+    $("endRange").value = audioBuffer.duration;
+
+    $("fadeIn").value = 0;
+    $("fadeOut").value = 0;
+    $("volume").value = 100;
+    $("volumeLabel").textContent = "100%";
+
+    $("fileList").innerHTML = buffers.map((x,i)=>
+      '<div class="file-item"><span>'+(i+1)+'. '+escapeHTML(x.name)+'</span><span>'+formatTime(x.buffer.duration)+'</span></div>'
+    ).join("");
+
+    enableControls(true);
+    drawWaveform();
+    updateTrimLabels();
+    updateTime(0);
+    setStatus(files.length>1 ? files.length+" audio files joined successfully." : "Audio loaded successfully.");
+  }catch(error){
+    audioBuffer = null;
+    enableControls(false);
+    setStatus("Could not load audio: "+error.message+". Try another supported audio format.");
+  }
+
+  event.target.value = "";
+});
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+function drawWaveform(){
+  const canvas = $("wave");
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(300,Math.floor(rect.width));
+  const height = 180;
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = width*dpr;
+  canvas.height = height*dpr;
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr,dpr);
+  ctx.fillStyle = "#0b1326";
+  ctx.fillRect(0,0,width,height);
+
+  if(!audioBuffer) return;
+
+  const data = audioBuffer.getChannelData(0);
+  const samplesPerPixel = Math.max(1,Math.floor(data.length/width));
+  const middle = height/2;
+
+  ctx.strokeStyle = "#a78bfa";
+  ctx.lineWidth = 1;
+
+  for(let x=0;x<width;x++){
+    const start = x*samplesPerPixel;
+    let min = 1, max = -1;
+
+    for(let j=0;j<samplesPerPixel && start+j<data.length;j++){
+      const value = data[start+j];
+      if(value<min) min=value;
+      if(value>max) max=value;
+    }
+
+    const y1 = middle + min*middle*.85;
+    const y2 = middle + max*middle*.85;
+    ctx.beginPath();
+    ctx.moveTo(x,y1);
+    ctx.lineTo(x,y2);
+    ctx.stroke();
+  }
+
+  const startX = getStart()/audioBuffer.duration*width;
+  const endX = getEnd()/audioBuffer.duration*width;
+
+  ctx.fillStyle = "rgba(167,139,250,.12)";
+  ctx.fillRect(startX,0,Math.max(0,endX-startX),height);
+
+  ctx.strokeStyle = "#e9d5ff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(startX,0);
+  ctx.lineTo(startX,height);
+  ctx.moveTo(endX,0);
+  ctx.lineTo(endX,height);
+  ctx.stroke();
+}
+
+function updateTrimLabels(){
+  if(!audioBuffer) return;
+  $("startLabel").textContent = getStart().toFixed(1)+" s";
+  $("endLabel").textContent = getEnd().toFixed(1)+" s";
+  $("startRange").value = getStart();
+  $("endRange").value = getEnd();
+  drawWaveform();
+}
+
+function updateTime(time){
+  $("currentTime").textContent = formatTime(time);
+  $("totalTime").textContent = formatTime(audioBuffer?.duration||0);
+}
+
+$("start").addEventListener("input",()=>{
+  if(!audioBuffer) return;
+  let value = Math.max(0,Math.min(Number($("start").value),audioBuffer.duration));
+  if(value>=getEnd()) value = Math.max(0,getEnd()-.1);
+  $("start").value = value;
+  playbackOffset = value;
+  updateTrimLabels();
+});
+
+$("end").addEventListener("input",()=>{
+  if(!audioBuffer) return;
+  let value = Math.max(0,Math.min(Number($("end").value),audioBuffer.duration));
+  if(value<=getStart()) value = Math.min(audioBuffer.duration,getStart()+.1);
+  $("end").value = value;
+  updateTrimLabels();
+});
+
+$("startRange").addEventListener("input",()=>{
+  $("start").value = $("startRange").value;
+  if(getStart()>=getEnd()) $("start").value = Math.max(0,getEnd()-.1);
+  playbackOffset = getStart();
+  updateTrimLabels();
+});
+
+$("endRange").addEventListener("input",()=>{
+  $("end").value = $("endRange").value;
+  if(getEnd()<=getStart()) $("end").value = Math.min(audioBuffer.duration,getStart()+.1);
+  updateTrimLabels();
+});
+
+$("volume").addEventListener("input",()=>{
+  $("volumeLabel").textContent = $("volume").value+"%";
+  if(playbackGain) playbackGain.gain.value = Number($("volume").value)/100;
+});
+
+function stopAudio(){
+  if(source){
+    try{source.stop()}catch(e){}
+    try{source.disconnect()}catch(e){}
+    source = null;
+  }
+  if(animationFrame) cancelAnimationFrame(animationFrame);
+  animationFrame = null;
+  playing = false;
+  playbackOffset = audioBuffer ? getStart() : 0;
+  if(audioBuffer) updateTime(playbackOffset);
+}
+
+async function playAudio(){
+  if(!audioBuffer || selectedDuration()<=0) return;
+  await getContext();
+  stopAudio();
+
+  const start = Math.max(getStart(),Math.min(playbackOffset,getEnd()-.01));
+  const duration = getEnd()-start;
+
+  source = audioContext.createBufferSource();
+  playbackGain = audioContext.createGain();
+  source.buffer = audioBuffer;
+  playbackGain.gain.value = Number($("volume").value)/100;
+
+  source.connect(playbackGain);
+  playbackGain.connect(audioContext.destination);
+
+  source.onended = ()=>{
+    if(playing){
+      playing = false;
+      playbackOffset = getStart();
+      updateTime(playbackOffset);
+      if(animationFrame) cancelAnimationFrame(animationFrame);
+    }
+  };
+
+  playbackStartedAt = audioContext.currentTime;
+  playbackOffset = start;
+  playing = true;
+  source.start(0,start,duration);
+
+  function tick(){
+    if(!playing) return;
+    const time = playbackOffset + (audioContext.currentTime-playbackStartedAt);
+    updateTime(Math.min(time,getEnd()));
+    animationFrame = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+$("playBtn").addEventListener("click",playAudio);
+$("pauseBtn").addEventListener("click",()=>{
+  if(!playing) return;
+  const elapsed = audioContext.currentTime-playbackStartedAt;
+  const position = playbackOffset+elapsed;
+  stopAudio();
+  playbackOffset = Math.min(position,getEnd());
+  updateTime(playbackOffset);
+});
+$("stopBtn").addEventListener("click",()=>{
+  stopAudio();
+  playbackOffset = getStart();
+  updateTime(playbackOffset);
+});
+
+$("clearBtn").addEventListener("click",()=>{
+  stopAudio();
+  audioBuffer = null;
+  $("fileList").textContent = "No audio files selected yet.";
+  $("exportStatus").textContent = "";
+  $("files").value = "";
+  $("wave").getContext("2d").clearRect(0,0,$("wave").width,$("wave").height);
+  enableControls(false);
+  updateTime(0);
+  setStatus("Upload audio files to begin.");
+});
+
+function writeWav(buffer){
+  const channels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const frames = buffer.length;
+  const bytesPerSample = 2;
+  const dataSize = frames*channels*bytesPerSample;
+  const output = new ArrayBuffer(44+dataSize);
+  const view = new DataView(output);
+
+  function writeString(offset,string){
+    for(let i=0;i<string.length;i++) view.setUint8(offset+i,string.charCodeAt(i));
+  }
+
+  writeString(0,"RIFF");
+  view.setUint32(4,36+dataSize,true);
+  writeString(8,"WAVE");
+  writeString(12,"fmt ");
+  view.setUint32(16,16,true);
+  view.setUint16(20,1,true);
+  view.setUint16(22,channels,true);
+  view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*channels*bytesPerSample,true);
+  view.setUint16(32,channels*bytesPerSample,true);
+  view.setUint16(34,16,true);
+  writeString(36,"data");
+  view.setUint32(40,dataSize,true);
+
+  let offset = 44;
+  for(let i=0;i<frames;i++){
+    for(let ch=0;ch<channels;ch++){
+      let sample = buffer.getChannelData(ch)[i];
+      sample = Math.max(-1,Math.min(1,sample));
+      view.setInt16(offset,sample<0?sample*32768:sample*32767,true);
+      offset+=2;
+    }
+  }
+  return output;
+}
+
+$("exportBtn").addEventListener("click",async()=>{
+  if(!audioBuffer || selectedDuration()<=0) return;
+
+  $("exportBtn").disabled = true;
+  $("exportStatus").textContent = "Preparing your WAV export...";
+
+  try{
+    const start = getStart();
+    const duration = selectedDuration();
+    const sampleRate = audioBuffer.sampleRate;
+    const length = Math.ceil(duration*sampleRate);
+    const channels = audioBuffer.numberOfChannels;
+    const offline = new OfflineAudioContext(channels,length,sampleRate);
+
+    const src = offline.createBufferSource();
+    const gain = offline.createGain();
+    src.buffer = audioBuffer;
+
+    const volume = Number($("volume").value)/100;
+    const fadeIn = Math.min(duration,Math.max(0,Number($("fadeIn").value)||0));
+    const fadeOut = Math.min(duration,Math.max(0,Number($("fadeOut").value)||0));
+
+    gain.gain.setValueAtTime(fadeIn>0?0:volume,0);
+    if(fadeIn>0){
+      gain.gain.linearRampToValueAtTime(volume,fadeIn);
+    }
+
+    if(fadeOut>0){
+      const fadeStart = Math.max(0,duration-fadeOut);
+      gain.gain.setValueAtTime(volume,fadeStart);
+      gain.gain.linearRampToValueAtTime(0,duration);
+    }
+
+    src.connect(gain);
+    gain.connect(offline.destination);
+    src.start(0,start,duration);
+
+    const rendered = await offline.startRendering();
+    const wav = writeWav(rendered);
+    const blob = new Blob([wav],{type:"audio/wav"});
+
+    if(objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = "pikora-edited-audio.wav";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    $("exportStatus").textContent = "Your WAV audio has been exported successfully!";
+  }catch(error){
+    $("exportStatus").textContent = "Export failed: "+error.message;
+  }finally{
+    $("exportBtn").disabled = false;
+  }
+});
+
+window.addEventListener("resize",()=>{
+  if(audioBuffer) drawWaveform();
+});
+
+enableControls(false);
+</script>
+</body>
+</html>
