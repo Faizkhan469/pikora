@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Free Video Editor | Pikora</title>
-<meta name="description" content="Free browser-based video editor with separate video and audio tracks, waveform, timeline zoom, trimming, text, music and WebM export.">
+<meta name="description" content="Free browser-based video editor with multitrack timeline, audio waveform, keyframe text animation, trimming, music and WebM export.">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:#f4f5ff;font-family:Arial,sans-serif}
@@ -33,7 +33,8 @@ label{display:block;font-size:12px;color:#c5cce0;margin-bottom:3px}
 .small{font-size:12px;color:#9ba8c4}
 video{width:100%;max-height:470px;background:#05070d;border-radius:10px;display:block}
 #previewWrap{position:relative}
-#previewText{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+#previewText{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#previewText .preview-overlay{position:absolute;transform:translate(-50%,-50%);font-weight:bold;text-align:center;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere;white-space:pre-wrap}
 .clip{padding:12px;border:1px solid #344365;border-radius:9px;margin-bottom:9px;background:#10182d}
 .clip.active{border-color:#a78bfa;background:#202044}
 .clip strong{font-size:13px}
@@ -46,8 +47,15 @@ video{width:100%;max-height:470px;background:#05070d;border-radius:10px;display:
 #progressBar{height:100%;width:0;background:#9b7bff}
 hr{border:0;border-top:1px solid #293654;margin:17px 0}
 a{color:#b9a5ff}
+.keyframe-box{background:#0d1529;border:1px solid #39496c;border-radius:10px;padding:13px;margin:12px 0}
+.keyframe-box h3{color:#a5f3fc}
+.keyframe-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.keyframe-grid label{margin-bottom:2px}
+.keyframe-grid input,.keyframe-grid select{margin-bottom:8px}
+.keyframe-note{font-size:11px;color:#91a2c3;line-height:1.5}
+.keyframe-badge{display:inline-block;background:#153c4b;color:#a5f3fc;border-radius:5px;padding:4px 7px;font-size:10px;margin-bottom:8px}
 
-/* Separate timeline tracks */
+/* Timeline */
 .timeline-shell{background:#0d1529;border:1px solid #344365;border-radius:12px;padding:12px;overflow:hidden}
 .timeline-top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
 .timeline-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:8px}
@@ -83,7 +91,7 @@ a{color:#b9a5ff}
 @media(max-width:800px){
  .layout{grid-template-columns:1fr}
  header{padding:15px}
- .clipgrid{grid-template-columns:1fr}
+ .clipgrid,.keyframe-grid{grid-template-columns:1fr}
  .trim-controls{grid-template-columns:1fr}
  .track-label{width:60px;min-width:60px;font-size:10px}
 }
@@ -97,7 +105,7 @@ a{color:#b9a5ff}
 
 <main>
 <h1>Free Video Editor</h1>
-<p class="sub">Edit multiple clips with separate video and audio tracks, waveform previews, timeline zoom, trimming, transitions, text and music. Editing happens in your browser.</p>
+<p class="sub">Edit multiple clips with separate video and audio tracks, waveform previews, keyframe text animation, trimming, transitions and music. Editing happens in your browser.</p>
 
 <div class="layout">
 <section>
@@ -120,7 +128,6 @@ a{color:#b9a5ff}
 <h2 style="margin:0">Multitrack Visual Timeline</h2>
 <span class="small" id="timelineDuration">0.0 seconds</span>
 </div>
-
 <div class="timeline-top">
 <div class="zoom-control">
 <span>Timeline zoom</span>
@@ -129,11 +136,9 @@ a{color:#b9a5ff}
 </div>
 <span class="small">Scroll horizontally to see more</span>
 </div>
-
 <div class="timeline-shell">
 <div class="timeline-scroll" id="timelineScroll">
 <div class="timeline-ruler" id="timelineRuler"></div>
-
 <div class="track-row">
 <div class="track-label">VIDEO</div>
 <div class="track-content" id="videoTrackContent">
@@ -142,7 +147,6 @@ a{color:#b9a5ff}
 </div>
 </div>
 </div>
-
 <div class="track-row">
 <div class="track-label">AUDIO</div>
 <div class="audio-track-content" id="audioTrackContent">
@@ -152,7 +156,7 @@ a{color:#b9a5ff}
 </div>
 </div>
 </div>
-<p class="timeline-help">The video and music tracks are displayed separately. Drag video clips to reorder them. The audio waveform is generated locally from your selected music file.</p>
+<p class="timeline-help">Drag video clips to reorder them. The audio waveform is generated locally from your selected music file.</p>
 </div>
 
 <div class="trim-visual">
@@ -220,26 +224,73 @@ a{color:#b9a5ff}
 </div>
 
 <div class="panel">
-<h2>2. Text Overlays</h2>
+<h2>2. Text Overlays & Keyframe Animation</h2>
 <label>Text to add</label>
 <input id="textInput" placeholder="Type your text here">
 <div class="clipgrid">
 <div><label>Text colour</label><input type="color" id="textColor" value="#ffffff"></div>
-<div><label>Font size</label><input type="number" id="textSize" value="42" min="10" max="150"></div>
-<div><label>Horizontal position</label><select id="textX"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
-<div><label>Vertical position</label><select id="textY"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
+<div><label>Font size (pixels)</label><input type="number" id="textSize" value="42" min="10" max="150"></div>
 <div><label>Start time (whole video seconds)</label><input type="number" id="textStart" value="0" min="0" step=".1"></div>
 <div><label>End time (whole video seconds)</label><input type="number" id="textEnd" value="10" min=".1" step=".1"></div>
 </div>
-<label>Text animation</label>
-<select id="textAnimation"><option value="none">None</option><option value="fade">Fade in</option><option value="zoom">Zoom in</option><option value="slide">Slide up</option></select>
+
+<div class="keyframe-box">
+<span class="keyframe-badge">KEYFRAME 1 · START</span>
+<h3>Starting appearance</h3>
+<div class="keyframe-grid">
+<div><label>Starting horizontal position</label>
+<select id="textX"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
+<div><label>Starting vertical position</label>
+<select id="textY"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
+<div><label>Starting scale</label>
+<input type="number" id="textScaleStart" min=".1" max="3" step=".1" value="1"></div>
+<div><label>Starting opacity (%)</label>
+<input type="number" id="textOpacityStart" min="0" max="100" value="0"></div>
+</div>
+</div>
+
+<div class="keyframe-box">
+<span class="keyframe-badge">KEYFRAME 2 · END</span>
+<h3>Ending appearance</h3>
+<div class="keyframe-grid">
+<div><label>Ending horizontal position</label>
+<select id="textXEnd"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
+<div><label>Ending vertical position</label>
+<select id="textYEnd"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
+<div><label>Ending scale</label>
+<input type="number" id="textScaleEnd" min=".1" max="3" step=".1" value="1"></div>
+<div><label>Ending opacity (%)</label>
+<input type="number" id="textOpacityEnd" min="0" max="100" value="100"></div>
+</div>
+</div>
+
+<label>Animation interpolation</label>
+<select id="textEasing">
+<option value="linear">Linear</option>
+<option value="ease">Smooth ease</option>
+<option value="ease-in">Ease in</option>
+<option value="ease-out">Ease out</option>
+</select>
+<label>Additional entrance effect</label>
+<select id="textAnimation">
+<option value="none">None</option>
+<option value="fade">Fade entrance</option>
+<option value="zoom">Zoom entrance</option>
+<option value="slide">Slide entrance</option>
+</select>
+<p class="keyframe-note">Keyframe 1 defines how the text looks when it first appears. Keyframe 2 defines its appearance when the text timing ends. Pikora smoothly animates the position, size and opacity between these settings.</p>
 <div class="row">
-<button id="addText">Add Text Overlay</button>
+<button id="addText">Add Animated Text</button>
 <button class="secondary" id="updateText">Update Selected</button>
 <button class="danger" id="deleteText">Delete Selected</button>
 </div>
-<div id="textList"></div>
-<p class="small">Add multiple overlays with different start and end times. Times refer to the full exported video timeline.</p>
+<div class="row" style="margin-top:8px">
+<button class="secondary" id="textPresetMove">Preset: Move Across</button>
+<button class="secondary" id="textPresetZoom">Preset: Zoom In</button>
+<button class="secondary" id="textPresetFade">Preset: Fade In</button>
+</div>
+<div id="textList" style="margin-top:12px"></div>
+<p class="small">Text timing refers to the complete exported video timeline. Preview and export both use the keyframe settings.</p>
 </div>
 </section>
 
@@ -288,7 +339,7 @@ a{color:#b9a5ff}
 <p class="small">• Select a thumbnail to preview and edit that clip.</p>
 <p class="small">• Use the visual trim sliders or time fields.</p>
 <p class="small">• Split the clip at the current preview position.</p>
-<p class="small">• Add multiple text overlays and set their timing.</p>
+<p class="small">• Animate text between two keyframes.</p>
 <p class="small">• Export is processed on your device; large videos may need more memory.</p>
 </div>
 </aside>
@@ -308,13 +359,13 @@ function totalDuration(){return clips.reduce((s,c)=>s+durationOf(c),0)}
 function selectedClip(){return clips[selected]}
 function fmt(n){return Number(n||0).toFixed(1)}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
 function timelineScale(){return 100*zoom}
 
 $("timelineZoom").addEventListener("input",()=>{
  zoom=Number($("timelineZoom").value)/100;
  $("zoomValue").textContent=$("timelineZoom").value+"%";
- renderTimeline();
- renderAudioTrack();
+ renderTimeline();renderAudioTrack();
 });
 
 $("videoFiles").addEventListener("change",async e=>{
@@ -322,8 +373,7 @@ $("videoFiles").addEventListener("change",async e=>{
  for(const f of files){
   const url=URL.createObjectURL(f);
   const c={name:f.name,url,start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,fadeOut:0,thumb:null};
-  clips.push(c);
-  await getDuration(c);
+  clips.push(c);await getDuration(c);
  }
  if(clips.length){selected=clips.length-1;loadSelected()}
  renderAll();
@@ -334,8 +384,7 @@ function getDuration(c){
   const v=document.createElement("video");
   v.preload="metadata";v.muted=true;v.src=c.url;
   v.onloadedmetadata=()=>{
-   c.duration=Number.isFinite(v.duration)?v.duration:0;
-   c.end=c.duration||0;
+   c.duration=Number.isFinite(v.duration)?v.duration:0;c.end=c.duration||0;
    v.removeAttribute("src");v.load();resolve();
   };
   v.onerror=()=>{c.duration=0;c.end=0;resolve()};
@@ -347,14 +396,10 @@ function makeThumbnail(c){
  thumbJobs.add(c.url);
  const v=document.createElement("video");
  v.preload="auto";v.muted=true;v.src=c.url;
- v.onloadedmetadata=()=>{
-  try{v.currentTime=Math.min(1,Math.max(0,v.duration*.15))}
-  catch(e){finish()}
- };
+ v.onloadedmetadata=()=>{try{v.currentTime=Math.min(1,Math.max(0,v.duration*.15))}catch(e){finish()}};
  v.onseeked=()=>{
   try{
-   const canvas=document.createElement("canvas");
-   canvas.width=240;canvas.height=100;
+   const canvas=document.createElement("canvas");canvas.width=240;canvas.height=100;
    const ctx=canvas.getContext("2d");
    const scale=Math.max(240/v.videoWidth,100/v.videoHeight);
    const w=v.videoWidth*scale,h=v.videoHeight*scale;
@@ -364,20 +409,10 @@ function makeThumbnail(c){
   finish();
  };
  v.onerror=finish;
- function finish(){
-  thumbJobs.delete(c.url);
-  v.removeAttribute("src");v.load();
-  renderTimeline();
- }
+ function finish(){thumbJobs.delete(c.url);v.removeAttribute("src");v.load();renderTimeline()}
 }
 
-function renderAll(){
- renderClips();
- renderTimeline();
- renderAudioTrack();
- renderTexts();
- updateTrimUI();
-}
+function renderAll(){renderClips();renderTimeline();renderAudioTrack();renderTexts();updateTrimUI()}
 
 function renderClips(){
  $("clipsList").innerHTML=clips.map((c,i)=>`
@@ -394,12 +429,8 @@ function renderTimeline(){
  $("timelineDuration").textContent=fmt(total)+" seconds";
  if(!clips.length){
   track.innerHTML='<div class="timeline-empty">Add video clips to build your timeline.</div>';
-  track.style.width="100%";
-  ruler.innerHTML="";
-  ruler.style.width="100%";
-  return;
+  track.style.width="100%";ruler.innerHTML="";ruler.style.width="100%";return;
  }
-
  const widths=clips.map(c=>Math.max(110,durationOf(c)*scale));
  const width=widths.reduce((a,b)=>a+b,0)+Math.max(0,clips.length-1)*7;
  track.style.width=width+"px";
@@ -409,105 +440,62 @@ function renderTimeline(){
  <canvas id="thumb${i}" width="240" height="100"></canvas>
  <div class="tc-info">${esc(c.name)} · ${fmt(durationOf(c))}s</div>
  </div>`).join("");
-
  clips.forEach((c,i)=>{
   if(c.thumb){
    const canvas=$("thumb"+i);
-   if(canvas){
-    const ctx=canvas.getContext("2d");
-    const img=new Image();
-    img.onload=()=>ctx.drawImage(img,0,0,240,100);
-    img.src=c.thumb;
-   }
+   if(canvas){const ctx=canvas.getContext("2d");const img=new Image();img.onload=()=>ctx.drawImage(img,0,0,240,100);img.src=c.thumb}
   }else makeThumbnail(c);
  });
-
  ruler.style.width=width+"px";
  const interval=zoom>=1.4?2:zoom>=.8?5:10;
  const marks=Math.max(1,Math.ceil(total/interval));
  ruler.innerHTML=Array.from({length:marks+1},(_,i)=>{
   const t=Math.min(i*interval,total);
-  const left=t*scale;
-  return `<span class="ruler-mark" style="left:${left}px">${fmt(t)}s</span>`;
+  return `<span class="ruler-mark" style="left:${t*scale}px">${fmt(t)}s</span>`;
  }).join("");
-
  track.querySelectorAll(".timeline-card").forEach(card=>{
   card.addEventListener("dragstart",e=>{
-   dragIndex=Number(card.dataset.index);
-   card.classList.add("dragging");
-   e.dataTransfer.effectAllowed="move";
-   e.dataTransfer.setData("text/plain",String(dragIndex));
+   dragIndex=Number(card.dataset.index);card.classList.add("dragging");
+   e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",String(dragIndex));
   });
   card.addEventListener("dragend",()=>{dragIndex=-1;renderTimeline()});
   card.addEventListener("dragover",e=>{e.preventDefault();card.classList.add("dragover")});
   card.addEventListener("dragleave",()=>card.classList.remove("dragover"));
   card.addEventListener("drop",e=>{
-   e.preventDefault();
-   const from=dragIndex,to=Number(card.dataset.index);
+   e.preventDefault();const from=dragIndex,to=Number(card.dataset.index);
    if(from<0||from===to)return;
-   const moved=clips.splice(from,1)[0];
-   clips.splice(to,0,moved);
-   selected=to;
-   loadSelected();renderAll();
-   $("status").textContent="Timeline clip order updated.";
+   const moved=clips.splice(from,1)[0];clips.splice(to,0,moved);
+   selected=to;loadSelected();renderAll();$("status").textContent="Timeline clip order updated.";
   });
  });
 }
 
 function renderAudioTrack(){
- const canvas=$("audioWaveform");
- const empty=$("audioEmpty");
- const name=$("audioTrackName");
- const total=totalDuration();
- const width=Math.max(300,total*timelineScale());
- const height=74;
+ const canvas=$("audioWaveform"),empty=$("audioEmpty"),name=$("audioTrackName");
+ const total=totalDuration(),width=Math.max(300,total*timelineScale()),height=74;
  const container=$("audioTrackContent");
-
  if(!musicURL||!musicWaveData){
-  canvas.style.display="none";
-  name.style.display="none";
-  empty.style.display="flex";
-  container.style.width="100%";
-  return;
+  canvas.style.display="none";name.style.display="none";empty.style.display="flex";
+  container.style.width="100%";return;
  }
-
- container.style.width=width+"px";
- empty.style.display="none";
- canvas.style.display="block";
- name.style.display="block";
+ container.style.width=width+"px";empty.style.display="none";
+ canvas.style.display="block";name.style.display="block";
  name.textContent="♫ "+musicFileName+" · "+fmt(musicDuration)+"s";
- canvas.width=Math.max(1,Math.ceil(width));
- canvas.height=height;
- canvas.style.width=width+"px";
- canvas.style.height=height+"px";
-
- const ctx=canvas.getContext("2d");
- ctx.clearRect(0,0,canvas.width,height);
- ctx.fillStyle="#10253a";
- ctx.fillRect(0,0,canvas.width,height);
-
- const data=musicWaveData;
- const middle=height/2;
- const step=Math.max(1,Math.floor(data.length/Math.max(1,width)));
+ canvas.width=Math.max(1,Math.ceil(width));canvas.height=height;
+ canvas.style.width=width+"px";canvas.style.height=height+"px";
+ const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,height);
+ ctx.fillStyle="#10253a";ctx.fillRect(0,0,canvas.width,height);
+ const data=musicWaveData,middle=height/2;
  const samplesPerPixel=Math.max(1,Math.floor(data.length/Math.max(1,width)));
-
  ctx.fillStyle="#45c6c8";
  for(let x=0;x<width;x++){
-  const start=x*samplesPerPixel;
-  let min=1,max=-1;
-  for(let j=start;j<Math.min(start+samplesPerPixel,data.length);j++){
-   if(data[j]<min)min=data[j];
-   if(data[j]>max)max=data[j];
-  }
+  const start=x*samplesPerPixel;let min=1,max=-1;
+  for(let j=start;j<Math.min(start+samplesPerPixel,data.length);j++){if(data[j]<min)min=data[j];if(data[j]>max)max=data[j]}
   if(max<min){min=0;max=0}
-  const y1=middle-max*28;
-  const y2=middle-min*28;
-  ctx.fillRect(x,y1,1,Math.max(1,y2-y1));
+  ctx.fillRect(x,middle-max*28,1,Math.max(1,(max-min)*28));
  }
- ctx.strokeStyle="#a5f3fc";
- ctx.globalAlpha=.35;
- ctx.beginPath();ctx.moveTo(0,middle);ctx.lineTo(width,middle);ctx.stroke();
- ctx.globalAlpha=1;
+ ctx.strokeStyle="#a5f3fc";ctx.globalAlpha=.35;ctx.beginPath();
+ ctx.moveTo(0,middle);ctx.lineTo(width,middle);ctx.stroke();ctx.globalAlpha=1;
 }
 
 function selectClip(i){selected=i;loadSelected();renderAll()}
@@ -517,14 +505,10 @@ function loadSelected(){
  preview.onloadedmetadata=()=>{
   preview.currentTime=Math.min(c.start,Math.max(0,preview.duration-.05));
   preview.playbackRate=c.speed;
-  $("trimStart").value=fmt(c.start);
-  $("trimEnd").value=fmt(c.end);
-  $("speed").value=c.speed;
-  $("filter").value=c.filter;
-  $("transition").value=c.transition;
-  $("transitionDuration").value=c.transitionDuration;
-  $("fadeOut").value=c.fadeOut;
-  updateTimeInfo();updateTrimUI();
+  $("trimStart").value=fmt(c.start);$("trimEnd").value=fmt(c.end);
+  $("speed").value=c.speed;$("filter").value=c.filter;
+  $("transition").value=c.transition;$("transitionDuration").value=c.transitionDuration;
+  $("fadeOut").value=c.fadeOut;updateTimeInfo();updateTrimUI();updatePreviewText();
  };
 }
 
@@ -537,8 +521,7 @@ function moveClip(d){
 }
 $("deleteClip").onclick=()=>{
  if(selected<0)return;
- URL.revokeObjectURL(clips[selected].url);
- clips.splice(selected,1);
+ URL.revokeObjectURL(clips[selected].url);clips.splice(selected,1);
  selected=Math.min(selected,clips.length-1);
  if(selected>=0)loadSelected();
  else{preview.pause();preview.removeAttribute("src");preview.load()}
@@ -547,14 +530,11 @@ $("deleteClip").onclick=()=>{
 
 function applyTrim(a,b){
  const c=selectedClip();if(!c)return;
- a=Math.max(0,Math.min(Number(a),c.duration));
- b=Math.max(0,Math.min(Number(b),c.duration));
+ a=clamp(Number(a),0,c.duration);b=clamp(Number(b),0,c.duration);
  if(b<=a+.05)return;
  c.start=a;c.end=b;
- $("trimStart").value=fmt(a);
- $("trimEnd").value=fmt(b);
- $("startRange").value=a;
- $("endRange").value=b;
+ $("trimStart").value=fmt(a);$("trimEnd").value=fmt(b);
+ $("startRange").value=a;$("endRange").value=b;
  updateTrimUI();renderClips();renderTimeline();
 }
 $("startRange").oninput=()=>applyTrim(Number($("startRange").value),Number($("endRange").value));
@@ -565,18 +545,15 @@ function updateTrimUI(){
  if(!c){
   $("startRange").disabled=true;$("endRange").disabled=true;
   $("startReadout").textContent="0.0s";$("endReadout").textContent="0.0s";
-  $("trimSelected").style.left="0";$("trimSelected").style.width="100%";
-  return;
+  $("trimSelected").style.left="0";$("trimSelected").style.width="100%";return;
  }
  $("startRange").disabled=false;$("endRange").disabled=false;
  $("startRange").max=c.duration;$("endRange").max=c.duration;
  $("startRange").value=c.start;$("endRange").value=c.end;
- $("startReadout").textContent=fmt(c.start)+"s";
- $("endReadout").textContent=fmt(c.end)+"s";
+ $("startReadout").textContent=fmt(c.start)+"s";$("endReadout").textContent=fmt(c.end)+"s";
  const left=c.duration?c.start/c.duration*100:0;
  const width=c.duration?(c.end-c.start)/c.duration*100:100;
- $("trimSelected").style.left=left+"%";
- $("trimSelected").style.width=width+"%";
+ $("trimSelected").style.left=left+"%";$("trimSelected").style.width=width+"%";
 }
 $("trimStart").addEventListener("change",()=>applyTrim(Number($("trimStart").value),Number($("trimEnd").value)));
 $("trimEnd").addEventListener("change",()=>applyTrim(Number($("trimStart").value),Number($("trimEnd").value)));
@@ -598,8 +575,7 @@ $("splitClip").onclick=()=>{
  const cut=preview.currentTime;
  if(cut<=c.start+.05||cut>=c.end-.05)return alert("Move the playhead inside the clip, away from its beginning and end.");
  const second={...c,name:c.name+" (split)",start:cut,end:c.end,transition:"cut",transitionDuration:1,fadeOut:c.fadeOut,thumb:c.thumb};
- c.end=cut;c.fadeOut=0;
- clips.splice(selected+1,0,second);
+ c.end=cut;c.fadeOut=0;clips.splice(selected+1,0,second);
  renderAll();$("status").textContent="Clip split successfully.";
 };
 
@@ -610,49 +586,120 @@ $("stopBtn").onclick=()=>{preview.pause();if(selected>=0)preview.currentTime=cli
 preview.addEventListener("timeupdate",()=>{
  updateTimeInfo();updatePreviewText();updatePlayhead();
 });
-
 function updateTimeInfo(){
  const c=selectedClip();if(!c)return;
  $("timeInfo").textContent=`Clip position: ${fmt(preview.currentTime)}s / ${fmt(c.end)}s`;
 }
 function updatePlayhead(){
  const c=selectedClip();if(!c||!c.duration)return;
- const p=preview.currentTime/c.duration*100;
- $("trimPlayhead").style.left=p+"%";
+ $("trimPlayhead").style.left=(preview.currentTime/c.duration*100)+"%";
+}
+
+/* Text keyframe controls */
+function readText(){
+ const t={
+  text:$("textInput").value.trim(),
+  color:$("textColor").value,
+  size:clamp(Number($("textSize").value)||42,10,150),
+  x:Number($("textX").value),y:Number($("textY").value),
+  x2:Number($("textXEnd").value),y2:Number($("textYEnd").value),
+  scale1:clamp(Number($("textScaleStart").value)||1,.1,3),
+  scale2:clamp(Number($("textScaleEnd").value)||1,.1,3),
+  opacity1:clamp(Number($("textOpacityStart").value)||0,0,100),
+  opacity2:clamp(Number($("textOpacityEnd").value)||0,0,100),
+  start:Number($("textStart").value),end:Number($("textEnd").value),
+  easing:$("textEasing").value,animation:$("textAnimation").value
+ };
+ return t;
+}
+
+function loadTextControls(t){
+ $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;
+ $("textX").value=String(t.x);$("textY").value=String(t.y);
+ $("textXEnd").value=String(t.x2);$("textYEnd").value=String(t.y2);
+ $("textScaleStart").value=t.scale1;$("textScaleEnd").value=t.scale2;
+ $("textOpacityStart").value=t.opacity1;$("textOpacityEnd").value=t.opacity2;
+ $("textStart").value=t.start;$("textEnd").value=t.end;
+ $("textEasing").value=t.easing||"linear";$("textAnimation").value=t.animation||"none";
 }
 
 function renderTexts(){
  $("textList").innerHTML=texts.map((t,i)=>`
  <div class="textitem ${i===selectedText?"active":""}">
- <strong>${esc(t.text)}</strong><div class="small">${fmt(t.start)}s – ${fmt(t.end)}s</div>
+ <strong>${esc(t.text)}</strong>
+ <div class="small">${fmt(t.start)}s – ${fmt(t.end)}s · ${fmt(t.scale1)}x to ${fmt(t.scale2)}x · ${t.opacity1}% to ${t.opacity2}% opacity</div>
  <button class="secondary" onclick="selectText(${i})">Select</button>
  </div>`).join("")||'<p class="small">No text overlays yet.</p>';
 }
 function selectText(i){
  selectedText=i;const t=texts[i];if(!t)return;
- $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;
- $("textX").value=t.x;$("textY").value=t.y;$("textStart").value=t.start;$("textEnd").value=t.end;
- $("textAnimation").value=t.animation;renderTexts();
-}
-function readText(){
- return {text:$("textInput").value.trim(),color:$("textColor").value,size:Number($("textSize").value),
- x:Number($("textX").value),y:Number($("textY").value),start:Number($("textStart").value),
- end:Number($("textEnd").value),animation:$("textAnimation").value};
+ loadTextControls(t);renderTexts();updatePreviewText();
 }
 $("addText").onclick=()=>{
- const t=readText();if(!t.text)return alert("Enter some text.");
+ const t=readText();
+ if(!t.text)return alert("Enter some text.");
  if(t.start<0||t.end<=t.start)return alert("Enter a valid text start and end time.");
  texts.push(t);selectedText=texts.length-1;renderTexts();updatePreviewText();
+ $("status").textContent="Animated text added.";
 };
 $("updateText").onclick=()=>{
  if(selectedText<0)return alert("Select a text overlay first.");
  const t=readText();if(!t.text||t.end<=t.start)return alert("Check your text and timing.");
  texts[selectedText]=t;renderTexts();updatePreviewText();
+ $("status").textContent="Text keyframes updated.";
 };
 $("deleteText").onclick=()=>{
  if(selectedText<0)return;
  texts.splice(selectedText,1);selectedText=-1;renderTexts();updatePreviewText();
 };
+
+function setPreset(type){
+ if(type==="move"){
+  $("textX").value=".15";$("textY").value=".5";
+  $("textXEnd").value=".85";$("textYEnd").value=".5";
+  $("textScaleStart").value="1";$("textScaleEnd").value="1";
+  $("textOpacityStart").value="100";$("textOpacityEnd").value="100";
+ }
+ if(type==="zoom"){
+  $("textX").value=".5";$("textY").value=".5";
+  $("textXEnd").value=".5";$("textYEnd").value=".5";
+  $("textScaleStart").value=".2";$("textScaleEnd").value="1.5";
+  $("textOpacityStart").value="0";$("textOpacityEnd").value="100";
+ }
+ if(type==="fade"){
+  $("textX").value=".5";$("textY").value=".5";
+  $("textXEnd").value=".5";$("textYEnd").value=".5";
+  $("textScaleStart").value="1";$("textScaleEnd").value="1";
+  $("textOpacityStart").value="0";$("textOpacityEnd").value="100";
+ }
+ $("textEasing").value="ease";
+ updatePreviewText();
+}
+$("textPresetMove").onclick=()=>setPreset("move");
+$("textPresetZoom").onclick=()=>setPreset("zoom");
+$("textPresetFade").onclick=()=>setPreset("fade");
+
+function easeProgress(p,type){
+ p=clamp(p,0,1);
+ if(type==="ease")return p*p*(3-2*p);
+ if(type==="ease-in")return p*p;
+ if(type==="ease-out")return 1-(1-p)*(1-p);
+ return p;
+}
+function textState(t,time){
+ const raw=clamp((time-t.start)/Math.max(.001,t.end-t.start),0,1);
+ const p=easeProgress(raw,t.easing||"linear");
+ let x=t.x+(t.x2-t.x)*p;
+ let y=t.y+(t.y2-t.y)*p;
+ let scale=t.scale1+(t.scale2-t.scale1)*p;
+ let opacity=(t.opacity1+(t.opacity2-t.opacity1)*p)/100;
+
+ if(t.animation==="fade")opacity*=Math.min(1,raw/.12);
+ if(t.animation==="zoom")scale*=Math.min(1,Math.max(.05,raw/.12));
+ if(t.animation==="slide")y+=((1-Math.min(1,raw/.12))*.08);
+
+ return {x,y,scale,opacity};
+}
 
 function timelineAtPreview(){
  let t=0;
@@ -661,9 +708,12 @@ function timelineAtPreview(){
  return t+(preview.currentTime-(c?.start||0))/(c?.speed||1);
 }
 function updatePreviewText(){
- const t=timelineAtPreview();
- const active=texts.filter(x=>t>=x.start&&t<=x.end);
- $("previewText").innerHTML=active.map(x=>`<div style="position:absolute;left:${x.x*100}%;top:${x.y*100}%;transform:translate(-50%,-50%);color:${x.color};font-size:${Math.min(x.size,80)}px;font-weight:bold;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere">${esc(x.text)}</div>`).join("");
+ const time=timelineAtPreview();
+ const active=texts.filter(t=>time>=t.start&&time<=t.end);
+ $("previewText").innerHTML=active.map(t=>{
+  const s=textState(t,time);
+  return `<div class="preview-overlay" style="left:${s.x*100}%;top:${s.y*100}%;color:${t.color};font-size:${Math.min(t.size,100)}px;opacity:${s.opacity};transform:translate(-50%,-50%) scale(${s.scale})">${esc(t.text)}</div>`;
+ }).join("");
 }
 
 async function loadMusicWaveform(file){
@@ -678,57 +728,47 @@ async function loadMusicWaveform(file){
   const decoded=await ctx.decodeAudioData(buffer.slice(0));
   musicDuration=decoded.duration;
   const channel=decoded.getChannelData(0);
-  const points= Math.min(12000,channel.length);
+  const points=Math.min(12000,channel.length);
   const block=Math.max(1,Math.floor(channel.length/points));
   const data=new Float32Array(points);
   for(let i=0;i<points;i++){
-   let peak=0;
-   const from=i*block,to=Math.min(channel.length,from+block);
-   for(let j=from;j<to;j++){
-    const val=Math.abs(channel[j]);
-    if(val>peak)peak=val;
-   }
+   let peak=0;const from=i*block,to=Math.min(channel.length,from+block);
+   for(let j=from;j<to;j++){const val=Math.abs(channel[j]);if(val>peak)peak=val}
    data[i]=peak;
   }
   musicWaveData=data;
   $("audioInfo").textContent="Music loaded: "+musicFileName+" · "+fmt(musicDuration)+" seconds";
   $("audioEmpty").textContent="Choose a music file to display its waveform here.";
-  renderAudioTrack();
-  await ctx.close();
+  renderAudioTrack();await ctx.close();
  }catch(err){
   $("audioInfo").textContent="Music selected, but waveform could not be generated: "+err.message;
   $("audioEmpty").textContent="Waveform preview is unavailable for this file.";
   renderAudioTrack();
  }
 }
-
 $("musicFile").onchange=async e=>{
- const file=e.target.files[0];
- if(!file)return;
+ const file=e.target.files[0];if(!file)return;
  if(musicURL)URL.revokeObjectURL(musicURL);
- musicURL=URL.createObjectURL(file);
- musicFileName=file.name;
+ musicURL=URL.createObjectURL(file);musicFileName=file.name;
  await loadMusicWaveform(file);
 };
 $("removeMusic").onclick=()=>{
  if(musicURL)URL.revokeObjectURL(musicURL);
  musicURL=null;musicFileName="";musicDuration=0;musicWaveData=null;
- $("musicFile").value="";
- $("audioInfo").textContent="No background music selected.";
+ $("musicFile").value="";$("audioInfo").textContent="No background music selected.";
  renderAudioTrack();
 };
 
 function canvasSize(){
- let w=1280,h=720;
- const a=$("aspect").value;
+ let w=1280,h=720;const a=$("aspect").value;
  if(a==="9:16"){w=720;h=1280}
  else if(a==="1:1"){w=1080;h=1080}
  else if(a==="4:5"){w=864;h=1080}
  else if(a==="original"&&preview.videoWidth){w=preview.videoWidth;h=preview.videoHeight}
  return [w,h];
 }
-
 function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress){
+ if(!v.videoWidth||!v.videoHeight)return;
  ctx.save();ctx.globalAlpha=alpha;ctx.filter=filter==="none"?"none":filter;
  let scale=fit==="cover"?Math.max(w/v.videoWidth,h/v.videoHeight):Math.min(w/v.videoWidth,h/v.videoHeight);
  let dw=v.videoWidth*scale,dh=v.videoHeight*scale;
@@ -737,25 +777,21 @@ function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress){
  if(transition==="slide")x+=(1-progress)*w;
  ctx.beginPath();
  if(transition==="wipe"){ctx.rect(0,0,w*progress,h);ctx.clip()}
- ctx.drawImage(v,x,y,dw,dh);
- ctx.restore();
+ ctx.drawImage(v,x,y,dw,dh);ctx.restore();
 }
 
 function drawOverlayText(ctx,t,time,w,h){
  if(time<t.start||time>t.end)return;
- let alpha=1,scale=1,offset=0;
- const elapsed=time-t.start;
- if(t.animation==="fade")alpha=Math.min(1,elapsed/.6);
- if(t.animation==="zoom")scale=Math.min(1,Math.max(.1,elapsed/.6));
- if(t.animation==="slide")offset=(1-Math.min(1,elapsed/.6))*50;
- ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=t.color;ctx.font=`bold ${t.size}px Arial`;
- ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor="#000";ctx.shadowBlur=5;
- ctx.translate(w*t.x,h*t.y+offset);ctx.scale(scale,scale);
+ const s=textState(t,time);
+ ctx.save();ctx.globalAlpha=s.opacity;
+ ctx.fillStyle=t.color;ctx.font=`bold ${t.size}px Arial`;
+ ctx.textAlign="center";ctx.textBaseline="middle";
+ ctx.shadowColor="#000";ctx.shadowBlur=5;
+ ctx.translate(w*s.x,h*s.y);ctx.scale(s.scale,s.scale);
  const words=t.text.split("\n");
  words.forEach((line,i)=>ctx.fillText(line,0,(i-(words.length-1)/2)*t.size*1.25,w*.9));
  ctx.restore();
 }
-
 function wait(ms){return new Promise(r=>setTimeout(r,ms))}
 
 async function exportVideo(){
@@ -774,61 +810,39 @@ async function exportVideo(){
  try{
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(!AudioCtx)throw new Error("Audio is not supported.");
-  audioCtx=new AudioCtx();
-  dest=audioCtx.createMediaStreamDestination();
+  audioCtx=new AudioCtx();dest=audioCtx.createMediaStreamDestination();
 
   for(const c of clips){
    const el=document.createElement("video");
-   el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;
-   el.playsInline=true;
-   await new Promise((resolve,reject)=>{
-    el.onloadedmetadata=resolve;el.onerror=reject;el.load();
-   });
+   el.src=c.url;el.crossOrigin="anonymous";el.muted=false;el.volume=1;el.playsInline=true;
+   await new Promise((resolve,reject)=>{el.onloadedmetadata=resolve;el.onerror=reject;el.load()});
    const src=audioCtx.createMediaElementSource(el);
    const gain=audioCtx.createGain();gain.gain.value=Number($("videoVolume").value);
    src.connect(gain);gain.connect(dest);
    audioEls.push({el,gain});
   }
-
   if(musicURL){
    musicEl=new Audio(musicURL);musicEl.loop=true;
-   await new Promise(resolve=>{
-    musicEl.onloadedmetadata=resolve;musicEl.onerror=resolve;musicEl.load();
-   });
+   await new Promise(resolve=>{musicEl.onloadedmetadata=resolve;musicEl.onerror=resolve;musicEl.load()});
    const ms=audioCtx.createMediaElementSource(musicEl);
-   const mg=audioCtx.createGain();ms.connect(mg);mg.connect(dest);
-   musicEl._gain=mg;
+   const mg=audioCtx.createGain();ms.connect(mg);mg.connect(dest);musicEl._gain=mg;
   }
-
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
- }catch(err){
-  console.warn("Audio setup issue",err);
- }
+ }catch(err){console.warn("Audio setup issue",err)}
 
  const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
- if(!mime){
-  alert("This browser does not support WebM recording.");
-  stream.getTracks().forEach(t=>t.stop());return;
- }
-
+ if(!mime){alert("This browser does not support WebM recording.");stream.getTracks().forEach(t=>t.stop());return}
  let recorder;
- try{
-  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000});
- }catch(e){
-  alert("Could not start export: "+e.message);
-  stream.getTracks().forEach(t=>t.stop());return;
- }
+ try{recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:Number($("quality").value)*1000000)}
+ catch(e){alert("Could not start export: "+e.message);stream.getTracks().forEach(t=>t.stop());return}
 
  const chunks=[];
  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
  const done=new Promise(resolve=>recorder.onstop=resolve);
 
- exporting=true;
- $("exportBtn").disabled=true;
+ exporting=true;$("exportBtn").disabled=true;
  $("status").textContent="Preparing export...";
- $("downloadLink").style.display="none";
- $("progressBar").style.width="0%";
-
+ $("downloadLink").style.display="none";$("progressBar").style.width="0%";
  const total=totalDuration();
  let elapsed=0;
 
@@ -839,35 +853,26 @@ async function exportVideo(){
 
   for(let i=0;i<clips.length;i++){
    const c=clips[i],v=audioEls[i]?.el||document.createElement("video");
-
    if(!audioEls[i]){
     v.src=c.url;v.muted=true;
     await new Promise(resolve=>{v.onloadedmetadata=resolve;v.load()});
    }
-
-   v.muted=!audioEls[i];
-   v.volume=1;
-   v.playbackRate=c.speed;
-   v.currentTime=c.start;
-
+   v.muted=!audioEls[i];v.volume=1;v.playbackRate=c.speed;v.currentTime=c.start;
    await new Promise(resolve=>{
     if(v.readyState>=2)resolve();
     else{v.onseeked=resolve;v.onerror=resolve}
    });
-
    if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value);
    await v.play().catch(()=>{});
 
-   const clipDur=durationOf(c);
-   const transition=c.transition;
+   const clipDur=durationOf(c),transition=c.transition;
    const transDur=transition==="cut"?0:Math.min(c.transitionDuration,clipDur/2);
 
-   while((v.currentTime<c.end-.025)&&!v.ended){
+   while(v.currentTime<c.end-.025&&!v.ended){
     const local=(v.currentTime-c.start)/c.speed;
     const progress=transDur?Math.min(1,local/transDur):1;
     let alpha=1;
     if(transDur&&local<transDur&&transition==="fade")alpha=progress;
-
     const fade=c.fadeOut>0?Math.min(1,Math.max(0,(clipDur-local)/c.fadeOut)):1;
     if(audioEls[i])audioEls[i].gain.gain.value=Number($("videoVolume").value)*fade;
 
@@ -881,44 +886,35 @@ async function exportVideo(){
 
     ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
     drawVideo(ctx,v,w,h,$("fit").value,c.filter,alpha,transition,progress);
-
     if(c.fadeOut>0&&local>clipDur-c.fadeOut){
-     ctx.save();
-     ctx.globalAlpha=Math.min(1,(local-(clipDur-c.fadeOut))/c.fadeOut);
-     ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
-     ctx.restore();
+     ctx.save();ctx.globalAlpha=Math.min(1,(local-(clipDur-c.fadeOut))/c.fadeOut);
+     ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);ctx.restore();
     }
-
-    for(const t of texts)drawOverlayText(ctx,t,elapsed+local,w,h);
+    const clipStart=clips.slice(0,i).reduce((s,x)=>s+durationOf(x),0);
+    for(const t of texts)drawOverlayText(ctx,t,clipStart+local,w,h);
 
     await wait(30);
-    elapsed=clips.slice(0,i).reduce((s,x)=>s+durationOf(x),0)+local;
+    elapsed=clipStart+local;
     $("progressBar").style.width=Math.min(99,elapsed/total*100)+"%";
     $("status").textContent=`Exporting clip ${i+1} of ${clips.length} · ${fmt(elapsed)} / ${fmt(total)} seconds`;
    }
-
    v.pause();
    if(audioEls[i])audioEls[i].gain.gain.value=0;
    elapsed=clips.slice(0,i+1).reduce((s,x)=>s+durationOf(x),0);
   }
 
-  recorder.stop();
-  await done;
+  recorder.stop();await done;
   const blob=new Blob(chunks,{type:"video/webm"});
   const url=URL.createObjectURL(blob);
-  $("downloadLink").href=url;
-  $("downloadLink").style.display="inline-block";
+  $("downloadLink").href=url;$("downloadLink").style.display="inline-block";
   $("downloadLink").textContent="⬇ Download your finished video";
   $("progressBar").style.width="100%";
   $("status").textContent="Export completed successfully! Your WebM video is ready.";
-
  }catch(err){
   if(recorder.state!=="inactive")recorder.stop();
-  await done;
-  $("status").textContent="Export error: "+err.message;
+  await done;$("status").textContent="Export error: "+err.message;
  }finally{
-  exporting=false;
-  $("exportBtn").disabled=false;
+  exporting=false;$("exportBtn").disabled=false;
   if(musicEl)musicEl.pause();
   audioEls.forEach(x=>{x.el.pause();x.el.remove()});
   if(audioCtx)audioCtx.close().catch(()=>{});
