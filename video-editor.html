@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pikora Video Editor</title>
+<meta name="description" content="Free browser-based video editing with clips, timeline, animated text, music and WebM export.">
+<meta name="theme-color" content="#090d18">
+<style>
+:root{color-scheme:dark;--bg:#090d18;--panel:#111827;--line:#263247;--muted:#9aa8bd;--accent:#9b7bff}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:#f4f6fb;font-family:Inter,Arial,sans-serif}
+body{overflow:hidden}
+.topbar{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#101727;border-bottom:1px solid var(--line);gap:12px}
+.brand{font-weight:900;letter-spacing:1.5px;color:#c4b5fd;text-decoration:none;font-size:19px}
+.top-actions{display:flex;align-items:center;gap:8px}
+.top-actions a,.top-actions button{border:1px solid #34415a;background:#1a2436;color:#fff;border-radius:9px;padding:9px 12px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer}
+.top-actions .export{background:#7654e8;border-color:#7654e8}
+.workspace{height:calc(100% - 116px);padding:10px 12px 0}
+#editorFrame{display:block;width:100%;height:100%;border:1px solid var(--line);border-radius:14px;background:#0b1020}
+.toolbar{height:58px;position:fixed;bottom:0;left:0;right:0;z-index:5;background:#101727;border-top:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:7px 10px;overflow-x:auto;scrollbar-width:thin}
+.tool{flex:0 0 auto;min-width:72px;border:1px solid transparent;background:transparent;color:#dbe2f0;border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;cursor:pointer}
+.tool .ico{font-size:18px;line-height:20px}
+.tool:active,.tool:hover{background:#202b42;border-color:#35445f}
+.hint{position:fixed;right:12px;top:67px;z-index:3;background:#171f31dd;border:1px solid #35415a;border-radius:8px;padding:7px 10px;color:#aab6ca;font-size:10px;pointer-events:none}
+@media(max-width:650px){
+ .topbar{height:54px;padding:0 10px}.brand{font-size:17px}
+ .top-actions a{display:none}.top-actions button{padding:8px 10px}
+ .workspace{height:calc(100% - 108px);padding:7px 6px 0}
+ #editorFrame{border-radius:10px}
+ .toolbar{height:54px;padding:5px 6px;gap:3px}
+ .tool{min-width:64px;padding:5px 7px}
+ .hint{display:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+ <a class="brand" href="index.html">PIKORA</a>
+ <div class="top-actions">
+  <a href="index.html">← Home</a>
+  <button type="button" id="jumpTimeline">Timeline</button>
+  <button type="button" class="export" id="jumpExport">Export</button>
+ </div>
+</header>
+<div class="hint">Your videos stay in your browser · Export format: WebM</div>
+<main class="workspace">
+ <iframe id="editorFrame" src="video-editor-core.html" title="Pikora video editor workspace" allow="autoplay"></iframe>
+</main>
+<nav class="toolbar" aria-label="Video editing tools">
+ <button class="tool" data-target="clips"><span class="ico">＋</span><span>Add Clips</span></button>
+ <button class="tool" data-target="timeline"><span class="ico">▤</span><span>Timeline</span></button>
+ <button class="tool" data-target="trim"><span class="ico">✂</span><span>Trim</span></button>
+ <button class="tool" data-target="clipsettings"><span class="ico">⚙</span><span>Clip</span></button>
+ <button class="tool" data-target="text"><span class="ico">T</span><span>Text</span></button>
+ <button class="tool" data-target="music"><span class="ico">♫</span><span>Music</span></button>
+ <button class="tool" data-target="export"><span class="ico">⇩</span><span>Export</span></button>
+</nav>
+<script>
+(function(){
+ const frame=document.getElementById('editorFrame');
+ function getDoc(){try{return frame.contentDocument||frame.contentWindow.document}catch(e){return null}}
+ function panelByHeading(doc,needle){
+  const heads=[...doc.querySelectorAll('h2')];
+  const h=heads.find(x=>x.textContent.toLowerCase().includes(needle));
+  return h?.closest('.panel')||h;
+ }
+ function go(target){
+  const d=getDoc();if(!d)return;
+  let el=null;
+  if(target==='clips')el=panelByHeading(d,'1. video clips');
+  if(target==='timeline')el=panelByHeading(d,'multitrack visual timeline');
+  if(target==='trim')el=d.querySelector('.trim-visual');
+  if(target==='clipsettings'){
+   const p=panelByHeading(d,'1. video clips');el=p;
+   const h=[...(p?.querySelectorAll('h3')||[])].find(x=>x.textContent.toLowerCase().includes('selected clip settings'));
+   if(h)el=h;
+  }
+  if(target==='text')el=panelByHeading(d,'2. text overlays');
+  if(target==='music')el=panelByHeading(d,'3. background music');
+  if(target==='export')el=panelByHeading(d,'4. export settings');
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+ }
+ document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>go(b.dataset.target)));
+ document.getElementById('jumpTimeline').addEventListener('click',()=>go('timeline'));
+ document.getElementById('jumpExport').addEventListener('click',()=>go('export'));
+ frame.addEventListener('load',()=>{
+  const d=getDoc();if(!d)return;
+  const style=d.createElement('style');
+  style.textContent=`
+   html{scroll-behavior:smooth;scroll-padding-top:12px}
+   body{background:#0b1020!important;color:#f4f5ff!important}
+   header{display:none!important}
+   main{max-width:1450px!important;padding:14px 12px!important}
+   main>h1,main>.sub{display:none!important}
+   .layout{grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr)!important;gap:14px!important}
+   .panel{background:#121b2d!important;border:1px solid #2b3953!important;border-radius:14px!important;padding:14px!important;box-shadow:0 8px 25px #0002}
+   h2{color:#c4b5fd!important}
+   button,.filebtn{border-radius:9px!important}
+   input,select,textarea{background:#0c1424!important;border-color:#35445f!important}
+   #previewWrap{border:1px solid #34415a}
+   @media(max-width:800px){.layout{grid-template-columns:1fr!important}main{padding:9px 7px!important}.panel{padding:11px!important}video{max-height:38vh!important}}
+  `;
+  d.head.appendChild(style);
+ });
+})();
+</script>
+</body>
+</html>
