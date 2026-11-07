@@ -19,7 +19,7 @@
 <meta name="twitter:title" content="Free Online Video Editor – Pikora">
 <meta name="twitter:description" content="Edit videos online for free. Trim, add text, filters and music, and export in WebM with Pikora.">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pikora Free Online Video Editor","applicationCategory":"MultimediaApplication","operatingSystem":"Any","browserRequirements":"Requires a modern web browser with JavaScript enabled.","description":"A free browser-based video editor for combining and trimming clips, adding animated text, filters, transitions and music, and exporting WebM videos.","url":"https://pikora.pages.dev/video-editor-core.html","featureList":["Combine multiple video clips","Visual timeline","Trimming and splitting","Filters and transitions","Animated keyframes","Animated text overlays","Background music and waveform","WebM export"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pikora Free Online Video Editor","applicationCategory":"MultimediaApplication","operatingSystem":"Any","browserRequirements":"Requires a modern web browser with JavaScript enabled.","description":"A free browser-based video editor for combining and trimming clips, adding animated text, filters, transitions and music, and exporting WebM videos.","url":"https://pikora.pages.dev/video-editor-core.html","featureList":["Combine multiple video clips","Visual timeline","Trimming and splitting","Filters and transitions","Animated keyframes","Animated text overlays","Background music and waveform","Video frame extraction","WebM export"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
 </script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -95,6 +95,11 @@ a{color:#b9a5ff}
 .tabbar button{background:none;color:#8f9bbd;border-radius:12px;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:600}
 .tabbar button b{font-size:17px;line-height:1}
 .tabbar button.on{color:#fff;background:#262b5c}
+.frames-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:10px;max-height:420px;overflow:auto}
+.frame-card{border:1px solid #344365;border-radius:8px;overflow:hidden;background:#10182d}
+.frame-card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#05070d}
+.frame-card span{display:block;font-size:9px;color:#9ba8c4;padding:3px 4px;text-align:center}
+.frame-card.active{border-color:#a78bfa}
 @media(min-width:900px){.stage{max-width:900px;margin:auto}video{max-height:42vh}}
 </style>
 </head>
@@ -133,6 +138,21 @@ a{color:#b9a5ff}
 <button class="secondary" id="dupClip" type="button">⧉ Duplicate</button>
 <button class="danger" id="deleteClip" type="button">Delete</button>
 </div>
+</div>
+
+<div class="panel">
+<h2>Video Frames</h2>
+<label>Extract frames from selected clip</label>
+<div class="g2">
+<div><label>Frames per second</label><input type="number" id="frameFps" value="2" min="0.5" max="10" step="0.5"></div>
+<div><label>Maximum frames</label><input type="number" id="frameLimit" value="60" min="1" max="300" step="1"></div>
+</div>
+<div class="row">
+<button id="extractFrames" type="button">Extract Frames</button>
+<button class="secondary" id="clearFrames" type="button">Clear Frames</button>
+</div>
+<p class="small">Frames are taken from the selected clip’s trimmed start and end. Use a lower FPS for long videos.</p>
+<div id="framesList" class="frames-list"></div>
 </div>
 </section>
 
@@ -283,6 +303,7 @@ $("goExport").onclick=()=>showTab("export");
 let clips=[],selected=-1,texts=[],selectedText=-1,musicURL=null;
 let musicFileName="",musicDuration=0,musicWaveData=null;
 let exporting=false,dragIndex=-1,thumbJobs=new Set(),zoom=1;
+let frames=[],extractingFrames=false;
 
 const durationOf=c=>Math.max(.1,(c.end-c.start)/c.speed);
 const totalDuration=()=>clips.reduce((s,c)=>s+durationOf(c),0);
@@ -483,7 +504,7 @@ function loadTextControls(t){
 }
 function renderTexts(){
  $("textList").innerHTML=texts.map((t,i)=>`<div class="textitem ${i===selectedText?"active":""}"><div><strong>${esc(t.text)||"(empty)"}</strong><div class="small">${fmt(t.start)}s – ${t.end>0?fmt(t.end)+"s":"end"}</div></div><div class="row"><button class="secondary" onclick="selectText(${i})">Edit</button><button class="danger" onclick="removeText(${i})">Delete</button></div></div>`).join("")||'<p class="small">No text yet. Type something above.</p>';
-  $("textMode").textContent=selectedText>=0?"Editing text "+(selectedText+1)+". Changes show instantly.":"Just type your text below. It shows on the video right away.";
+ $("textMode").textContent=selectedText>=0?"Editing text "+(selectedText+1)+". Changes show instantly.":"Just type your text below. It shows on the video right away.";
 }
 function selectText(i){selectedText=i;loadTextControls(texts[i]);renderTexts();updatePreviewText()}
 function removeText(i){texts.splice(i,1);selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText()}
@@ -579,6 +600,87 @@ function drawOverlayText(ctx,t,time,w,h){
  ctx.restore();
 }
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+async function extractVideoFrames(){
+ const c=selectedClip();
+ if(!c)return alert("Select a video clip first.");
+ if(extractingFrames)return;
+ const fps=clamp(Number($("frameFps").value)||2,.5,10);
+ const limit=clamp(Number($("frameLimit").value)||60,1,300);
+ const step=1/fps;
+ if(c.end<=c.start)return alert("This clip has no usable trim range.");
+
+ extractingFrames=true;$("extractFrames").disabled=true;
+ $("framesList").innerHTML='<p class="small">Extracting frames…</p>';
+ $("status").textContent="Extracting frames from "+c.name+"...";
+ frames=[];
+
+ const video=document.createElement("video");
+ video.muted=true;video.playsInline=true;video.preload="auto";video.src=c.url;
+
+ try{
+  await new Promise((resolve,reject)=>{
+   video.onloadedmetadata=resolve;video.onerror=()=>reject(new Error("Could not load video for frame extraction."));video.load();
+  });
+
+  const canvas=document.createElement("canvas");
+  const ratio=video.videoHeight/(video.videoWidth||1);
+  canvas.width=240;canvas.height=Math.max(1,Math.round(240*ratio));
+  const ctx=canvas.getContext("2d");
+
+  let count=0;
+  for(let time=c.start;time<c.end&&count<limit;time+=step){
+   const seekTime=Math.min(time,Math.max(0,video.duration-.05));
+   await new Promise((resolve,reject)=>{
+    const onSeeked=()=>{
+     video.removeEventListener("seeked",onSeeked);
+     try{
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const dataUrl=canvas.toDataURL("image/jpeg",.7);
+      frames.push({time:seekTime,image:dataUrl});
+      count++;
+      $("status").textContent=`Extracting frames… ${count}`;
+      renderFrames();
+      resolve();
+     }catch(err){reject(err)}
+    };
+    video.addEventListener("seeked",onSeeked);
+    video.currentTime=seekTime;
+   });
+  }
+
+  renderFrames();
+  $("status").textContent=`Extracted ${frames.length} frames from ${c.name}.`;
+ }catch(err){
+  $("status").textContent="Frame extraction error: "+err.message;
+  $("framesList").innerHTML='<p class="small">Could not extract frames from this video.</p>';
+ }finally{
+  extractingFrames=false;$("extractFrames").disabled=false;
+  video.pause();video.removeAttribute("src");video.load();
+ }
+}
+
+function renderFrames(){
+ const list=$("framesList");
+ if(!frames.length){list.innerHTML='<p class="small">No frames extracted yet. Select a clip and press Extract Frames.</p>';return}
+ list.innerHTML=frames.map((f,i)=>`
+  <div class="frame-card" data-index="${i}">
+   <img src="${f.image}" alt="Frame at ${f.time.toFixed(2)} seconds">
+   <span>${f.time.toFixed(2)}s</span>
+  </div>
+ `).join("");
+ list.querySelectorAll(".frame-card").forEach(card=>{
+  card.onclick=()=>{
+   const i=Number(card.dataset.index),c=selectedClip();
+   if(!c)return;
+   preview.currentTime=Math.min(Math.max(frames[i].time,c.start),c.end);
+   updateTimeInfo();updatePreviewVideo();updatePreviewText();updatePlayhead();
+  };
+ });
+}
+
+$("extractFrames").onclick=extractVideoFrames;
+$("clearFrames").onclick=()=>{frames=[];renderFrames();$("status").textContent="Frames cleared."};
 
 async function exportVideo(){
  if(exporting)return;
@@ -717,6 +819,7 @@ wrapEl.addEventListener("pointerup",endPtr);wrapEl.addEventListener("pointercanc
 updateFrame();
 $("exportBtn").onclick=exportVideo;
 renderAll();
+renderFrames();
 </script>
 </body>
 </html>
