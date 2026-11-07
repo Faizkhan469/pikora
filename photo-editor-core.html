@@ -2,238 +2,406 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>Free Online Photo Editor – Edit Photos Without Watermarks | Pikora</title>
 <meta name="description" content="Edit photos online for free with Pikora. Add curved text, text effects, stickers, shapes and filters. Crop, resize, rotate and download photos without registration or watermarks.">
-<meta name="keywords" content="free photo editor, online photo editor, edit photos online, free image editor, curved text photo editor, add text to photos, crop image online, resize image online, photo filters, Pikora">
-<meta name="author" content="Pikora">
-<meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#0b1020">
 <link rel="canonical" href="https://pikora.pages.dev/photo-editor-core.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Pikora">
 <meta property="og:title" content="Free Online Photo Editor – Edit Photos Without Watermarks | Pikora">
 <meta property="og:description" content="Edit photos online for free. Add text, curved lettering, stickers, shapes and filters. Crop, resize and download with no registration or watermark.">
-<meta property="og:url" content="https://pikora.pages.dev/photo-editor-core.html">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Free Online Photo Editor | Pikora">
-<meta name="twitter:description" content="Add text, stickers, shapes and filters, crop and resize images, and download without watermarks.">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pikora Free Photo Editor","url":"https://pikora.pages.dev/photo-editor-core.html","applicationCategory":"MultimediaApplication","operatingSystem":"Any","browserRequirements":"Requires a modern web browser with JavaScript enabled.","description":"A free browser-based photo editor for text, curved text, stickers, shapes, filters and effects. Crop, resize, rotate and download without registration or watermarks.","featureList":["Brightness, contrast, saturation, blur and vignette","Photo filters","Crop, resize, rotate and flip","Text, curved text and presets","Stickers and shapes","Layer controls","Undo and redo","Download as PNG, JPG and WebP"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pikora Free Photo Editor","url":"https://pikora.pages.dev/photo-editor-core.html","applicationCategory":"MultimediaApplication","operatingSystem":"Any","description":"A free browser-based photo editor for text, curved text, stickers, shapes, filters and effects. Crop, resize, rotate and download without registration or watermarks.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
 </script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-:root{--bg:#0b1020;--card:#141d35;--line:#293654;--acc:#6d4be8;--soft:#c4b5fd;--mut:#9ba8c4}
-body{margin:0;background:var(--bg);color:#eef2ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
-.appbar{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:9px 14px;padding-top:calc(9px + env(safe-area-inset-top));background:#0f1630;border-bottom:1px solid var(--line)}
-.logo{font-size:18px;font-weight:800;color:#a78bfa;text-decoration:none;letter-spacing:1.5px}
-.appbar a.back{color:#cdd3ea;text-decoration:none;font-size:12px}
-.appbar .exp{padding:6px 14px;border-radius:20px}
-.stage{position:sticky;top:var(--ab,44px);z-index:20;background:var(--bg);padding:8px 10px 6px;border-bottom:1px solid var(--line)}
-.stage-top{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.stage-top .info{flex:1;font-size:11px;color:var(--mut);text-align:right}
-.canvas-area{height:34vh;background:#080d19;border:1px dashed #354568;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:6px;overflow:hidden}
-canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;touch-action:none;cursor:grab}
+:root{
+  --bg:#0b1020;--card:#141d35;--line:#293654;--acc:#6d4be8;--acc-hover:#8264f2;
+  --soft:#c4b5fd;--mut:#9ba8c4;--danger:#8b3044;--success:#6ee7b7;
+}
+body{margin:0;background:var(--bg);color:#eef2ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:calc(70px + env(safe-area-inset-bottom));line-height:1.5}
+
+/* App Bar */
+.appbar{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));background:#0f1630;border-bottom:1px solid var(--line)}
+.logo{font-size:20px;font-weight:800;color:#a78bfa;text-decoration:none;letter-spacing:1.5px}
+.appbar a.back{color:#cdd3ea;text-decoration:none;font-size:13px;font-weight:500}
+.appbar .exp{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600}
+
+/* Stage / Canvas Area - FIXED LAYOUT */
+.stage{position:relative;z-index:1;background:var(--bg);padding:12px 16px;border-bottom:1px solid var(--line);margin-bottom:16px}
+main{max-width:900px;margin:0 auto;padding:0 16px 16px;position:relative;z-index:2}
+
+.stage-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.stage-top .info{flex:1;font-size:12px;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+
+/* Dynamic Frame Selector */
+.frame-selector{margin-bottom:12px;text-align:center;max-width:500px;margin-left:auto;margin-right:auto}
+.frame-selector label{margin-bottom:6px;display:block;text-align:left;font-size:13px;color:#a78bfa;font-weight:700}
+.frame-selector select{background:#141d35;border:1px solid #a78bfa}
+
+.canvas-area{
+  width:100%;max-width:500px;margin:0 auto;
+  background-color:#080d19;
+  background-image:linear-gradient(45deg, #111827 25%, transparent 25%), linear-gradient(-45deg, #111827 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111827 75%), linear-gradient(-45deg, transparent 75%, #111827 75%);
+  background-size:16px 16px;
+  background-position:0 0, 0 8px, 8px -8px, -8px 0px;
+  border:1px dashed #354568;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden;
+  aspect-ratio: 9/16; /* Default */
+  transition:aspect-ratio 0.3s ease;
+}
+canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;touch-action:none;cursor:grab;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
 canvas.dragging{cursor:grabbing}
-.placeholder{text-align:center;color:#8292ae;font-size:12px;padding:10px}
-.placeholder strong{display:block;color:var(--soft);font-size:15px;margin-bottom:4px}
-.status{font-size:11px;color:#a5b4fc;min-height:14px;margin-top:5px}
-main{max-width:900px;margin:auto;padding:12px 10px}
-h1{font-size:20px;margin:6px 0 4px}
-.sub{color:var(--mut);font-size:12px;margin:0 0 10px;line-height:1.5}
-.stage.unpinned{position:static}
+.placeholder{text-align:center;color:#8292ae;font-size:13px;padding:20px}
+.placeholder strong{display:block;color:var(--soft);font-size:16px;margin-bottom:6px}
+.status{font-size:12px;color:#a5b4fc;min-height:18px;margin-top:8px;text-align:center;font-weight:500}
+
+/* Typography & Panels */
+h1{font-size:22px;margin:0 0 6px;font-weight:700}
+.sub{color:var(--mut);font-size:13px;margin:0 0 16px;line-height:1.5}
 .sec{display:none}.sec.on{display:block}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
-h2{font-size:15px;margin:0 0 10px;color:var(--soft)}
-label{display:block;font-size:11px;color:#cbd5e1;margin-bottom:4px}
-input[type=file],input[type=number],input[type=text],select{width:100%;background:#0b1020;border:1px solid #354568;color:#fff;padding:8px;border-radius:9px;margin-bottom:10px;font-size:13px}
-input[type=color]{width:100%;height:34px;background:#0b1020;border:1px solid #354568;border-radius:8px;padding:2px;margin-bottom:10px}
-input[type=range]{width:100%;accent-color:#8b5cf6;margin:2px 0 10px}
-input[type=checkbox]{accent-color:#8b5cf6}
-.checkline{display:flex;align-items:center;gap:8px;margin:6px 0 10px}.checkline label{margin:0}
-.range-value{float:right;color:var(--mut);font-size:11px}
-button{background:var(--acc);color:#fff;border:0;padding:7px 10px;border-radius:9px;cursor:pointer;font-weight:600;font-size:12px}
-button:hover{background:#8264f2}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 12px;color:var(--soft);display:flex;align-items:center;gap:8px}
+h3{font-size:14px;margin:16px 0 8px;color:#ddd}
+label{display:block;font-size:12px;color:#cbd5e1;margin-bottom:4px;font-weight:600}
+
+/* Inputs & Buttons */
+input[type=file],input[type=number],input[type=text],select{
+  width:100%;background:#0b1020;border:1px solid #354568;color:#fff;
+  padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:14px;min-height:44px;
+}
+input[type=color]{width:100%;height:44px;background:#0b1020;border:1px solid #354568;border-radius:10px;padding:4px;margin-bottom:12px;cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--acc);height:6px;margin:4px 0 14px;cursor:pointer}
+input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px;cursor:pointer}
+
+.checkline{display:flex;align-items:center;gap:8px;margin:8px 0 12px;cursor:pointer}
+.checkline label{margin:0;cursor:pointer;font-size:13px}
+.range-value{float:right;color:var(--mut);font-size:11px;font-weight:600}
+
+button{
+  background:var(--acc);color:#fff;border:0;padding:10px 14px;border-radius:10px;
+  cursor:pointer;font-weight:600;font-size:13px;min-height:44px;transition:background 0.2s;
+}
+button:hover{background:var(--acc-hover)}
 button.secondary{background:#253451;color:#e2e8f0}button.secondary:hover{background:#354568}
-button.danger{background:#8b3044}
+button.danger{background:var(--danger)}button.danger:hover{background:#a33850}
 button:disabled{opacity:.4;cursor:not-allowed}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g2 button,.full{width:100%}
-.g2.b{margin-bottom:8px}
-.note{font-size:11px;color:#8292ae;line-height:1.5;margin:4px 0 10px}
-.selected-info{background:#1c2944;border:1px solid #465a82;padding:8px;border-radius:9px;font-size:11px;color:#cbd5e1;line-height:1.5;margin-bottom:10px}
-hr{border:0;border-top:1px solid var(--line);margin:12px 0}
-h3{font-size:13px;margin:0 0 8px;color:#ddd}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(6,1fr);background:#0f1630f2;backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:5px 4px calc(5px + env(safe-area-inset-bottom))}
-.tabbar button{background:none;color:#8f9bbd;border-radius:12px;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px}
-.tabbar button b{font-size:17px;line-height:1}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g2 button,.full{width:100%}
+.g2.b{margin-bottom:12px}
+.note{font-size:12px;color:#8292ae;line-height:1.5;margin:4px 0 12px}
+.selected-info{background:#1c2944;border:1px solid #465a82;padding:10px;border-radius:10px;font-size:12px;color:#cbd5e1;line-height:1.5;margin-bottom:12px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+
+/* Tab Bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(6,1fr);background:rgba(15,22,48,0.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+.tabbar button{background:none;color:#8f9bbd;border-radius:10px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;min-height:auto;border:0}
+.tabbar button b{font-size:18px;line-height:1}
 .tabbar button.on{color:#fff;background:#262b5c}
-@media(min-width:900px){.stage,main{max-width:900px;margin-left:auto;margin-right:auto}.canvas-area{height:42vh}}
+
+@media(min-width:900px){
+  .stage,main{max-width:900px}
+  .canvas-area{max-width:600px}
+}
 </style>
 </head>
 <body>
+
 <div class="appbar">
-<a class="logo" href="index.html">PIKORA</a>
-<a class="back" href="index.html">← Home</a>
-<button class="exp" id="goSave" type="button">Save</button>
+  <a class="logo" href="index.html">PIKORA</a>
+  <a class="back" href="index.html">← Home</a>
+  <button class="exp" id="goSave" type="button">Save ✨</button>
 </div>
 
 <div class="stage">
-<div class="stage-top">
-<button class="secondary" id="undo" disabled type="button">↶ Undo</button>
-<button class="secondary" id="redo" disabled type="button">↷ Redo</button>
-<button class="secondary" id="pinBtn" type="button" title="Pin or unpin the photo">📌</button>
-<span class="info" id="imageInfo">No image uploaded</span>
-</div>
-<div class="canvas-area">
-<div class="placeholder" id="placeholder"><strong>Your photo will appear here</strong>Open the Photo tab to upload an image.</div>
-<canvas id="canvas" hidden></canvas>
-</div>
-<div class="status" id="status">Ready to edit your photo.</div>
+  <div class="stage-top">
+    <button class="secondary" id="undo" disabled type="button" style="min-width:80px">↶ Undo</button>
+    <button class="secondary" id="redo" disabled type="button" style="min-width:80px">↷ Redo</button>
+    <button class="secondary" id="pinBtn" type="button" title="Pin or unpin the photo" style="flex:0 0 auto;width:44px">📌</button>
+    <span class="info" id="imageInfo">No image uploaded</span>
+  </div>
+
+  <!-- MOVED CROP SELECTOR HERE FOR WYSIWYG -->
+  <div class="frame-selector">
+    <label for="crop">📐 Canvas Frame (Crop Ratio)</label>
+    <select id="crop">
+      <option value="original">Original Image Size</option>
+      <option value="1:1">1:1 Square (Instagram Post)</option>
+      <option value="4:5">4:5 Portrait (Instagram Feed)</option>
+      <option value="4:3">4:3 Landscape</option>
+      <option value="16:9">16:9 Widescreen (YouTube)</option>
+      <option value="3:4">3:4 Portrait</option>
+      <option value="9:16" selected>9:16 Story (TikTok / Reels / Shorts)</option>
+    </select>
+  </div>
+
+  <div class="canvas-area" id="canvasArea">
+    <div class="placeholder" id="placeholder">
+      <strong>Your photo will appear here</strong>
+      Open the Photo tab below to upload an image.
+   2</div>
+    <canvas id="canvas" hidden></canvas>
+  </div>
+  <div class="status" id="status">Ready to edit your photo.</div>
 </div>
 
 <main>
-<h1>Free Online Photo Editor</h1>
-<p class="sub">Edit photos, create curved text, add stickers and shapes, and download your creation. Free, with no registration or watermark. Your photo stays in your browser.</p>
+  <h1>Free Online Photo Editor</h1>
+  <p class="sub">Edit photos, create curved text, add stickers and shapes, and download your creation. Free, with no registration or watermark. Your photo stays in your browser.</p>
 
-<section class="sec on" id="tab-photo">
-<div class="panel">
-<h2>Upload Photo</h2>
-<input type="file" id="upload" accept="image/jpeg,image/png,image/webp">
-<p class="note">Supported formats: JPG, PNG and WebP.</p>
-<p class="note" id="historyInfo">Upload a photo to start editing.</p>
-</div>
-<div class="panel">
-<h2>Crop & Rotate</h2>
-<label>Crop ratio</label>
-<select id="crop"><option value="original">Original</option><option value="1:1">Square 1:1</option><option value="4:3">Landscape 4:3</option><option value="16:9">Wide 16:9</option><option value="3:4">Portrait 3:4</option><option value="9:16" selected>Story 9:16</option></select>
-<div class="g2 b"><button class="secondary" id="rotateLeft" type="button">↶ Rotate Left</button><button class="secondary" id="rotateRight" type="button">↷ Rotate Right</button></div>
-<div class="g2"><button class="secondary" id="flipH" type="button">↔ Flip H</button><button class="secondary" id="flipV" type="button">↕ Flip V</button></div>
-</div>
-<div class="panel">
-<h2>Resize Image</h2>
-<div class="g2">
-<div><label>Width (px)</label><input type="number" id="resizeWidth" min="1" max="12000" placeholder="Width"></div>
-<div><label>Height (px)</label><input type="number" id="resizeHeight" min="1" max="12000" placeholder="Height"></div>
-</div>
-<div class="g2"><button id="applyResize" type="button">Apply Resize</button><button class="secondary" id="resetResize" type="button">Original Size</button></div>
-</div>
-</section>
+  <section class="sec on" id="tab-photo">
+    <div class="panel">
+      <h2>📷 Upload Photo</h2>
+      <input type="file" id="upload" accept="image/jpeg,image/png,image/webp">
+      <p class="note">Supported formats: JPG, PNG, and WebP.</p>
+      <p class="note" id="historyInfo">Upload a photo to start editing.</p>
+    </div>
+    <div class="panel">
+      <h2>🔄 Rotate & Flip</h2>
+      <div class="g2 b">
+        <button class="secondary" id="rotateLeft" type="button">↶ Rotate Left</button>
+        <button class="secondary" id="rotateRight" type="button">↷ Rotate Right</button>
+      </div>
+      <div class="g2">
+        <button class="secondary" id="flipH" type="button">↔ Flip Horizontal</button>
+        <button class="secondary" id="flipV" type="button">↕ Flip Vertical</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>📏 Resize Image</h2>
+      <div class="g2">
+        <div><label>Width (px)</label><input type="number" id="resizeWidth" min="1" max="12000" placeholder="Width"></div>
+        <div><label>Height (px)</label><input type="number" id="resizeHeight" min="1" max="12000" placeholder="Height"></div>
+      </div>
+      <div class="g2">
+        <button id="applyResize" type="button">Apply Resize</button>
+        <button class="secondary" id="resetResize" type="button">Reset to Original</button>
+      </div>
+    </div>
+  </section>
 
-<section class="sec" id="tab-adjust">
-<div class="panel">
-<h2>Adjustments</h2>
-<label>Brightness <span class="range-value" id="brightnessValue">100%</span></label><input type="range" id="brightness" min="0" max="200" value="100">
-<label>Contrast <span class="range-value" id="contrastValue">100%</span></label><input type="range" id="contrast" min="0" max="200" value="100">
-<label>Saturation <span class="range-value" id="saturationValue">100%</span></label><input type="range" id="saturation" min="0" max="200" value="100">
-<label>Blur <span class="range-value" id="blurValue">0px</span></label><input type="range" id="blur" min="0" max="15" value="0">
-<label>Vignette (new) <span class="range-value" id="vignetteValue">0%</span></label><input type="range" id="vignette" min="0" max="100" value="0">
-</div>
-<div class="panel">
-<h2>Filters</h2>
-<select id="filter">
-<option value="none">Original</option><option value="grayscale(100%)">Grayscale</option><option value="sepia(100%)">Sepia</option><option value="saturate(180%) contrast(110%)">Vivid</option><option value="brightness(110%) saturate(80%)">Soft</option><option value="sepia(30%) saturate(130%)">Warm</option><option value="invert(100%)">Invert</option><option value="contrast(130%)">High Contrast</option>
-<option value="hue-rotate(180deg) saturate(120%)">Cool Blue (new)</option><option value="brightness(110%) saturate(130%) contrast(95%)">Dreamy (new)</option><option value="grayscale(100%) contrast(150%) brightness(90%)">Noir (new)</option><option value="sepia(50%) hue-rotate(-20deg) saturate(180%)">Sunset (new)</option>
-</select>
-<p class="note">Safari may not apply adjustments and filters in the downloaded image.</p>
-</div>
-</section>
+  <section class="sec" id="tab-adjust">
+    <div class="panel">
+      <h2>🎛️ Adjustments</h2>
+      <label>Brightness <span class="range-value" id="brightnessValue">100%</span></label>
+      <input type="range" id="brightness" min="0" max="200" value="100">
+      
+      <label>Contrast <span class="range-value" id="contrastValue">100%</span></label>
+      <input type="range" id="contrast" min="0" max="200" value="100">
+      
+      <label>Saturation <span class="range-value" id="saturationValue">100%</span></label>
+      <input type="range" id="saturation" min="0" max="200" value="100">
+      
+      <label>Blur <span class="range-value" id="blurValue">0px</span></label>
+      <input type="range" id="blur" min="0" max="15" value="0">
+      
+      <label>Vignette <span class="range-value" id="vignetteValue">0%</span></label>
+      <input type="range" id="vignette" min="0" max="100" value="0">
+    </div>
+    <div class="panel">
+      <h2>🎨 Filters</h2>
+      <select id="filter">
+        <option value="none">Original</option>
+        <option value="grayscale(100%)">Grayscale</option>
+        <option value="sepia(100%)">Sepia</option>
+        <option value="saturate(180%) contrast(110%)">Vivid</option>
+        <option value="brightness(110%) saturate(80%)">Soft</option>
+        <option value="sepia(30%) saturate(130%)">Warm</option>
+        <option value="invert(100%)">Invert</option>
+        <option value="contrast(130%)">High Contrast</option>
+        <option value="hue-rotate(180deg) saturate(120%)">Cool Blue</option>
+        <option value="brightness(110%) saturate(130%) contrast(95%)">Dreamy</option>
+        <option value="grayscale(100%) contrast(150%) brightness(90%)">Noir</option>
+        <option value="sepia(50%) hue-rotate(-20deg) saturate(180%)">Sunset</option>
+      </select>
+      <p class="note">💡 Safari may not apply adjustments and filters in the downloaded image due to browser limitations.</p>
+    </div>
+  </section>
 
-<section class="sec" id="tab-text">
-<div class="panel">
-<h2>Add & Edit Text</h2>
-<div class="selected-info" id="selectionInfo">Just type your text below. It shows on the photo right away. Drag it with one finger, pinch with two fingers to resize.</div>
-<label>Text content</label><input type="text" id="textInput" placeholder="Type your text here">
-<div class="g2">
-<div><label>Font</label><select id="fontFamily"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times New Roman">Times New Roman</option><option value="Verdana">Verdana</option><option value="Courier New">Courier New</option><option value="Trebuchet MS">Trebuchet MS</option></select></div>
-<div><label>Alignment</label><select id="textAlign"><option value="center">Centre</option><option value="left">Left</option><option value="right">Right</option></select></div>
-</div>
-<label>Text preset</label>
-<select id="textPreset"><option value="custom">Custom Style</option><option value="title">Bold Title</option><option value="subtitle">Elegant Subtitle</option><option value="neon">Neon Style</option><option value="outline">Outlined Text</option><option value="shadow">Shadow Text</option><option value="badge">Label / Badge</option><option value="minimal">Minimal Text</option></select>
-<button class="secondary full" id="applyPreset" type="button">Apply Text Preset</button>
-<p class="note">Pick a style, then add text or update your selected text.</p>
-<div class="g2">
-<div><label>Text colour</label><input type="color" id="textColor" value="#ffffff"></div>
-<div><label>Outline colour</label><input type="color" id="outlineColor" value="#000000"></div>
-<div><label>Outline thickness</label><input type="number" id="outlineWidth" min="0" max="15" value="2"></div>
-<div><label>Font size</label><input type="number" id="textSize" min="8" max="300" value="45"></div>
-</div>
-<label>Opacity <span class="range-value" id="textOpacityValue">100%</span></label><input type="range" id="textOpacity" min="0" max="100" value="100">
-<label>Letter spacing <span class="range-value" id="letterSpacingValue">0px</span></label><input type="range" id="letterSpacing" min="-5" max="30" value="0">
-<label>Line spacing <span class="range-value" id="lineSpacingValue">1.2x</span></label><input type="range" id="lineSpacing" min="0.8" max="3" step="0.1" value="1.2">
-<label>Curved text style</label>
-<select id="textCurve"><option value="none">Straight Text</option><option value="up">Arc Up</option><option value="down">Arc Down</option><option value="circle">Full Circle</option></select>
-<label>Curve amount <span class="range-value" id="curveAmountValue">180°</span></label><input type="range" id="curveAmount" min="45" max="360" value="180">
-<hr>
-<h3>Rotation & Style</h3>
-<label>Rotation <span class="range-value" id="textRotationValue">0°</span></label><input type="range" id="textRotation" min="0" max="360" value="0">
-<div class="g2 b"><button class="secondary" id="rotateTextLeft" type="button">↶ -90°</button><button class="secondary" id="rotateTextRight" type="button">↷ +90°</button></div>
-<div class="g2"><div class="checkline"><input type="checkbox" id="textBold" checked><label for="textBold">Bold</label></div><div class="checkline"><input type="checkbox" id="textItalic"><label for="textItalic">Italic</label></div></div>
-<hr>
-<h3>Text Shadow</h3>
-<div class="checkline"><input type="checkbox" id="textShadowEnabled"><label for="textShadowEnabled">Enable text shadow</label></div>
-<label>Shadow colour</label><input type="color" id="textShadowColor" value="#000000">
-<label>Blur <span class="range-value" id="textShadowBlurValue">8px</span></label><input type="range" id="textShadowBlur" min="0" max="30" value="8">
-<label>Horizontal <span class="range-value" id="textShadowXValue">4px</span></label><input type="range" id="textShadowX" min="-30" max="30" value="4">
-<label>Vertical <span class="range-value" id="textShadowYValue">4px</span></label><input type="range" id="textShadowY" min="-30" max="30" value="4">
-<hr>
-<h3>Text Background</h3>
-<div class="checkline"><input type="checkbox" id="textBgEnabled"><label for="textBgEnabled">Enable text background</label></div>
-<label>Background colour</label><input type="color" id="textBgColor" value="#000000">
-<div class="g2 b"><button class="secondary" id="blackBg" type="button">Black</button><button class="secondary" id="whiteBg" type="button">White</button></div>
-<button class="secondary full" id="noBg" type="button">Transparent Background</button>
-<hr>
-<button class="full" id="addText" type="button" style="margin-bottom:8px">＋ New Text</button>
-<div class="g2"><button class="secondary" id="duplicateSelected" disabled type="button">⧉ Duplicate</button><button class="danger" id="deleteSelected" disabled type="button">Delete Selected</button></div>
-<p class="note">Drag overlays on the photo. Double-tap text to load it into the editor.</p>
-</div>
-</section>
+  <section class="sec" id="tab-text">
+    <div class="panel">
+      <h2>📝 Add & Edit Text</h2>
+      <div class="selected-info" id="selectionInfo">Just type your text below. It shows on the photo right away. Drag it with one finger, pinch with two fingers to resize.</div>
+      
+      <label>Text content</label>
+      <input type="text" id="textInput" placeholder="Type your text here" style="font-size:16px">
+      
+      <div class="g2">
+        <div><label>Font</label>
+          <select id="fontFamily">
+            <option value="Arial">Arial</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Trebuchet MS">Trebuchet MS</option>
+            <option value="Impact">Impact</option>
+          </select>
+        </div>
+        <div><label>Alignment</label>
+          <select id="textAlign">
+            <option value="center">Center</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+      </div>
 
-<section class="sec" id="tab-add">
-<div class="panel">
-<h2>Stickers</h2>
-<label>Choose sticker</label>
-<select id="stickerInput"><option>⭐</option><option>❤️</option><option>🔥</option><option>✨</option><option>😍</option><option>🎉</option><option>🌸</option><option>🌈</option><option>👍</option><option>☀️</option><option>🎂</option><option>💯</option></select>
-<button class="full" id="addSticker" type="button">＋ Add Sticker</button>
-</div>
-<div class="panel">
-<h2>Shapes</h2>
-<label>Shape colour</label><input type="color" id="shapeColor" value="#a78bfa">
-<div class="g2"><button id="addRect" type="button">＋ Rectangle</button><button id="addCircle" type="button">＋ Circle</button></div>
-</div>
-</section>
+      <label>Text Preset</label>
+      <select id="textPreset">
+        <option value="custom">Custom Style</option>
+        <option value="title">Bold Title</option>
+        <option value="subtitle">Elegant Subtitle</option>
+        <option value="neon">Neon Glow</option>
+        <option value="outline">Outlined Text</option>
+        <option value="shadow">Drop Shadow</option>
+        <option value="badge">Label / Badge</option>
+        <option value="minimal">Minimal Clean</option>
+      </select>
+      <button class="secondary full" id="applyPreset" type="button" style="margin-bottom:12px">Apply Text Preset</button>
 
-<section class="sec" id="tab-layers">
-<div class="panel">
-<h2>Layer Controls</h2>
-<div class="g2 b"><button class="secondary" id="bringForward" disabled type="button">Forward ↑</button><button class="secondary" id="sendBackward" disabled type="button">Backward ↓</button></div>
-<div class="g2"><button class="secondary" id="bringTop" disabled type="button">To Front</button><button class="secondary" id="sendBottom" disabled type="button">To Back</button></div>
-<p class="note">Select an overlay on the photo, then change which one appears in front.</p>
-</div>
-<div class="panel">
-<h2>Overlay Controls</h2>
-<div class="g2"><button class="secondary" id="undoOverlay" type="button">Undo Last Overlay</button><button class="danger" id="clearOverlays" type="button">Remove All</button></div>
-</div>
-</section>
+      <div class="g2">
+        <div><label>Text Colour</label><input type="color" id="textColor" value="#ffffff"></div>
+        <div><label>Outline Colour</label><input type="color" id="outlineColor" value="#000000"></div>
+      </div>
+      <div class="g2">
+        <div><label>Outline Thickness</label><input type="number" id="outlineWidth" min="0" max="15" value="2"></div>
+        <div><label>Font Size</label><input type="number" id="textSize" min="8" max="300" value="45"></div>
+      </div>
 
-<section class="sec" id="tab-save">
-<div class="panel">
-<h2>Download Photo</h2>
-<label>File format</label>
-<select id="format"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WebP</option></select>
-<button class="full" id="download" type="button" style="padding:11px">⬇ Download Edited Photo</button>
-</div>
-<div class="panel"><button class="secondary full" id="resetAll" type="button">Reset Everything</button></div>
-</section>
+      <label>Opacity <span class="range-value" id="textOpacityValue">100%</span></label>
+      <input type="range" id="textOpacity" min="0" max="100" value="100">
+      
+      <label>Letter Spacing <span class="range-value" id="letterSpacingValue">0px</span></label>
+      <input type="range" id="letterSpacing" min="-5" max="30" value="0">
+      
+      <label>Line Spacing <span class="range-value" id="lineSpacingValue">1.2x</span></label>
+      <input type="range" id="lineSpacing" min="0.8" max="3" step="0.1" value="1.2">
+
+      <hr>
+      <h3>🌈 Curved Text</h3>
+      <label>Curve Style</label>
+      <select id="textCurve">
+        <option value="none">Straight Text</option>
+        <option value="up">Arc Up</option>
+        <option value="down">Arc Down</option>
+        <option value="circle">Full Circle</option>
+      </select>
+      <label>Curve Amount <span class="range-value" id="curveAmountValue">180°</span></label>
+      <input type="range" id="curveAmount" min="45" max="360" value="180">
+
+      <hr>
+      <h3>🔄 Rotation & Style</h3>
+      <label>Rotation <span class="range-value" id="textRotationValue">0°</span></label>
+      <input type="range" id="textRotation" min="0" max="360" value="0">
+      <div class="g2 b">
+        <button class="secondary" id="rotateTextLeft" type="button">↶ -90°</button>
+        <button class="secondary" id="rotateTextRight" type="button">↷ +90°</button>
+      </div>
+      <div class="g2">
+        <div class="checkline"><input type="checkbox" id="textBold" checked><label for="textBold">Bold</label></div>
+        <div class="checkline"><input type="checkbox" id="textItalic"><label for="textItalic">Italic</label></div>
+      </div>
+
+      <hr>
+      <h3>🌑 Text Shadow</h3>
+      <div class="checkline"><input type="checkbox" id="textShadowEnabled"><label for="textShadowEnabled">Enable text shadow</label></div>
+      <label>Shadow Colour</label><input type="color" id="textShadowColor" value="#000000">
+      <label>Blur <span class="range-value" id="textShadowBlurValue">8px</span></label><input type="range" id="textShadowBlur" min="0" max="30" value="8">
+      <label>Horizontal <span class="range-value" id="textShadowXValue">4px</span></label><input type="range" id="textShadowX" min="-30" max="30" value="4">
+      <label>Vertical <span class="range-value" id="textShadowYValue">4px</span></label><input type="range" id="textShadowY" min="-30" max="30" value="4">
+
+      <hr>
+      <h3>⬛ Text Background</h3>
+      <div class="checkline"><input type="checkbox" id="textBgEnabled"><label for="textBgEnabled">Enable text background</label></div>
+      <label>Background Colour</label><input type="color" id="textBgColor" value="#000000">
+      <div class="g2 b">
+        <button class="secondary" id="blackBg" type="button">Black</button>
+        <button class="secondary" id="whiteBg" type="button">White</button>
+      </div>
+      <button class="secondary full" id="noBg" type="button">Transparent Background</button>
+
+      <hr>
+      <button class="full" id="addText" type="button" style="margin-bottom:8px">＋ New Text</button>
+      <div class="g2">
+        <button class="secondary" id="duplicateSelected" disabled type="button">⧉ Duplicate</button>
+        <button class="danger" id="deleteSelected" disabled type="button">Delete Selected</button>
+      </div>
+      <p class="note">💡 Drag overlays on the photo. Double-tap text to load it into the editor.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="tab-add">
+    <div class="panel">
+      <h2>⭐ Stickers</h2>
+      <label>Choose sticker</label>
+      <select id="stickerInput">
+        <option>⭐</option><option>❤️</option><option>🔥</option><option>✨</option>
+        <option>😍</option><option>🎉</option><option>🌸</option><option>🌈</option>
+        <option>👍</option><option>☀️</option><option>🎂</option><option>💯</option>
+        <option>📍</option><option>💬</option><option>🎵</option><option>👑</option>
+      </select>
+      <button class="full" id="addSticker" type="button">＋ Add Sticker</button>
+    </div>
+    <div class="panel">
+      <h2>🔷 Shapes</h2>
+      <label>Shape Colour</label>
+      <input type="color" id="shapeColor" value="#a78bfa">
+      <div class="g2">
+        <button id="addRect" type="button">＋ Rectangle</button>
+        <button id="addCircle" type="button">＋ Circle</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="tab-layers">
+    <div class="panel">
+      <h2>📚 Layer Controls</h2>
+      <div class="g2 b">
+        <button class="secondary" id="bringForward" disabled type="button">Forward ↑</button>
+        <button class="secondary" id="sendBackward" disabled type="button">Backward ↓</button>
+      </div>
+      <div class="g2">
+        <button class="secondary" id="bringTop" disabled type="button">To Front</button>
+        <button class="secondary" id="sendBottom" disabled type="button">To Back</button>
+      </div>
+      <p class="note">Select an overlay on the photo, then change which one appears in front.</p>
+    </div>
+    <div class="panel">
+      <h2>🗑️ Overlay Controls</h2>
+      <div class="g2">
+        <button class="secondary" id="undoOverlay" type="button">Undo Last Overlay</button>
+        <button class="danger" id="clearOverlays" type="button">Remove All</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="tab-save">
+    <div class="panel">
+      <h2>💾 Download Photo</h2>
+      <label>File Format</label>
+      <select id="format">
+        <option value="image/png">PNG (Best for transparency)</option>
+        <option value="image/jpeg" selected>JPG (Best for photos)</option>
+        <option value="image/webp">WebP (Modern, smaller size)</option>
+      </select>
+      <button class="full" id="download" type="button" style="padding:14px;font-size:16px;margin-top:8px">⬇ Download Edited Photo</button>
+    </div>
+    <div class="panel">
+      <button class="secondary full" id="resetAll" type="button" style="color:var(--danger)">Reset Everything to Default</button>
+    </div>
+  </section>
 </main>
 
 <nav class="tabbar" id="tabbar" aria-label="Editor sections">
-<button type="button" data-tab="photo" class="on"><b>▣</b>Photo</button>
-<button type="button" data-tab="adjust"><b>◐</b>Adjust</button>
-<button type="button" data-tab="text"><b>T</b>Text</button>
-<button type="button" data-tab="add"><b>☺</b>Add</button>
-<button type="button" data-tab="layers"><b>▤</b>Layers</button>
-<button type="button" data-tab="save"><b>⇩</b>Save</button>
+  <button type="button" data-tab="photo" class="on"><b>📷</b>Photo</button>
+  <button type="button" data-tab="adjust"><b>🎛️</b>Adjust</button>
+  <button type="button" data-tab="text"><b>T</b>Text</button>
+  <button type="button" data-tab="add"><b>⭐</b>Add</button>
+  <button type="button" data-tab="layers"><b>📚</b>Layers</button>
+  <button type="button" data-tab="save"><b>💾</b>Save</button>
 </nav>
 
 <script>
@@ -245,13 +413,14 @@ const upload=document.getElementById("upload");
 const placeholder=document.getElementById("placeholder");
 const statusText=document.getElementById("status");
 const imageInfo=document.getElementById("imageInfo");
+const canvasArea=document.getElementById("canvasArea");
 const $=id=>document.getElementById(id);
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 
 function showTab(n){
- document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id==="tab-"+n));
- document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.tab===n));
- window.scrollTo({top:0,behavior:"smooth"});
+  document.querySelectorAll(".sec").forEach(s=>s.classList.toggle("on",s.id==="tab-"+n));
+  document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.tab===n));
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 document.querySelectorAll("#tabbar button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $("goSave").onclick=()=>showTab("save");
@@ -265,250 +434,272 @@ let shadowEditStarted=false;
 const sliderFlags={};
 
 function setStatus(m){statusText.textContent=m}
+
+// Dynamic Canvas Frame Ratio
+function updateCanvasFrame(){
+  const ratio=$("crop").value;
+  let cssRatio="auto";
+  if(ratio==="1:1")cssRatio="1/1";
+  else if(ratio==="4:5")cssRatio="4/5";
+  else if(ratio==="4:3")cssRatio="4/3";
+  else if(ratio==="16:9")cssRatio="16/9";
+  else if(ratio==="3:4")cssRatio="3/4";
+  else if(ratio==="9:16")cssRatio="9/16";
+  
+  if(cssRatio!=="auto"){
+    canvasArea.style.aspectRatio=cssRatio;
+    canvasArea.style.height="auto";
+    canvasArea.style.maxHeight="55vh";
+  }else{
+    canvasArea.style.aspectRatio="auto";
+    canvasArea.style.height="45vh";
+  }
+}
+
 function readControls(){
- return {brightness:$("brightness").value,contrast:$("contrast").value,saturation:$("saturation").value,blur:$("blur").value,vignette:$("vignette").value,filter:$("filter").value,crop:$("crop").value};
+  return {brightness:$("brightness").value,contrast:$("contrast").value,saturation:$("saturation").value,blur:$("blur").value,vignette:$("vignette").value,filter:$("filter").value,crop:$("crop").value};
 }
 function makeSnapshot(){
- return {angle,flipH,flipV,overlays:JSON.parse(JSON.stringify(overlays)),outputWidth,outputHeight,selectedIndex,controls:readControls()};
+  return {angle,flipH,flipV,overlays:JSON.parse(JSON.stringify(overlays)),outputWidth,outputHeight,selectedIndex,controls:readControls()};
 }
 function saveSnapshot(){
- if(!img)return;
- undoStack.push(makeSnapshot());
- if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
- redoStack=[];updateHistoryButtons();
+  if(!img)return;
+  undoStack.push(makeSnapshot());
+  if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+  redoStack=[];updateHistoryButtons();
 }
 function updateHistoryButtons(){
- $("undo").disabled=undoStack.length===0;$("redo").disabled=redoStack.length===0;
- $("historyInfo").textContent=`${undoStack.length} undo step(s) · ${redoStack.length} redo step(s)`;
+  $("undo").disabled=undoStack.length===0;$("redo").disabled=redoStack.length===0;
+  $("historyInfo").textContent=`${undoStack.length} undo step(s) · ${redoStack.length} redo step(s)`;
 }
 function updateLayerButtons(){
- const valid=selectedIndex>=0&&selectedIndex<overlays.length;
- $("duplicateSelected").disabled=!valid;
- $("bringForward").disabled=!valid||selectedIndex===overlays.length-1;
- $("bringTop").disabled=!valid||selectedIndex===overlays.length-1;
- $("sendBackward").disabled=!valid||selectedIndex===0;
- $("sendBottom").disabled=!valid||selectedIndex===0;
+  const valid=selectedIndex>=0&&selectedIndex<overlays.length;
+  $("duplicateSelected").disabled=!valid;
+  $("bringForward").disabled=!valid||selectedIndex===overlays.length-1;
+  $("bringTop").disabled=!valid||selectedIndex===overlays.length-1;
+  $("sendBackward").disabled=!valid||selectedIndex===0;
+  $("sendBottom").disabled=!valid||selectedIndex===0;
 }
 function updateSelectionControls(){
- const item=overlays[selectedIndex];
- $("deleteSelected").disabled=!item;$("duplicateSelected").disabled=!item;
+  const item=overlays[selectedIndex];
+  $("deleteSelected").disabled=!item;$("duplicateSelected").disabled=!item;
   $("selectionInfo").textContent=!item?"Just type your text below. It shows on the photo right away.":item.type==="text"?"Editing this text. Changes show instantly. Drag it on the photo to move it.":"An overlay is selected. You can move, duplicate, reorder or delete it.";
- updateLayerButtons();
+  updateLayerButtons();
 }
 function applySnapshot(s){
- angle=s.angle;flipH=s.flipH;flipV=s.flipV;
- overlays=JSON.parse(JSON.stringify(s.overlays));
- outputWidth=s.outputWidth;outputHeight=s.outputHeight;
- selectedIndex=s.selectedIndex??-1;if(selectedIndex>=overlays.length)selectedIndex=-1;
- Object.entries(s.controls).forEach(([id,v])=>$(id).value=v);
- updateRangeLabels();updateResizeFields();
- if(overlays[selectedIndex]?.type==="text")loadSelectedTextIntoControls();
- render();updateHistoryButtons();
+  angle=s.angle;flipH=s.flipH;flipV=s.flipV;
+  overlays=JSON.parse(JSON.stringify(s.overlays));
+  outputWidth=s.outputWidth;outputHeight=s.outputHeight;
+  selectedIndex=s.selectedIndex??-1;if(selectedIndex>=overlays.length)selectedIndex=-1;
+  Object.entries(s.controls).forEach(([id,v])=>$(id).value=v);
+  updateRangeLabels();updateResizeFields();updateCanvasFrame();
+  if(overlays[selectedIndex]?.type==="text")loadSelectedTextIntoControls();
+  render();updateHistoryButtons();
 }
 function undo(){if(!undoStack.length)return;redoStack.push(makeSnapshot());applySnapshot(undoStack.pop());setStatus("Undo successful.")}
 function redo(){if(!redoStack.length)return;undoStack.push(makeSnapshot());applySnapshot(redoStack.pop());setStatus("Redo successful.")}
 $("undo").addEventListener("click",undo);$("redo").addEventListener("click",redo);
 
 function getCropDimensions(){
- if(!img)return {width:0,height:0};
- const ratio=$("crop").value,original=img.width/img.height;
- if(ratio==="original")return {width:img.width,height:img.height};
- const p=ratio.split(":").map(Number),target=p[0]/p[1];
- let width=img.width,height=img.height;
- if(original>target)width=height*target;else height=width/target;
- return {width,height};
+  if(!img)return {width:0,height:0};
+  const ratio=$("crop").value,original=img.width/img.height;
+  if(ratio==="original")return {width:img.width,height:img.height};
+  const p=ratio.split(":").map(Number),target=p[0]/p[1];
+  let width=img.width,height=img.height;
+  if(original>target)width=height*target;else height=width/target;
+  return {width,height};
 }
 function getBaseDimensions(){
- const c=getCropDimensions();
- return Math.abs(angle%180)===90?{width:c.height,height:c.width}:c;
+  const c=getCropDimensions();
+  return Math.abs(angle%180)===90?{width:c.height,height:c.width}:c;
 }
 function updateResizeFields(){
- if(!img)return;
- const b=getBaseDimensions();
- $("resizeWidth").value=outputWidth||Math.round(b.width);
- $("resizeHeight").value=outputHeight||Math.round(b.height);
+  if(!img)return;
+  const b=getBaseDimensions();
+  $("resizeWidth").value=outputWidth||Math.round(b.width);
+  $("resizeHeight").value=outputHeight||Math.round(b.height);
 }
 function makeBaseCanvas(){
- const crop=getCropDimensions(),base=document.createElement("canvas");
- const w=Math.max(1,Math.round(angle%180===0?crop.width:crop.height));
- const h=Math.max(1,Math.round(angle%180===0?crop.height:crop.width));
- base.width=w;base.height=h;
- const c=base.getContext("2d");
- c.save();c.translate(w/2,h/2);c.rotate(angle*Math.PI/180);c.scale(flipH?-1:1,flipV?-1:1);
- const sx=(img.width-crop.width)/2,sy=(img.height-crop.height)/2;
- c.drawImage(img,sx,sy,crop.width,crop.height,-crop.width/2,-crop.height/2,crop.width,crop.height);
- c.restore();return base;
+  const crop=getCropDimensions(),base=document.createElement("canvas");
+  const w=Math.max(1,Math.round(angle%180===0?crop.width:crop.height));
+  const h=Math.max(1,Math.round(angle%180===0?crop.height:crop.width));
+  base.width=w;base.height=h;
+  const c=base.getContext("2d");
+  c.save();c.translate(w/2,h/2);c.rotate(angle*Math.PI/180);c.scale(flipH?-1:1,flipV?-1:1);
+  const sx=(img.width-crop.width)/2,sy=(img.height-crop.height)/2;
+  c.drawImage(img,sx,sy,crop.width,crop.height,-crop.width/2,-crop.height/2,crop.width,crop.height);
+  c.restore();return base;
 }
 function getFilter(){
- return `brightness(${$("brightness").value}%) contrast(${$("contrast").value}%) saturate(${$("saturation").value}%) blur(${$("blur").value}px) ${$("filter").value==="none"?"":$("filter").value}`;
+  return `brightness(${$("brightness").value}%) contrast(${$("contrast").value}%) saturate(${$("saturation").value}%) blur(${$("blur").value}px) ${$("filter").value==="none"?"":$("filter").value}`;
 }
 function fontString(i){return `${i.italic?"italic":"normal"} ${i.bold?"bold":"normal"} ${i.size}px "${i.fontFamily}"`}
 function spacedWidth(c,text,sp){
- let w=0;for(let i=0;i<text.length;i++)w+=c.measureText(text[i]).width;
- return w+Math.max(0,text.length-1)*sp;
+  let w=0;for(let i=0;i<text.length;i++)w+=c.measureText(text[i]).width;
+  return w+Math.max(0,text.length-1)*sp;
 }
 function drawSpaced(c,text,x,y,sp,align,stroke){
- const width=spacedWidth(c,text,sp);let cur=x;
- if(align==="center")cur-=width/2;if(align==="right")cur-=width;
- for(const ch of text){stroke?c.strokeText(ch,cur,y):c.fillText(ch,cur,y);cur+=c.measureText(ch).width+sp}
+  const width=spacedWidth(c,text,sp);let cur=x;
+  if(align==="center")cur-=width/2;if(align==="right")cur-=width;
+  for(const ch of text){stroke?c.strokeText(ch,cur,y):c.fillText(ch,cur,y);cur+=c.measureText(ch).width+sp}
 }
 const getTextLines=i=>String(i.text||"").split("\n");
 
 function getTextMetrics(item){
- ctx.save();ctx.font=fontString(item);
- const lines=getTextLines(item),spacing=Number(item.letterSpacing)||0;
- const widths=lines.map(l=>spacedWidth(ctx,l,spacing));
- const width=Math.max(1,...widths);
- const lineHeight=item.size*(Number(item.lineSpacing)||1.2);
- const height=Math.max(item.size,lines.length*lineHeight);
- const padding=item.backgroundEnabled?12:10,align=item.align||"center";
- const left=align==="center"?-width/2:align==="right"?-width:0;
- const curve=item.curve||"none";
- const curveExtra=curve==="none"?0:Math.max(item.size,Number(item.curveAmount)||180);
- const totalWidth=curve==="circle"?Math.max(width,curveExtra*1.2):width;
- ctx.restore();
- return {x:left-padding,y:-height/2-padding,width:totalWidth+padding*2,height:height+curveExtra/2+padding*2,padding,lines,lineHeight};
+  ctx.save();ctx.font=fontString(item);
+  const lines=getTextLines(item),spacing=Number(item.letterSpacing)||0;
+  const widths=lines.map(l=>spacedWidth(ctx,l,spacing));
+  const width=Math.max(1,...widths);
+  const lineHeight=item.size*(Number(item.lineSpacing)||1.2);
+  const height=Math.max(item.size,lines.length*lineHeight);
+  const padding=item.backgroundEnabled?12:10,align=item.align||"center";
+  const left=align==="center"?-width/2:align==="right"?-width:0;
+  const curve=item.curve||"none";
+  const curveExtra=curve==="none"?0:Math.max(item.size,Number(item.curveAmount)||180);
+  const totalWidth=curve==="circle"?Math.max(width,curveExtra*1.2):width;
+  ctx.restore();
+  return {x:left-padding,y:-height/2-padding,width:totalWidth+padding*2,height:height+curveExtra/2+padding*2,padding,lines,lineHeight};
 }
 function getTextBounds(item){
- const m=getTextMetrics(item),r=(Number(item.rotation)||0)*Math.PI/180,c=Math.cos(r),s=Math.sin(r);
- const pts=[{x:m.x,y:m.y},{x:m.x+m.width,y:m.y},{x:m.x+m.width,y:m.y+m.height},{x:m.x,y:m.y+m.height}].map(p=>({x:item.x+p.x*c-p.y*s,y:item.y+p.x*s+p.y*c}));
- const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
- return {x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)};
+  const m=getTextMetrics(item),r=(Number(item.rotation)||0)*Math.PI/180,c=Math.cos(r),s=Math.sin(r);
+  const pts=[{x:m.x,y:m.y},{x:m.x+m.width,y:m.y},{x:m.x+m.width,y:m.y+m.height},{x:m.x,y:m.y+m.height}].map(p=>({x:item.x+p.x*c-p.y*s,y:item.y+p.x*s+p.y*c}));
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  return {x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)};
 }
 function drawCurvedLine(c,item,line,stroke){
- const chars=[...line];if(!chars.length)return;
- const spacing=Number(item.letterSpacing)||0;
- const widths=chars.map(ch=>c.measureText(ch).width+spacing);
- const total=widths.reduce((a,b)=>a+b,0)-spacing;
- const amount=clamp(Number(item.curveAmount)||180,45,360);
- const radius=Math.max(item.size*1.5,total/(amount*Math.PI/180));
- const dir=item.curve==="down"?-1:1;
- let cur=item.curve==="circle"?-Math.PI:-total/(2*radius);
- for(let i=0;i<chars.length;i++){
-  const w=widths[i]-spacing,mid=cur+w/(2*radius);
-  c.save();
-  if(item.curve==="circle"){c.rotate(mid+Math.PI/2);c.translate(0,-radius);c.rotate(Math.PI)}
-  else{c.translate(Math.sin(mid)*radius,dir*(radius-Math.cos(mid)*radius));c.rotate(-dir*mid)}
-  stroke?c.strokeText(chars[i],0,0):c.fillText(chars[i],0,0);
-  c.restore();cur+=widths[i]/radius;
- }
+  const chars=[...line];if(!chars.length)return;
+  const spacing=Number(item.letterSpacing)||0;
+  const widths=chars.map(ch=>c.measureText(ch).width+spacing);
+  const total=widths.reduce((a,b)=>a+b,0)-spacing;
+  const amount=clamp(Number(item.curveAmount)||180,45,360);
+  const radius=Math.max(item.size*1.5,total/(amount*Math.PI/180));
+  const dir=item.curve==="down"?-1:1;
+  let cur=item.curve==="circle"?-Math.PI:-total/(2*radius);
+  for(let i=0;i<chars.length;i++){
+    const w=widths[i]-spacing,mid=cur+w/(2*radius);
+    c.save();
+    if(item.curve==="circle"){c.rotate(mid+Math.PI/2);c.translate(0,-radius);c.rotate(Math.PI)}
+    else{c.translate(Math.sin(mid)*radius,dir*(radius-Math.cos(mid)*radius));c.rotate(-dir*mid)}
+    stroke?c.strokeText(chars[i],0,0):c.fillText(chars[i],0,0);
+    c.restore();cur+=widths[i]/radius;
+  }
 }
 function drawTextContent(c,item,stroke){
- const lines=getTextLines(item);
- c.font=fontString(item);c.textAlign=item.align||"center";c.textBaseline="middle";c.lineJoin="round";
- const spacing=Number(item.letterSpacing)||0,lh=item.size*(Number(item.lineSpacing)||1.2);
- if((item.curve||"none")!=="none"&&lines.length===1){drawCurvedLine(c,item,lines[0],stroke);return}
- const startY=-(lines.length-1)*lh/2;
- lines.forEach((line,i)=>{
-  const y=startY+i*lh;
-  if(spacing)drawSpaced(c,line,0,y,spacing,item.align||"center",stroke);
-  else stroke?c.strokeText(line,0,y):c.fillText(line,0,y);
- });
+  const lines=getTextLines(item);
+  c.font=fontString(item);c.textAlign=item.align||"center";c.textBaseline="middle";c.lineJoin="round";
+  const spacing=Number(item.letterSpacing)||0,lh=item.size*(Number(item.lineSpacing)||1.2);
+  if((item.curve||"none")!=="none"&&lines.length===1){drawCurvedLine(c,item,lines[0],stroke);return}
+  const startY=-(lines.length-1)*lh/2;
+  lines.forEach((line,i)=>{
+    const y=startY+i*lh;
+    if(spacing)drawSpaced(c,line,0,y,spacing,item.align||"center",stroke);
+    else stroke?c.strokeText(line,0,y):c.fillText(line,0,y);
+  });
 }
 function drawOverlays(c){
- overlays.forEach(item=>{
-  c.save();
-  if(item.type==="text"){
-   c.globalAlpha=clamp(item.opacity===undefined?100:Number(item.opacity),0,100)/100;
-   c.translate(item.x,item.y);c.rotate((Number(item.rotation)||0)*Math.PI/180);
-   const m=getTextMetrics(item);
-   if(item.backgroundEnabled){c.fillStyle=item.backgroundColor||"#000000";c.fillRect(m.x,m.y,m.width,m.height)}
-   if(item.shadowEnabled){
-    c.shadowColor=item.shadowColor||"#000000";c.shadowBlur=Number(item.shadowBlur)||0;
-    c.shadowOffsetX=Number(item.shadowOffsetX)||0;c.shadowOffsetY=Number(item.shadowOffsetY)||0;
-    c.fillStyle=item.color;drawTextContent(c,item,false);
-    c.shadowColor="transparent";c.shadowBlur=0;c.shadowOffsetX=0;c.shadowOffsetY=0;
-   }
-   if(Number(item.outlineWidth)>0){c.strokeStyle=item.outlineColor||"#000000";c.lineWidth=Number(item.outlineWidth);drawTextContent(c,item,true)}
-   c.fillStyle=item.color||"#ffffff";drawTextContent(c,item,false);
-  }
-  if(item.type==="sticker"){c.font=`${item.size}px Arial`;c.textAlign="center";c.textBaseline="middle";c.fillText(item.text,item.x,item.y)}
-  if(item.type==="rect"){c.fillStyle=item.color;c.fillRect(item.x-70,item.y-45,140,90)}
-  if(item.type==="circle"){c.fillStyle=item.color;c.beginPath();c.arc(item.x,item.y,45,0,Math.PI*2);c.fill()}
-  c.restore();
- });
+  overlays.forEach(item=>{
+    c.save();
+    if(item.type==="text"){
+      c.globalAlpha=clamp(item.opacity===undefined?100:Number(item.opacity),0,100)/100;
+      c.translate(item.x,item.y);c.rotate((Number(item.rotation)||0)*Math.PI/180);
+      const m=getTextMetrics(item);
+      if(item.backgroundEnabled){c.fillStyle=item.backgroundColor||"#000000";c.fillRect(m.x,m.y,m.width,m.height)}
+      if(item.shadowEnabled){
+        c.shadowColor=item.shadowColor||"#000000";c.shadowBlur=Number(item.shadowBlur)||0;
+        c.shadowOffsetX=Number(item.shadowOffsetX)||0;c.shadowOffsetY=Number(item.shadowOffsetY)||0;
+        c.fillStyle=item.color;drawTextContent(c,item,false);
+        c.shadowColor="transparent";c.shadowBlur=0;c.shadowOffsetX=0;c.shadowOffsetY=0;
+      }
+      if(Number(item.outlineWidth)>0){c.strokeStyle=item.outlineColor||"#000000";c.lineWidth=Number(item.outlineWidth);drawTextContent(c,item,true)}
+      c.fillStyle=item.color||"#ffffff";drawTextContent(c,item,false);
+    }
+    if(item.type==="sticker"){c.font=`${item.size}px Arial`;c.textAlign="center";c.textBaseline="middle";c.fillText(item.text,item.x,item.y)}
+    if(item.type==="rect"){c.fillStyle=item.color;c.fillRect(item.x-70,item.y-45,140,90)}
+    if(item.type==="circle"){c.fillStyle=item.color;c.beginPath();c.arc(item.x,item.y,45,0,Math.PI*2);c.fill()}
+    c.restore();
+  });
 }
 function drawSelection(){
- const item=overlays[selectedIndex];if(!item)return;
- ctx.save();ctx.strokeStyle="#a78bfa";ctx.lineWidth=2;ctx.setLineDash([7,5]);
- let x,y,w,h;
- if(item.type==="text"){const b=getTextBounds(item);x=b.x;y=b.y;w=b.width;h=b.height}
- else if(item.type==="rect"){x=item.x-78;y=item.y-53;w=156;h=106}
- else if(item.type==="circle"){x=item.x-53;y=item.y-53;w=106;h=106}
- else{x=item.x-item.size*.8;y=item.y-item.size*.8;w=item.size*1.6;h=item.size*1.6}
- ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);ctx.restore();
+  const item=overlays[selectedIndex];if(!item)return;
+  ctx.save();ctx.strokeStyle="#a78bfa";ctx.lineWidth=2;ctx.setLineDash([7,5]);
+  let x,y,w,h;
+  if(item.type==="text"){const b=getTextBounds(item);x=b.x;y=b.y;w=b.width;h=b.height}
+  else if(item.type==="rect"){x=item.x-78;y=item.y-53;w=156;h=106}
+  else if(item.type==="circle"){x=item.x-53;y=item.y-53;w=106;h=106}
+  else{x=item.x-item.size*.8;y=item.y-item.size*.8;w=item.size*1.6;h=item.size*1.6}
+  ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);ctx.restore();
 }
 function render(){
- if(!img)return;
- const base=makeBaseCanvas(),w=outputWidth||base.width,h=outputHeight||base.height;
- canvas.width=w;canvas.height=h;ctx.clearRect(0,0,w,h);
- ctx.save();ctx.scale(w/base.width,h/base.height);
- ctx.filter=getFilter();ctx.drawImage(base,0,0);ctx.filter="none";
- const v=Number($("vignette").value)||0;
- if(v>0){
-  const g=ctx.createRadialGradient(base.width/2,base.height/2,Math.min(base.width,base.height)*.25,base.width/2,base.height/2,Math.hypot(base.width,base.height)/2);
-  g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,`rgba(0,0,0,${v/100*.85})`);
-  ctx.fillStyle=g;ctx.fillRect(0,0,base.width,base.height);
- }
- drawOverlays(ctx);drawSelection();ctx.restore();
- canvas.hidden=false;placeholder.hidden=true;
- imageInfo.textContent=`${w} × ${h} px`;
- updateResizeFields();updateSelectionControls();
+  if(!img)return;
+  const base=makeBaseCanvas(),w=outputWidth||base.width,h=outputHeight||base.height;
+  canvas.width=w;canvas.height=h;ctx.clearRect(0,0,w,h);
+  ctx.save();ctx.scale(w/base.width,h/base.height);
+  ctx.filter=getFilter();ctx.drawImage(base,0,0);ctx.filter="none";
+  const v=Number($("vignette").value)||0;
+  if(v>0){
+    const g=ctx.createRadialGradient(base.width/2,base.height/2,Math.min(base.width,base.height)*.25,base.width/2,base.height/2,Math.hypot(base.width,base.height)/2);
+    g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,`rgba(0,0,0,${v/100*.85})`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,base.width,base.height);
+  }
+  drawOverlays(ctx);drawSelection();ctx.restore();
+  canvas.hidden=false;placeholder.hidden=true;
+  imageInfo.textContent=`${w} × ${h} px`;
+  updateResizeFields();updateSelectionControls();
 }
 function addOverlay(item){
- if(!img){setStatus("Please upload a photo first.");return}
- saveSnapshot();
- const d=getBaseDimensions();item.x=d.width/2;item.y=d.height/2;
- overlays.push(item);selectedIndex=overlays.length-1;
- render();if(item.type==="text")loadSelectedTextIntoControls();
- setStatus("Added! Drag it to reposition.");
+  if(!img){setStatus("Please upload a photo first.");return}
+  saveSnapshot();
+  const d=getBaseDimensions();item.x=d.width/2;item.y=d.height/2;
+  overlays.push(item);selectedIndex=overlays.length-1;
+  render();if(item.type==="text")loadSelectedTextIntoControls();
+  setStatus("Added! Drag it to reposition.");
 }
 function updateRangeLabels(){
- ["brightness","contrast","saturation","vignette"].forEach(id=>$(id+"Value").textContent=$(id).value+"%");
- $("blurValue").textContent=$("blur").value+"px";
- $("textOpacityValue").textContent=$("textOpacity").value+"%";
- $("textRotationValue").textContent=$("textRotation").value+"°";
- $("textShadowBlurValue").textContent=$("textShadowBlur").value+"px";
- $("textShadowXValue").textContent=$("textShadowX").value+"px";
- $("textShadowYValue").textContent=$("textShadowY").value+"px";
- $("letterSpacingValue").textContent=$("letterSpacing").value+"px";
- $("lineSpacingValue").textContent=Number($("lineSpacing").value).toFixed(1)+"x";
- $("curveAmountValue").textContent=$("curveAmount").value+"°";
+  ["brightness","contrast","saturation","vignette"].forEach(id=>$(id+"Value").textContent=$(id).value+"%");
+  $("blurValue").textContent=$("blur").value+"px";
+  $("textOpacityValue").textContent=$("textOpacity").value+"%";
+  $("textRotationValue").textContent=$("textRotation").value+"°";
+  $("textShadowBlurValue").textContent=$("textShadowBlur").value+"px";
+  $("textShadowXValue").textContent=$("textShadowX").value+"px";
+  $("textShadowYValue").textContent=$("textShadowY").value+"px";
+  $("letterSpacingValue").textContent=$("letterSpacing").value+"px";
+  $("lineSpacingValue").textContent=Number($("lineSpacing").value).toFixed(1)+"x";
+  $("curveAmountValue").textContent=$("curveAmount").value+"°";
 }
 
 upload.addEventListener("change",event=>{
- const file=event.target.files[0];if(!file)return;
- if(!file.type.startsWith("image/")){setStatus("Please select a valid image.");return}
- const reader=new FileReader();
- reader.onload=e=>{
-  const ni=new Image();
-  ni.onload=()=>{
-   img=ni;angle=0;flipH=false;flipV=false;overlays=[];selectedIndex=-1;outputWidth=0;outputHeight=0;
-   $("crop").value="9:16";$("brightness").value=100;$("contrast").value=100;$("saturation").value=100;
-   $("blur").value=0;$("vignette").value=0;$("filter").value="none";$("textOpacity").value=100;$("textRotation").value=0;
-   undoStack=[];redoStack=[];updateRangeLabels();render();updateHistoryButtons();
-   upload.value="";setStatus("Photo uploaded successfully. Start editing!");
+  const file=event.target.files[0];if(!file)return;
+  if(!file.type.startsWith("image/")){setStatus("Please select a valid image.");return}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const ni=new Image();
+    ni.onload=()=>{
+      img=ni;angle=0;flipH=false;flipV=false;overlays=[];selectedIndex=-1;outputWidth=0;outputHeight=0;
+      $("crop").value="9:16";$("brightness").value=100;$("contrast").value=100;$("saturation").value=100;
+      $("blur").value=0;$("vignette").value=0;$("filter").value="none";$("textOpacity").value=100;$("textRotation").value=0;
+      undoStack=[];redoStack=[];updateRangeLabels();updateCanvasFrame();render();updateHistoryButtons();
+      upload.value="";setStatus("Photo uploaded successfully. Start editing!");
+    };
+    ni.onerror=()=>setStatus("Could not open this image. Try another file.");
+    ni.src=e.target.result;
   };
-  ni.onerror=()=>setStatus("Could not open this image. Try another file.");
-  ni.src=e.target.result;
- };
- reader.readAsDataURL(file);
+  reader.readAsDataURL(file);
 });
 
 ["brightness","contrast","saturation","blur","vignette"].forEach(id=>{
- $(id).addEventListener("pointerdown",()=>{if(img)saveSnapshot()});
- $(id).addEventListener("input",()=>{updateRangeLabels();render()});
+  $(id).addEventListener("pointerdown",()=>{if(img)saveSnapshot()});
+  $(id).addEventListener("input",()=>{updateRangeLabels();render()});
 });
 function attachTextSlider(id,update){
- $(id).addEventListener("input",()=>{
-  updateRangeLabels();
-  const item=overlays[selectedIndex];
-  if(!img||!item||item.type!=="text")return;
-  if(!sliderFlags[id]){saveSnapshot();sliderFlags[id]=true}
-  update(item);render();setStatus("Text style updated. You can undo this change.");
- });
- $(id).addEventListener("change",()=>{sliderFlags[id]=false});
- $(id).addEventListener("pointercancel",()=>{sliderFlags[id]=false});
+  $(id).addEventListener("input",()=>{
+    updateRangeLabels();
+    const item=overlays[selectedIndex];
+    if(!img||!item||item.type!=="text")return;
+    if(!sliderFlags[id]){saveSnapshot();sliderFlags[id]=true}
+    update(item);render();
+  });
+  $(id).addEventListener("change",()=>{sliderFlags[id]=false});
+  $(id).addEventListener("pointercancel",()=>{sliderFlags[id]=false});
 }
 attachTextSlider("textOpacity",i=>i.opacity=Number($("textOpacity").value));
 attachTextSlider("textRotation",i=>i.rotation=Number($("textRotation").value));
@@ -516,239 +707,241 @@ attachTextSlider("letterSpacing",i=>i.letterSpacing=Number($("letterSpacing").va
 attachTextSlider("lineSpacing",i=>i.lineSpacing=Number($("lineSpacing").value));
 attachTextSlider("curveAmount",i=>i.curveAmount=Number($("curveAmount").value));
 ["textShadowBlur","textShadowX","textShadowY"].forEach(id=>{
- $(id).addEventListener("input",()=>{
-  updateRangeLabels();
-  const item=overlays[selectedIndex];
-  if(!img||!item||item.type!=="text")return;
-  if(!shadowEditStarted){saveSnapshot();shadowEditStarted=true}
-  item.shadowBlur=Number($("textShadowBlur").value);item.shadowOffsetX=Number($("textShadowX").value);item.shadowOffsetY=Number($("textShadowY").value);
-  render();
- });
- $(id).addEventListener("change",()=>shadowEditStarted=false);
+  $(id).addEventListener("input",()=>{
+    updateRangeLabels();
+    const item=overlays[selectedIndex];
+    if(!img||!item||item.type!=="text")return;
+    if(!shadowEditStarted){saveSnapshot();shadowEditStarted=true}
+    item.shadowBlur=Number($("textShadowBlur").value);item.shadowOffsetX=Number($("textShadowX").value);item.shadowOffsetY=Number($("textShadowY").value);
+    render();
+  });
+  $(id).addEventListener("change",()=>shadowEditStarted=false);
 });
 $("filter").addEventListener("change",()=>{if(img){saveSnapshot();render()}});
-$("crop").addEventListener("change",()=>{if(img){saveSnapshot();render()}});
+$("crop").addEventListener("change",()=>{if(img){saveSnapshot();updateCanvasFrame();render()}});
 $("rotateLeft").addEventListener("click",()=>{if(!img)return;saveSnapshot();angle=(angle-90+360)%360;render()});
 $("rotateRight").addEventListener("click",()=>{if(!img)return;saveSnapshot();angle=(angle+90)%360;render()});
 $("flipH").addEventListener("click",()=>{if(!img)return;saveSnapshot();flipH=!flipH;render()});
 $("flipV").addEventListener("click",()=>{if(!img)return;saveSnapshot();flipV=!flipV;render()});
 
 function getTextStyleFromControls(){
- return {
-  text:$("textInput").value.trim(),color:$("textColor").value,outlineColor:$("outlineColor").value,
-  outlineWidth:clamp(Number($("outlineWidth").value)||0,0,15),fontFamily:$("fontFamily").value,align:$("textAlign").value,
-  bold:$("textBold").checked,italic:$("textItalic").checked,size:clamp(Number($("textSize").value)||45,8,300),
-  opacity:Number($("textOpacity").value),rotation:Number($("textRotation").value),
-  letterSpacing:Number($("letterSpacing").value),lineSpacing:Number($("lineSpacing").value),
-  curve:$("textCurve").value,curveAmount:Number($("curveAmount").value),
-  shadowEnabled:$("textShadowEnabled").checked,shadowColor:$("textShadowColor").value,
-  shadowBlur:Number($("textShadowBlur").value),shadowOffsetX:Number($("textShadowX").value),shadowOffsetY:Number($("textShadowY").value),
-  backgroundEnabled:$("textBgEnabled").checked,backgroundColor:$("textBgColor").value
- };
+  return {
+    text:$("textInput").value.trim(),color:$("textColor").value,outlineColor:$("outlineColor").value,
+    outlineWidth:clamp(Number($("outlineWidth").value)||0,0,15),fontFamily:$("fontFamily").value,align:$("textAlign").value,
+    bold:$("textBold").checked,italic:$("textItalic").checked,size:clamp(Number($("textSize").value)||45,8,300),
+    opacity:Number($("textOpacity").value),rotation:Number($("textRotation").value),
+    letterSpacing:Number($("letterSpacing").value),lineSpacing:Number($("lineSpacing").value),
+    curve:$("textCurve").value,curveAmount:Number($("curveAmount").value),
+    shadowEnabled:$("textShadowEnabled").checked,shadowColor:$("textShadowColor").value,
+    shadowBlur:Number($("textShadowBlur").value),shadowOffsetX:Number($("textShadowX").value),shadowOffsetY:Number($("textShadowY").value),
+    backgroundEnabled:$("textBgEnabled").checked,backgroundColor:$("textBgColor").value
+  };
 }
 function loadSelectedTextIntoControls(){
- const item=overlays[selectedIndex];if(!item||item.type!=="text")return;
- $("textInput").value=item.text;$("textColor").value=item.color||"#ffffff";$("outlineColor").value=item.outlineColor||"#000000";
- $("outlineWidth").value=item.outlineWidth??2;$("fontFamily").value=item.fontFamily||"Arial";$("textAlign").value=item.align||"center";
- $("textBold").checked=!!item.bold;$("textItalic").checked=!!item.italic;$("textSize").value=item.size||45;
- $("textOpacity").value=item.opacity??100;$("textRotation").value=item.rotation??0;
- $("letterSpacing").value=item.letterSpacing??0;$("lineSpacing").value=item.lineSpacing??1.2;
- $("textCurve").value=item.curve||"none";$("curveAmount").value=item.curveAmount||180;
- $("textShadowEnabled").checked=!!item.shadowEnabled;$("textShadowColor").value=item.shadowColor||"#000000";
- $("textShadowBlur").value=item.shadowBlur??8;$("textShadowX").value=item.shadowOffsetX??4;$("textShadowY").value=item.shadowOffsetY??4;
- $("textBgEnabled").checked=!!item.backgroundEnabled;$("textBgColor").value=item.backgroundColor||"#000000";
- updateRangeLabels();updateSelectionControls();
+  const item=overlays[selectedIndex];if(!item||item.type!=="text")return;
+  $("textInput").value=item.text;$("textColor").value=item.color||"#ffffff";$("outlineColor").value=item.outlineColor||"#000000";
+  $("outlineWidth").value=item.outlineWidth??2;$("fontFamily").value=item.fontFamily||"Arial";$("textAlign").value=item.align||"center";
+  $("textBold").checked=!!item.bold;$("textItalic").checked=!!item.italic;$("textSize").value=item.size||45;
+  $("textOpacity").value=item.opacity??100;$("textRotation").value=item.rotation??0;
+  $("letterSpacing").value=item.letterSpacing??0;$("lineSpacing").value=item.lineSpacing??1.2;
+  $("textCurve").value=item.curve||"none";$("curveAmount").value=item.curveAmount||180;
+  $("textShadowEnabled").checked=!!item.shadowEnabled;$("textShadowColor").value=item.shadowColor||"#000000";
+  $("textShadowBlur").value=item.shadowBlur??8;$("textShadowX").value=item.shadowOffsetX??4;$("textShadowY").value=item.shadowOffsetY??4;
+  $("textBgEnabled").checked=!!item.backgroundEnabled;$("textBgColor").value=item.backgroundColor||"#000000";
+  updateRangeLabels();updateSelectionControls();
 }
 $("applyPreset").addEventListener("click",()=>{
- const presets={
-  title:{fontFamily:"Arial",size:64,bold:true,italic:false,color:"#ffffff",outlineColor:"#000000",outlineWidth:3,shadowEnabled:true,shadowBlur:8,shadowOffsetX:3,shadowOffsetY:3,backgroundEnabled:false,letterSpacing:0},
-  subtitle:{fontFamily:"Georgia",size:38,bold:false,italic:true,color:"#fff1d6",outlineWidth:0,shadowEnabled:true,shadowBlur:5,shadowOffsetX:2,shadowOffsetY:2,backgroundEnabled:false,letterSpacing:1},
-  neon:{fontFamily:"Arial",size:55,bold:true,italic:false,color:"#ffffff",outlineColor:"#ec38ff",outlineWidth:4,shadowEnabled:true,shadowColor:"#ec38ff",shadowBlur:22,shadowOffsetX:0,shadowOffsetY:0,backgroundEnabled:false,letterSpacing:2},
-  outline:{fontFamily:"Arial",size:58,bold:true,italic:false,color:"#ffffff",outlineColor:"#000000",outlineWidth:5,shadowEnabled:false,backgroundEnabled:false,letterSpacing:0},
-  shadow:{fontFamily:"Arial",size:52,bold:true,italic:false,color:"#ffffff",outlineWidth:0,shadowEnabled:true,shadowColor:"#000000",shadowBlur:12,shadowOffsetX:6,shadowOffsetY:6,backgroundEnabled:false,letterSpacing:0},
-  badge:{fontFamily:"Arial",size:36,bold:true,italic:false,color:"#ffffff",outlineWidth:0,shadowEnabled:false,backgroundEnabled:true,backgroundColor:"#6d4be8",letterSpacing:1},
-  minimal:{fontFamily:"Verdana",size:36,bold:false,italic:false,color:"#ffffff",outlineWidth:0,shadowEnabled:false,backgroundEnabled:false,letterSpacing:2}
- };
- const p=presets[$("textPreset").value];
- if(!p){setStatus("Choose a text preset first.");return}
- const map={fontFamily:"fontFamily",size:"textSize",bold:"textBold",italic:"textItalic",color:"textColor",outlineColor:"outlineColor",outlineWidth:"outlineWidth",shadowEnabled:"textShadowEnabled",shadowColor:"textShadowColor",shadowBlur:"textShadowBlur",shadowOffsetX:"textShadowX",shadowOffsetY:"textShadowY",backgroundEnabled:"textBgEnabled",backgroundColor:"textBgColor",letterSpacing:"letterSpacing"};
- Object.entries(p).forEach(([k,v])=>{const id=map[k];if(id){if($(id).type==="checkbox")$(id).checked=v;else $(id).value=v}});
- updateRangeLabels();liveText();setStatus("Preset applied.");
+  const presets={
+    title:{fontFamily:"Arial",size:64,bold:true,italic:false,color:"#ffffff",outlineColor:"#000000",outlineWidth:3,shadowEnabled:true,shadowBlur:8,shadowOffsetX:3,shadowOffsetY:3,backgroundEnabled:false,letterSpacing:0},
+    subtitle:{fontFamily:"Georgia",size:38,bold:false,italic:true,color:"#fff1d6",outlineWidth:0,shadowEnabled:true,shadowBlur:5,shadowOffsetX:2,shadowOffsetY:2,backgroundEnabled:false,letterSpacing:1},
+    neon:{fontFamily:"Arial",size:55,bold:true,italic:false,color:"#ffffff",outlineColor:"#ec38ff",outlineWidth:4,shadowEnabled:true,shadowColor:"#ec38ff",shadowBlur:22,shadowOffsetX:0,shadowOffsetY:0,backgroundEnabled:false,letterSpacing:2},
+    outline:{fontFamily:"Arial",size:58,bold:true,italic:false,color:"#ffffff",outlineColor:"#000000",outlineWidth:5,shadowEnabled:false,backgroundEnabled:false,letterSpacing:0},
+    shadow:{fontFamily:"Arial",size:52,bold:true,italic:false,color:"#ffffff",outlineWidth:0,shadowEnabled:true,shadowColor:"#000000",shadowBlur:12,shadowOffsetX:6,shadowOffsetY:6,backgroundEnabled:false,letterSpacing:0},
+    badge:{fontFamily:"Arial",size:36,bold:true,italic:false,color:"#ffffff",outlineWidth:0,shadowEnabled:false,backgroundEnabled:true,backgroundColor:"#6d4be8",letterSpacing:1},
+    minimal:{fontFamily:"Verdana",size:36,bold:false,italic:false,color:"#ffffff",outlineWidth:0,shadowEnabled:false,backgroundEnabled:false,letterSpacing:2}
+  };
+  const p=presets[$("textPreset").value];
+  if(!p){setStatus("Choose a text preset first.");return}
+  const map={fontFamily:"fontFamily",size:"textSize",bold:"textBold",italic:"textItalic",color:"textColor",outlineColor:"outlineColor",outlineWidth:"outlineWidth",shadowEnabled:"textShadowEnabled",shadowColor:"textShadowColor",shadowBlur:"textShadowBlur",shadowOffsetX:"textShadowX",shadowOffsetY:"textShadowY",backgroundEnabled:"textBgEnabled",backgroundColor:"textBgColor",letterSpacing:"letterSpacing"};
+  Object.entries(p).forEach(([k,v])=>{const id=map[k];if(id){if($(id).type==="checkbox")$(id).checked=v;else $(id).value=v}});
+  updateRangeLabels();liveText();setStatus("Preset applied.");
 });
 function rotateText(d,msg){
- const item=overlays[selectedIndex];
- if(!item||item.type!=="text"){setStatus("Please select text first.");return}
- saveSnapshot();item.rotation=((Number(item.rotation)||0)+d+360)%360;
- loadSelectedTextIntoControls();render();setStatus(msg);
+  const item=overlays[selectedIndex];
+  if(!item||item.type!=="text"){setStatus("Please select text first.");return}
+  saveSnapshot();item.rotation=((Number(item.rotation)||0)+d+360)%360;
+  loadSelectedTextIntoControls();render();setStatus(msg);
 }
 $("rotateTextLeft").addEventListener("click",()=>rotateText(-90,"Text rotated left."));
 $("rotateTextRight").addEventListener("click",()=>rotateText(90,"Text rotated right."));
-$("blackBg").addEventListener("click",()=>{$("textBgEnabled").checked=true;$("textBgColor").value="#000000";setStatus("Black background selected. Add or update text to apply.")});
-$("whiteBg").addEventListener("click",()=>{$("textBgEnabled").checked=true;$("textBgColor").value="#ffffff";setStatus("White background selected. Add or update text to apply.")});
-$("noBg").addEventListener("click",()=>{$("textBgEnabled").checked=false;setStatus("Transparent background selected.")});
+$("blackBg").addEventListener("click",()=>{$("textBgEnabled").checked=true;$("textBgColor").value="#000000";liveText()});
+$("whiteBg").addEventListener("click",()=>{$("textBgEnabled").checked=true;$("textBgColor").value="#ffffff";liveText()});
+$("noBg").addEventListener("click",()=>{$("textBgEnabled").checked=false;liveText()});
 $("addSticker").addEventListener("click",()=>addOverlay({type:"sticker",text:$("stickerInput").value,size:65}));
 $("addRect").addEventListener("click",()=>addOverlay({type:"rect",color:$("shapeColor").value}));
 $("addCircle").addEventListener("click",()=>addOverlay({type:"circle",color:$("shapeColor").value}));
 $("deleteSelected").addEventListener("click",()=>{
- if(selectedIndex<0)return;
- saveSnapshot();overlays.splice(selectedIndex,1);selectedIndex=-1;render();$("textInput").value="";setStatus("Selected overlay deleted.");
+  if(selectedIndex<0)return;
+  saveSnapshot();overlays.splice(selectedIndex,1);selectedIndex=-1;render();$("textInput").value="";setStatus("Selected overlay deleted.");
 });
 $("duplicateSelected").addEventListener("click",()=>{
- const item=overlays[selectedIndex];if(!item)return;
- saveSnapshot();
- const copy=JSON.parse(JSON.stringify(item));copy.x+=25;copy.y+=25;
- overlays.splice(selectedIndex+1,0,copy);selectedIndex++;
- render();if(copy.type==="text")loadSelectedTextIntoControls();setStatus("Overlay duplicated.");
+  const item=overlays[selectedIndex];if(!item)return;
+  saveSnapshot();
+  const copy=JSON.parse(JSON.stringify(item));copy.x+=25;copy.y+=25;
+  overlays.splice(selectedIndex+1,0,copy);selectedIndex++;
+  render();if(copy.type==="text")loadSelectedTextIntoControls();setStatus("Overlay duplicated.");
 });
 function moveLayer(dest){
- if(selectedIndex<0)return;
- const item=overlays[selectedIndex];saveSnapshot();
- overlays.splice(selectedIndex,1);dest=clamp(dest,0,overlays.length);
- overlays.splice(dest,0,item);selectedIndex=dest;render();setStatus("Layer order updated.");
+  if(selectedIndex<0)return;
+  const item=overlays[selectedIndex];saveSnapshot();
+  overlays.splice(selectedIndex,1);dest=clamp(dest,0,overlays.length);
+  overlays.splice(dest,0,item);selectedIndex=dest;render();setStatus("Layer order updated.");
 }
 $("bringForward").addEventListener("click",()=>moveLayer(selectedIndex+1));
 $("sendBackward").addEventListener("click",()=>moveLayer(selectedIndex-1));
 $("bringTop").addEventListener("click",()=>moveLayer(overlays.length-1));
 $("sendBottom").addEventListener("click",()=>moveLayer(0));
 $("undoOverlay").addEventListener("click",()=>{
- if(!overlays.length){setStatus("There is nothing to remove.");return}
- saveSnapshot();overlays.pop();selectedIndex=-1;render();setStatus("Last overlay removed.");
+  if(!overlays.length){setStatus("There is nothing to remove.");return}
+  saveSnapshot();overlays.pop();selectedIndex=-1;render();setStatus("Last overlay removed.");
 });
 $("clearOverlays").addEventListener("click",()=>{
- if(!overlays.length)return;
- saveSnapshot();overlays=[];selectedIndex=-1;render();setStatus("All overlays removed.");
+  if(!overlays.length)return;
+  saveSnapshot();overlays=[];selectedIndex=-1;render();setStatus("All overlays removed.");
 });
 $("applyResize").addEventListener("click",()=>{
- if(!img)return;
- const w=Number($("resizeWidth").value),h=Number($("resizeHeight").value);
- if(!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>12000||h>12000){setStatus("Enter valid width and height from 1 to 12000 pixels.");return}
- saveSnapshot();outputWidth=w;outputHeight=h;render();setStatus("Image resized successfully.");
+  if(!img)return;
+  const w=Number($("resizeWidth").value),h=Number($("resizeHeight").value);
+  if(!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||w>12000||h>12000){setStatus("Enter valid width and height from 1 to 12000 pixels.");return}
+  saveSnapshot();outputWidth=w;outputHeight=h;render();setStatus("Image resized successfully.");
 });
 $("resetResize").addEventListener("click",()=>{
- if(!img)return;saveSnapshot();outputWidth=0;outputHeight=0;render();setStatus("Original dimensions restored.");
+  if(!img)return;saveSnapshot();outputWidth=0;outputHeight=0;render();setStatus("Original dimensions restored.");
 });
 
 function getPointerPosition(e){
- const r=canvas.getBoundingClientRect(),base=getBaseDimensions();
- return {x:(e.clientX-r.left)*base.width/r.width,y:(e.clientY-r.top)*base.height/r.height};
+  const r=canvas.getBoundingClientRect(),base=getBaseDimensions();
+  return {x:(e.clientX-r.left)*base.width/r.width,y:(e.clientY-r.top)*base.height/r.height};
 }
 function hitTest(item,x,y){
- if(item.type==="rect")return Math.abs(x-item.x)<=75&&Math.abs(y-item.y)<=50;
- if(item.type==="circle")return Math.hypot(x-item.x,y-item.y)<=55;
- if(item.type==="sticker")return Math.abs(x-item.x)<=item.size*.7&&Math.abs(y-item.y)<=item.size*.7;
- if(item.type==="text"){
-  const r=(Number(item.rotation)||0)*Math.PI/180,dx=x-item.x,dy=y-item.y;
-  const lx=dx*Math.cos(r)+dy*Math.sin(r),ly=-dx*Math.sin(r)+dy*Math.cos(r),b=getTextMetrics(item);
-  return lx>=b.x&&lx<=b.x+b.width&&ly>=b.y&&ly<=b.y+b.height;
- }
- return false;
+  if(item.type==="rect")return Math.abs(x-item.x)<=75&&Math.abs(y-item.y)<=50;
+  if(item.type==="circle")return Math.hypot(x-item.x,y-item.y)<=55;
+  if(item.type==="sticker")return Math.abs(x-item.x)<=item.size*.7&&Math.abs(y-item.y)<=item.size*.7;
+  if(item.type==="text"){
+    const r=(Number(item.rotation)||0)*Math.PI/180,dx=x-item.x,dy=y-item.y;
+    const lx=dx*Math.cos(r)+dy*Math.sin(r),ly=-dx*Math.sin(r)+dy*Math.cos(r),b=getTextMetrics(item);
+    return lx>=b.x&&lx<=b.x+b.width&&ly>=b.y&&ly<=b.y+b.height;
+  }
+  return false;
 }
 const ptrs=new Map();let pinch=null;
 function pinchDist(){const [a,b]=[...ptrs.values()];return Math.hypot(a.x-b.x,a.y-b.y)||1}
 canvas.addEventListener("pointerdown",event=>{
- if(!img)return;
- ptrs.set(event.pointerId,{x:event.clientX,y:event.clientY});
- canvas.setPointerCapture(event.pointerId);
- const sel=overlays[selectedIndex];
- if(ptrs.size===2&&sel&&sel.size){
-  draggingIndex=-1;activePointer=null;saveSnapshot();
-  pinch={d:pinchDist(),size:sel.size,item:sel};event.preventDefault();return;
- }
- if(ptrs.size>1||draggingIndex!==-1)return;
- const p=getPointerPosition(event);
- for(let i=overlays.length-1;i>=0;i--){
-  if(hitTest(overlays[i],p.x,p.y)){
-   saveSnapshot();selectedIndex=i;draggingIndex=i;activePointer=event.pointerId;
-   dragOffsetX=p.x-overlays[i].x;dragOffsetY=p.y-overlays[i].y;
-   updateSelectionControls();if(overlays[i].type==="text")loadSelectedTextIntoControls();
-   render();event.preventDefault();break;
+  if(!img)return;
+  ptrs.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  canvas.setPointerCapture(event.pointerId);
+  const sel=overlays[selectedIndex];
+  if(ptrs.size===2&&sel&&sel.size){
+    draggingIndex=-1;activePointer=null;saveSnapshot();
+    pinch={d:pinchDist(),size:sel.size,item:sel};event.preventDefault();return;
   }
- }
+  if(ptrs.size>1||draggingIndex!==-1)return;
+  const p=getPointerPosition(event);
+  for(let i=overlays.length-1;i>=0;i--){
+    if(hitTest(overlays[i],p.x,p.y)){
+      saveSnapshot();selectedIndex=i;draggingIndex=i;activePointer=event.pointerId;
+      dragOffsetX=p.x-overlays[i].x;dragOffsetY=p.y-overlays[i].y;
+      updateSelectionControls();if(overlays[i].type==="text")loadSelectedTextIntoControls();
+      render();event.preventDefault();break;
+    }
+  }
 });
 canvas.addEventListener("dblclick",event=>{
- if(!img)return;
- const p=getPointerPosition(event);
- for(let i=overlays.length-1;i>=0;i--){
-  if(overlays[i].type==="text"&&hitTest(overlays[i],p.x,p.y)){
-   selectedIndex=i;loadSelectedTextIntoControls();render();showTab("text");
-   $("textInput").focus();$("textInput").select();
-   setStatus("Text loaded into the editor. Make changes and tap Update Text.");
-   event.preventDefault();return;
+  if(!img)return;
+  const p=getPointerPosition(event);
+  for(let i=overlays.length-1;i>=0;i--){
+    if(overlays[i].type==="text"&&hitTest(overlays[i],p.x,p.y)){
+      selectedIndex=i;loadSelectedTextIntoControls();render();showTab("text");
+      $("textInput").focus();$("textInput").select();
+      setStatus("Text loaded into the editor. Make changes and tap Update Text.");
+      event.preventDefault();return;
+    }
   }
- }
 });
 canvas.addEventListener("pointermove",event=>{
- if(ptrs.has(event.pointerId))ptrs.set(event.pointerId,{x:event.clientX,y:event.clientY});
- if(pinch&&ptrs.size>=2){
-  const sz=clamp(Math.round(pinch.size*pinchDist()/pinch.d),8,300);
-  pinch.item.size=sz;if(pinch.item.type==="text")$("textSize").value=sz;
-  render();event.preventDefault();return;
- }
- if(draggingIndex<0||event.pointerId!==activePointer)return;
- const p=getPointerPosition(event),item=overlays[draggingIndex];
- item.x=p.x-dragOffsetX;item.y=p.y-dragOffsetY;render();event.preventDefault();
+  if(ptrs.has(event.pointerId))ptrs.set(event.pointerId,{x:event.clientX,y:event.clientY});
+  if(pinch&&ptrs.size>=2){
+    const sz=clamp(Math.round(pinch.size*pinchDist()/pinch.d),8,300);
+    pinch.item.size=sz;if(pinch.item.type==="text")$("textSize").value=sz;
+    render();event.preventDefault();return;
+  }
+  if(draggingIndex<0||event.pointerId!==activePointer)return;
+  const p=getPointerPosition(event),item=overlays[draggingIndex];
+  item.x=p.x-dragOffsetX;item.y=p.y-dragOffsetY;render();event.preventDefault();
 });
 function stopDragging(event){
- ptrs.delete(event.pointerId);
- if(ptrs.size<2&&pinch){pinch=null;setStatus("Size updated. You can undo this action.")}
- if(activePointer!==null&&event.pointerId!==activePointer)return;
- if(draggingIndex>=0){draggingIndex=-1;activePointer=null;setStatus("Overlay position updated. You can undo this action.")}
+  ptrs.delete(event.pointerId);
+  if(ptrs.size<2&&pinch){pinch=null;setStatus("Size updated. You can undo this action.")}
+  if(activePointer!==null&&event.pointerId!==activePointer)return;
+  if(draggingIndex>=0){draggingIndex=-1;activePointer=null;setStatus("Overlay position updated. You can undo this action.")}
 }
 canvas.addEventListener("pointerup",stopDragging);
 canvas.addEventListener("pointercancel",stopDragging);
 canvas.addEventListener("lostpointercapture",e=>{ptrs.delete(e.pointerId);draggingIndex=-1;activePointer=null});
 
 $("download").addEventListener("click",()=>{
- if(!img){setStatus("Please upload a photo first.");return}
- const format=$("format").value,ext=format==="image/jpeg"?"jpg":format==="image/webp"?"webp":"png";
- try{
-  const old=selectedIndex;selectedIndex=-1;render();
-  canvas.toBlob(blob=>{
-   selectedIndex=old;render();
-   if(!blob){setStatus("Could not export the image. Please try again.");return}
-   const url=URL.createObjectURL(blob),a=document.createElement("a");
-   a.href=url;a.download=`pikora-edited-photo.${ext}`;document.body.appendChild(a);a.click();a.remove();
-   setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus("Your edited photo has been downloaded!");
-  },format,0.95);
- }catch(e){setStatus("Export failed. Please try a smaller image.")}
+  if(!img){setStatus("Please upload a photo first.");return}
+  const format=$("format").value,ext=format==="image/jpeg"?"jpg":format==="image/webp"?"webp":"png";
+  try{
+    const old=selectedIndex;selectedIndex=-1;render();
+    canvas.toBlob(blob=>{
+      selectedIndex=old;render();
+      if(!blob){setStatus("Could not export the image. Please try again.");return}
+      const url=URL.createObjectURL(blob),a=document.createElement("a");
+      a.href=url;a.download=`pikora-edited-photo.${ext}`;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus("Your edited photo has been downloaded!");
+    },format,0.95);
+  }catch(e){setStatus("Export failed. Please try a smaller image.")}
 });
 $("resetAll").addEventListener("click",()=>{
- if(!img){setStatus("Upload a photo to start editing.");return}
- saveSnapshot();
- angle=0;flipH=false;flipV=false;overlays=[];selectedIndex=-1;outputWidth=0;outputHeight=0;
- $("brightness").value=100;$("contrast").value=100;$("saturation").value=100;$("blur").value=0;$("vignette").value=0;
- $("filter").value="none";$("crop").value="9:16";$("textOpacity").value=100;$("textRotation").value=0;
- $("letterSpacing").value=0;$("lineSpacing").value=1.2;$("textCurve").value="none";$("curveAmount").value=180;
- updateRangeLabels();render();setStatus("All editing changes reset. You can undo this action.");
+  if(!img){setStatus("Upload a photo to start editing.");return}
+  saveSnapshot();
+  angle=0;flipH=false;flipV=false;overlays=[];selectedIndex=-1;outputWidth=0;outputHeight=0;
+  $("brightness").value=100;$("contrast").value=100;$("saturation").value=100;$("blur").value=0;$("vignette").value=0;
+  $("filter").value="none";$("crop").value="9:16";$("textOpacity").value=100;$("textRotation").value=0;
+  $("letterSpacing").value=0;$("lineSpacing").value=1.2;$("textCurve").value="none";$("curveAmount").value=180;
+  updateRangeLabels();updateCanvasFrame();render();setStatus("All editing changes reset. You can undo this action.");
 });
 
 let liveFor=null;
 function liveText(){
- if(!img){setStatus("Upload a photo first.");return}
- const style=getTextStyleFromControls();
- let item=overlays[selectedIndex];
- if(!item||item.type!=="text"){
-  if(!style.text.trim())return;
-  saveSnapshot();
-  const d=getBaseDimensions();
-  item={type:"text",...style,x:d.width/2,y:d.height/2};
-  overlays.push(item);selectedIndex=overlays.length-1;liveFor=item;
- }else{
-  if(liveFor!==item){saveSnapshot();liveFor=item}
-  if(!style.text.trim()){overlays.splice(selectedIndex,1);selectedIndex=-1;liveFor=null;render();return}
-  const x=item.x,y=item.y;Object.assign(item,style);item.x=x;item.y=y;
- }
- render();
+  if(!img){setStatus("Upload a photo first.");return}
+  const style=getTextStyleFromControls();
+  let item=overlays[selectedIndex];
+  if(!item||item.type!=="text"){
+    if(!style.text.trim())return;
+    saveSnapshot();
+    const d=getBaseDimensions();
+    item={type:"text",...style,x:d.width/2,y:d.height/2};
+    overlays.push(item);selectedIndex=overlays.length-1;liveFor=item;
+  }else{
+    if(liveFor!==item){saveSnapshot();liveFor=item}
+    if(!style.text.trim()){overlays.splice(selectedIndex,1);selectedIndex=-1;liveFor=null;render();return}
+    const x=item.x,y=item.y;Object.assign(item,style);item.x=x;item.y=y;
+  }
+  render();
 }
 ["textInput","textColor","outlineColor","outlineWidth","textSize","fontFamily","textAlign","textBold","textItalic","textCurve","textShadowEnabled","textShadowColor","textBgEnabled","textBgColor"].forEach(id=>{
- $(id).addEventListener("input",liveText);$(id).addEventListener("change",liveText);
+  $(id).addEventListener("input",liveText);$(id).addEventListener("change",liveText);
 });
-$("blackBg").addEventListener("click",liveText);$("whiteBg").addEventListener("click",liveText);$("noBg").addEventListener("click",liveText);
 $("addText").addEventListener("click",()=>{selectedIndex=-1;liveFor=null;$("textInput").value="";render();updateSelectionControls();$("textInput").focus();setStatus("Type to add new text.")});
 
 const _ab=()=>document.documentElement.style.setProperty("--ab",document.querySelector(".appbar").offsetHeight+"px");
 _ab();window.addEventListener("resize",_ab);
 $("pinBtn").onclick=()=>{const st=document.querySelector(".stage");st.classList.toggle("unpinned");$("pinBtn").style.opacity=st.classList.contains("unpinned")?".5":"1";setTimeout(_ab,0)};
+
+// Initialize
+updateCanvasFrame();
 updateRangeLabels();updateHistoryButtons();updateSelectionControls();
 })();
 </script>
