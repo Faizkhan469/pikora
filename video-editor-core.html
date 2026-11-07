@@ -29,10 +29,13 @@ body{margin:0;background:var(--bg);color:#f4f5ff;font-family:system-ui,-apple-sy
 .logo{font-size:18px;font-weight:800;color:#a78bfa;text-decoration:none;letter-spacing:1.5px}
 .appbar a.back{color:#cdd3ea;text-decoration:none;font-size:12px}
 .appbar .exp{padding:6px 14px;border-radius:20px}
-.stage{position:sticky;top:calc(44px + env(safe-area-inset-top));z-index:20;background:var(--bg);padding:8px 10px 6px;border-bottom:1px solid var(--line)}
+.stage{position:sticky;top:var(--ab,44px);z-index:20;background:var(--bg);padding:8px 10px 6px;border-bottom:1px solid var(--line)}
 main{max-width:900px;margin:auto;padding:12px 10px}
 h1{font-size:20px;margin:6px 0 4px}
 .sub{color:var(--mut);font-size:12px;margin:0 0 10px;line-height:1.5}
+.stage.unpinned{position:static}
+#previewWrap{margin:0 auto;touch-action:none}
+#previewWrap video{position:absolute;inset:0;width:100%;height:100%;max-height:none;border-radius:0}
 .sec{display:none}.sec.on{display:block}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
 h2{font-size:15px;margin:0 0 10px;color:var(--soft)}
@@ -46,11 +49,11 @@ input[type=range]{padding:0;accent-color:#9b7bff}input[type=color]{height:36px;p
 label{display:block;font-size:11px;color:#c5cce0}
 .row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:70px}
 .small{font-size:11px;color:var(--mut);margin:6px 0}
-video{width:100%;max-height:34vh;background:#05070d;border-radius:12px;display:block;object-fit:contain}
+video{width:100%;max-height:26vh;background:#05070d;border-radius:12px;display:block;object-fit:contain}
 #previewWrap{position:relative;overflow:hidden;background:#05070d;border-radius:12px}
 #preview{transform-origin:center;will-change:transform,opacity}
 #previewText{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.preview-overlay{position:absolute;font-weight:bold;text-align:center;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere;white-space:pre-wrap}
+.preview-overlay{pointer-events:auto;touch-action:none;cursor:move;position:absolute;font-weight:bold;text-align:center;text-shadow:2px 2px 5px #000;max-width:90%;overflow-wrap:anywhere;white-space:pre-wrap}
 .ctrl{display:flex;gap:6px;margin-top:6px;align-items:center}.ctrl button{flex:1}.ctrl .small{flex:2;margin:0;text-align:right}
 .clip,.textitem{padding:9px;border:1px solid #344365;border-radius:10px;margin-bottom:7px;background:#10182d;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .clip.active,.textitem.active{border-color:#a78bfa;background:#202044}
@@ -103,13 +106,15 @@ a{color:#b9a5ff}
 </div>
 
 <div class="stage">
-<div id="previewWrap"><video id="preview" controls playsinline></video><div id="previewText"></div></div>
+<div id="previewWrap"><video id="preview" playsinline></video><div id="previewText"></div></div>
 <div class="ctrl">
 <button class="secondary" id="playBtn" type="button">▶ Play</button>
 <button class="secondary" id="pauseBtn" type="button">❚❚ Pause</button>
 <button class="secondary" id="stopBtn" type="button">■ Stop</button>
+<button class="secondary" id="pinBtn" type="button" title="Pin or unpin the preview" style="flex:0 0 auto">📌</button>
 <span class="small" id="timeInfo">Select a clip</span>
 </div>
+<input type="range" id="seekBar" min="0" max="1000" value="0" style="margin:6px 0 0">
 </div>
 
 <main>
@@ -201,9 +206,9 @@ a{color:#b9a5ff}
 <label>Your text</label><input id="textInput" placeholder="Type your text here">
 <div class="g2">
 <div><label>Colour</label><input type="color" id="textColor" value="#ffffff"></div>
-<div><label>Position</label><select id="textPos"><option value="top">Top</option><option value="center" selected>Middle</option><option value="bottom">Bottom</option></select></div>
+<div><label>Position</label><select id="textPos"><option value="custom">Custom (moved by finger)</option><option value="top">Top</option><option value="center" selected>Middle</option><option value="bottom">Bottom</option></select></div>
 </div>
-<label>Size: <span id="textSizeVal">42</span></label><input type="range" id="textSize" min="16" max="120" value="42">
+<label>Size: <span id="textSizeVal">42</span></label><input type="range" id="textSize" min="16" max="300" value="42">
 <label>Animation</label>
 <select id="textAnimation"><option value="none">None</option><option value="fade">Fade in</option><option value="zoom">Zoom in</option><option value="slide">Slide up</option></select>
 <div class="g2">
@@ -211,7 +216,7 @@ a{color:#b9a5ff}
 <div><label>End (0 = until the end)</label><input type="number" id="textEnd" value="0" min="0" step=".5"></div>
 </div>
 <button class="full" id="addText" type="button">＋ New Text</button>
-<p class="small">Just type — your text appears on the video instantly. Press New Text to start another one, or Edit in the list to change an old one.</p>
+<p class="small">Just type — your text appears on the video instantly. Drag it with one finger, pinch with two fingers to make it bigger or smaller. Press New Text to start another one, or Edit in the list to change an old one.</p>
 <div id="textList" style="margin-top:10px"></div>
 </div>
 </section>
@@ -235,7 +240,7 @@ a{color:#b9a5ff}
 <div class="panel">
 <h2>Export</h2>
 <label>Aspect ratio</label>
-<select id="aspect"><option value="original">Original</option><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Social</option></select>
+<select id="aspect"><option value="original">Original</option><option value="16:9">16:9 Landscape</option><option value="9:16" selected>9:16 Portrait</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Social</option></select>
 <label>Video positioning</label><select id="fit"><option value="contain">Fit (show full video)</option><option value="cover">Fill (crop edges)</option></select>
 <label>Quality</label><select id="quality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Very High</option></select>
 <button id="exportBtn" type="button" style="width:100%;padding:11px">Export Video (WebM)</button>
@@ -392,7 +397,7 @@ function loadSelected(){
   preview.currentTime=Math.min(c.start,Math.max(0,preview.duration-.05));preview.playbackRate=c.speed;
   $("trimStart").value=fmt(c.start);$("trimEnd").value=fmt(c.end);$("speed").value=c.speed;$("filter").value=c.filter;
   $("transition").value=c.transition;$("transitionDuration").value=c.transitionDuration;$("fadeOut").value=c.fadeOut;
-  loadVideoKeys(c.videoKeys);updateTimeInfo();updateTrimUI();updatePreviewText();updatePreviewVideo();
+  loadVideoKeys(c.videoKeys);updateFrame();updateTimeInfo();updateTrimUI();updatePreviewText();updatePreviewVideo();
  };
 }
 function moveClip(d){const j=selected+d;if(selected<0||j<0||j>=clips.length)return;[clips[selected],clips[j]]=[clips[j],clips[selected]];selected=j;loadSelected();renderAll()}
@@ -460,9 +465,9 @@ function updatePreviewVideo(){
 function textEnd(t){return t.end>0?t.end:Math.max(totalDuration(),t.start+1)}
 const TEXT_POS={top:.15,center:.5,bottom:.85};
 function readText(){
- const pos=$("textPos").value,y=TEXT_POS[pos]||.5;
- return {text:$("textInput").value,color:$("textColor").value,size:clamp(Number($("textSize").value)||42,10,150),
- x:.5,y,x2:.5,y2:y,scale1:1,scale2:1,opacity1:100,opacity2:100,pos,
+ const pos=$("textPos").value,cur=texts[selectedText],custom=pos==="custom"&&cur,y=custom?cur.y:(TEXT_POS[pos]||.5),x=custom?cur.x:.5;
+ return {text:$("textInput").value,color:$("textColor").value,size:clamp(Number($("textSize").value)||42,10,300),
+ x,y,x2:x,y2:y,scale1:1,scale2:1,opacity1:100,opacity2:100,pos,
  start:Math.max(0,Number($("textStart").value)||0),end:Math.max(0,Number($("textEnd").value)||0),easing:"ease",animation:$("textAnimation").value};
 }
 function loadTextControls(t){
@@ -510,10 +515,11 @@ function timelineAtPreview(){
 }
 function updatePreviewText(){
  if(selected<0){$("previewText").innerHTML="";return}
- const time=timelineAtPreview(),k=$("previewWrap").clientWidth/canvasSize()[0],active=texts.filter(t=>time>=t.start&&time<=textEnd(t));
- $("previewText").innerHTML=active.map(t=>{
+ const time=timelineAtPreview(),k=$("previewWrap").clientWidth/canvasSize()[0];
+ $("previewText").innerHTML=texts.map((t,i)=>{
+  if(time<t.start||time>textEnd(t))return "";
   const s=textState(t,time);
-  return `<div class="preview-overlay" style="left:${s.x*100}%;top:${s.y*100}%;color:${t.color};font-size:${t.size*k}px;opacity:${s.opacity};transform:translate(-50%,-50%) scale(${s.scale})">${esc(t.text)}</div>`;
+  return `<div class="preview-overlay" data-i="${i}" style="left:${s.x*100}%;top:${s.y*100}%;color:${t.color};font-size:${t.size*k}px;opacity:${s.opacity};transform:translate(-50%,-50%) scale(${s.scale});${i===selectedText?"outline:1px dashed #a78bfa;":""}">${esc(t.text)}</div>`;
  }).join("");
 }
 
@@ -651,6 +657,57 @@ async function exportVideo(){
   stream.getTracks().forEach(t=>t.stop());
  }
 }
+const _ab=()=>document.documentElement.style.setProperty("--ab",document.querySelector(".appbar").offsetHeight+"px");
+_ab();window.addEventListener("resize",_ab);
+$("pinBtn").onclick=()=>{const st=document.querySelector(".stage");st.classList.toggle("unpinned");$("pinBtn").style.opacity=st.classList.contains("unpinned")?".5":"1";setTimeout(_ab,0)};
+function frameRatio(){
+ const a=$("aspect").value;
+ if(a==="original")return preview.videoWidth?preview.videoWidth/preview.videoHeight:9/16;
+ const [w,h]=a.split(":").map(Number);return w/h;
+}
+function updateFrame(){
+ const wrap=$("previewWrap"),r=frameRatio(),maxH=window.innerHeight*.34,maxW=wrap.parentElement.clientWidth-20;
+ let h=maxH,w=h*r;if(w>maxW){w=maxW;h=w/r}
+ wrap.style.width=Math.round(w)+"px";wrap.style.height=Math.round(h)+"px";
+ preview.style.objectFit=$("fit").value;updatePreviewText();updatePreviewVideo();
+}
+$("aspect").addEventListener("change",updateFrame);$("fit").addEventListener("change",updateFrame);
+window.addEventListener("resize",updateFrame);
+$("seekBar").addEventListener("input",()=>{const c=selectedClip();if(!c)return;preview.currentTime=c.start+Number($("seekBar").value)/1000*(c.end-c.start)});
+preview.addEventListener("timeupdate",()=>{const c=selectedClip();if(c&&c.end>c.start)$("seekBar").value=clamp((preview.currentTime-c.start)/(c.end-c.start),0,1)*1000});
+
+/* Touch: drag text with one finger, pinch with two fingers to resize */
+const ptrs=new Map();let pinch=null,drag=null;
+const wrapEl=$("previewWrap");
+wrapEl.addEventListener("pointerdown",e=>{
+ wrapEl.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(ptrs.size===2&&selectedText>=0&&texts[selectedText]){
+  const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,size:texts[selectedText].size};drag=null;return;
+ }
+ const el=e.target.closest&&e.target.closest(".preview-overlay");
+ if(el&&ptrs.size===1){
+  const i=Number(el.dataset.i);if(i!==selectedText)selectText(i);
+  const t=texts[i],r=wrapEl.getBoundingClientRect();
+  drag={id:e.pointerId,dx:(e.clientX-r.left)/r.width-t.x,dy:(e.clientY-r.top)/r.height-t.y};
+ }
+});
+wrapEl.addEventListener("pointermove",e=>{
+ if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ const t=texts[selectedText];if(!t)return;
+ if(pinch&&ptrs.size>=2){
+  const [a,b]=[...ptrs.values()];
+  t.size=clamp(Math.round(pinch.size*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d),10,300);
+  $("textSize").value=t.size;$("textSizeVal").textContent=t.size;updatePreviewText();return;
+ }
+ if(drag&&e.pointerId===drag.id){
+  const r=wrapEl.getBoundingClientRect();
+  t.x=t.x2=clamp((e.clientX-r.left)/r.width-drag.dx,0,1);t.y=t.y2=clamp((e.clientY-r.top)/r.height-drag.dy,0,1);
+  t.pos="custom";$("textPos").value="custom";updatePreviewText();
+ }
+});
+function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(drag&&e.pointerId===drag.id)drag=null}
+wrapEl.addEventListener("pointerup",endPtr);wrapEl.addEventListener("pointercancel",endPtr);
+updateFrame();
 $("exportBtn").onclick=exportVideo;
 renderAll();
 </script>
