@@ -18,20 +18,30 @@
 :root{
   --bg:#0b1020;--card:#141d35;--line:#293654;--acc:#7854e8;--acc-hover:#9675ff;
   --soft:#c4b5fd;--mut:#9ba8c4;--danger:#a83e55;--success:#6ee7b7;
-  --preview-ratio: 9/16; /* Dynamic */
+  --preview-ratio: 9/16;
 }
 body{margin:0;background:var(--bg);color:#f4f5ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:calc(70px + env(safe-area-inset-bottom));line-height:1.5}
+
+/* App Bar */
 .appbar{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));background:#0f1630;border-bottom:1px solid var(--line)}
 .logo{font-size:20px;font-weight:800;color:#a78bfa;text-decoration:none;letter-spacing:1.5px}
 .appbar a.back{color:#cdd3ea;text-decoration:none;font-size:13px;font-weight:500}
 .appbar .exp{padding:8px 16px;border-radius:20px;font-size:13px}
 
-.stage{position:sticky;top:var(--ab,56px);z-index:20;background:var(--bg);padding:12px 16px;border-bottom:1px solid var(--line)}
-main{max-width:900px;margin:auto;padding:16px}
+/* Stage / Preview Area - FIXED LAYOUT */
+.stage{
+  position:relative;
+  z-index:1;
+  background:var(--bg);
+  padding:12px 16px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:16px;
+}
+main{max-width:900px;margin:0 auto;padding:0 16px 16px;position:relative;z-index:2}
 h1{font-size:22px;margin:0 0 6px;font-weight:700}
 .sub{color:var(--mut);font-size:13px;margin:0 0 16px;line-height:1.5}
 
-/* Preview Area - WYSIWYG */
+/* Preview Box */
 #previewWrap{
   width:100%;max-width:450px;aspect-ratio:var(--preview-ratio);
   margin:0 auto;background:#05070d;border-radius:16px;overflow:hidden;
@@ -129,7 +139,7 @@ a{color:#b9a5ff;text-decoration:none}a:hover{text-decoration:underline}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(min-width:900px){
-  .stage{max-width:900px;margin:auto;border-radius:0 0 16px 16px}
+  .stage{max-width:900px;margin:0 auto 16px;border-radius:0 0 16px 16px}
   #previewWrap{max-width:500px}
 }
 </style>
@@ -576,7 +586,7 @@ function autoApplyClip(){
     preview.currentTime=c.start;preview.playbackRate=c.speed;
     renderClips();renderTimeline();updateTimeInfo();updateTrimUI();updatePreviewVideo();
     $("status").textContent="✅ Settings auto-saved.";
-  }, 300); // 300ms debounce for smooth UX
+  }, 300);
 }
 
 ["trimStart","trimEnd","speed","filter","transition","transitionDuration","fadeOut","videoEasing",
@@ -731,7 +741,6 @@ async function exportVideo(){
   for(const c of clips){if(c.end<=c.start)return alert("One clip has invalid trim settings.")}
   if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)return alert("Video export is not supported by this browser.");
   
-  // Show overlay
   exporting=true;
   $("exportOverlay").classList.add("active");
   $("exportBtn").disabled=true;
@@ -739,7 +748,6 @@ async function exportVideo(){
   $("overlayProgressBar").style.width="0%";
   $("downloadLink").style.display="none";
 
-  // Prevent accidental tab close
   const beforeUnloadHandler = (e) => { e.preventDefault(); e.returnValue = "Export in progress. Are you sure?"; };
   window.addEventListener("beforeunload", beforeUnloadHandler);
 
@@ -835,7 +843,7 @@ async function exportVideo(){
 
   function cleanupExport(){
     exporting=false;$("exportBtn").disabled=false;
-    setTimeout(() => $("exportOverlay").classList.remove("active"), 2000); // Keep success message visible briefly
+    setTimeout(() => $("exportOverlay").classList.remove("active"), 2000);
     if(musicEl)musicEl.pause();
     audioEls.forEach(x=>{x.el.pause();x.el.remove()});
     if(audioCtx)audioCtx.close().catch(()=>{});
@@ -843,9 +851,7 @@ async function exportVideo(){
   }
 }
 
-const _ab=()=>document.documentElement.style.setProperty("--ab",document.querySelector(".appbar").offsetHeight+"px");
-_ab();window.addEventListener("resize",_ab);
-$("pinBtn").onclick=()=>{const st=document.querySelector(".stage");st.classList.toggle("unpinned");$("pinBtn").style.opacity=st.classList.contains("unpinned")?".5":"1";setTimeout(_ab,0)};
+$("pinBtn").onclick=()=>{const st=document.querySelector(".stage");st.classList.toggle("unpinned");$("pinBtn").style.opacity=st.classList.contains("unpinned")?".5":"1"};
 
 function frameRatio(){
   const a=$("aspect").value;
@@ -854,7 +860,6 @@ function frameRatio(){
 }
 function updateFrame(){
   const ratio = frameRatio();
-  // Update CSS variable for smooth aspect-ratio transitions
   document.documentElement.style.setProperty("--preview-ratio", ratio);
   updatePreviewText();updatePreviewVideo();
 }
