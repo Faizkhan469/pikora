@@ -196,36 +196,23 @@ a{color:#b9a5ff}
 
 <section class="sec" id="tab-text">
 <div class="panel">
-<h2>Text Overlays</h2>
-<label>Text</label><input id="textInput" placeholder="Type your text here">
+<h2>Text</h2>
+<div class="kf" id="textMode" style="margin-top:0;font-size:12px">New text: type below, then press Add Text.</div>
+<label>Your text</label><input id="textInput" placeholder="Type your text here">
 <div class="g2">
 <div><label>Colour</label><input type="color" id="textColor" value="#ffffff"></div>
-<div><label>Font size (px)</label><input type="number" id="textSize" value="42" min="10" max="150"></div>
-<div><label>Start (video seconds)</label><input type="number" id="textStart" value="0" min="0" step=".1"></div>
-<div><label>End (video seconds)</label><input type="number" id="textEnd" value="10" min=".1" step=".1"></div>
+<div><label>Position</label><select id="textPos"><option value="top">Top</option><option value="center" selected>Middle</option><option value="bottom">Bottom</option></select></div>
 </div>
-<div class="kf"><span class="badge">KEYFRAME 1 · START</span>
+<label>Size: <span id="textSizeVal">42</span></label><input type="range" id="textSize" min="16" max="120" value="42">
+<label>Animation</label>
+<select id="textAnimation"><option value="none">None</option><option value="fade">Fade in</option><option value="zoom">Zoom in</option><option value="slide">Slide up</option></select>
 <div class="g2">
-<div><label>Horizontal</label><select id="textX"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
-<div><label>Vertical</label><select id="textY"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
-<div><label>Scale</label><input type="number" id="textScaleStart" min=".1" max="3" step=".1" value="1"></div>
-<div><label>Opacity (%)</label><input type="number" id="textOpacityStart" min="0" max="100" value="100"></div>
-</div></div>
-<div class="kf"><span class="badge">KEYFRAME 2 · END</span>
-<div class="g2">
-<div><label>Horizontal</label><select id="textXEnd"><option value=".5">Center</option><option value=".15">Left</option><option value=".85">Right</option></select></div>
-<div><label>Vertical</label><select id="textYEnd"><option value=".5">Center</option><option value=".15">Top</option><option value=".85">Bottom</option></select></div>
-<div><label>Scale</label><input type="number" id="textScaleEnd" min=".1" max="3" step=".1" value="1"></div>
-<div><label>Opacity (%)</label><input type="number" id="textOpacityEnd" min="0" max="100" value="100"></div>
-</div></div>
-<div class="g2">
-<div><label>Interpolation</label><select id="textEasing"><option value="linear">Linear</option><option value="ease">Smooth ease</option><option value="ease-in">Ease in</option><option value="ease-out">Ease out</option></select></div>
-<div><label>Entrance effect</label><select id="textAnimation"><option value="none">None</option><option value="fade">Fade</option><option value="zoom">Zoom</option><option value="slide">Slide</option></select></div>
+<div><label>Start (seconds)</label><input type="number" id="textStart" value="0" min="0" step=".5"></div>
+<div><label>End (0 = until the end)</label><input type="number" id="textEnd" value="0" min="0" step=".5"></div>
 </div>
-<div class="row"><button id="addText" type="button">Add Text</button><button class="secondary" id="updateText" type="button">Update</button><button class="danger" id="deleteText" type="button">Delete</button></div>
-<div class="presets"><button class="secondary" id="textPresetMove" type="button">Move Across</button><button class="secondary" id="textPresetZoom" type="button">Zoom In</button><button class="secondary" id="textPresetFade" type="button">Fade In</button></div>
-<div id="textList"></div>
-<p class="small">Text timing uses the whole video timeline.</p>
+<div class="row"><button id="addText" type="button">＋ Add Text</button><button class="secondary" id="doneText" type="button" style="display:none">✓ Done</button></div>
+<p class="small">To change a text, press Edit in the list. Changes show instantly.</p>
+<div id="textList" style="margin-top:10px"></div>
 </div>
 </section>
 
@@ -470,54 +457,51 @@ function updatePreviewVideo(){
  preview.style.opacity=s.opacity;preview.style.filter=c.filter==="none"?"none":c.filter;
 }
 
+function textEnd(t){return t.end>0?t.end:Math.max(totalDuration(),t.start+1)}
+const TEXT_POS={top:.15,center:.5,bottom:.85};
 function readText(){
- return {text:$("textInput").value.trim(),color:$("textColor").value,size:clamp(Number($("textSize").value)||42,10,150),
- x:Number($("textX").value),y:Number($("textY").value),x2:Number($("textXEnd").value),y2:Number($("textYEnd").value),
- scale1:clamp(num("textScaleStart",1),.1,3),scale2:clamp(num("textScaleEnd",1),.1,3),
- opacity1:clamp(num("textOpacityStart",100),0,100),opacity2:clamp(num("textOpacityEnd",100),0,100),
- start:Number($("textStart").value),end:Number($("textEnd").value),easing:$("textEasing").value,animation:$("textAnimation").value};
+ const pos=$("textPos").value,y=TEXT_POS[pos]||.5;
+ return {text:$("textInput").value,color:$("textColor").value,size:clamp(Number($("textSize").value)||42,10,150),
+ x:.5,y,x2:.5,y2:y,scale1:1,scale2:1,opacity1:100,opacity2:100,pos,
+ start:Math.max(0,Number($("textStart").value)||0),end:Math.max(0,Number($("textEnd").value)||0),easing:"ease",animation:$("textAnimation").value};
 }
 function loadTextControls(t){
- $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;
- $("textX").value=String(t.x);$("textY").value=String(t.y);$("textXEnd").value=String(t.x2);$("textYEnd").value=String(t.y2);
- $("textScaleStart").value=t.scale1;$("textScaleEnd").value=t.scale2;$("textOpacityStart").value=t.opacity1;$("textOpacityEnd").value=t.opacity2;
- $("textStart").value=t.start;$("textEnd").value=t.end;$("textEasing").value=t.easing||"linear";$("textAnimation").value=t.animation||"none";
+ $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;$("textSizeVal").textContent=t.size;
+ $("textPos").value=t.pos||"center";$("textAnimation").value=t.animation||"none";$("textStart").value=t.start;$("textEnd").value=t.end;
 }
 function renderTexts(){
- $("textList").innerHTML=texts.map((t,i)=>`<div class="textitem ${i===selectedText?"active":""}"><div><strong>${esc(t.text)}</strong><div class="small">${fmt(t.start)}–${fmt(t.end)}s · ${t.opacity1}%→${t.opacity2}%</div></div><button class="secondary" onclick="selectText(${i})">Select</button></div>`).join("")||'<p class="small">No text overlays yet.</p>';
+ $("textList").innerHTML=texts.map((t,i)=>`<div class="textitem ${i===selectedText?"active":""}"><div><strong>${esc(t.text)||"(empty)"}</strong><div class="small">${fmt(t.start)}s – ${t.end>0?fmt(t.end)+"s":"end"}</div></div><div class="row"><button class="secondary" onclick="selectText(${i})">Edit</button><button class="danger" onclick="removeText(${i})">Delete</button></div></div>`).join("")||'<p class="small">No text yet. Type something and press Add Text.</p>';
+ $("doneText").style.display=selectedText>=0?"":"none";
+ $("textMode").textContent=selectedText>=0?"Editing text "+(selectedText+1)+". Changes apply instantly. Press Done when finished.":"New text: type below, then press Add Text.";
 }
-function selectText(i){selectedText=i;const t=texts[i];if(!t)return;loadTextControls(t);renderTexts();updatePreviewText()}
+function selectText(i){selectedText=i;loadTextControls(texts[i]);renderTexts();updatePreviewText()}
+function removeText(i){texts.splice(i,1);selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText()}
+function liveUpdateText(){
+ $("textSizeVal").textContent=$("textSize").value;
+ if(selectedText<0)return;
+ texts[selectedText]=readText();renderTexts();updatePreviewText();
+}
+["textInput","textColor","textSize","textPos","textAnimation","textStart","textEnd"].forEach(id=>{
+ $(id).addEventListener("input",liveUpdateText);$(id).addEventListener("change",liveUpdateText);
+});
 $("addText").onclick=()=>{
- const t=readText();if(!t.text)return alert("Enter some text.");
- if(t.start<0||t.end<=t.start)return alert("Enter a valid start and end time.");
- texts.push(t);selectedText=texts.length-1;renderTexts();updatePreviewText();$("status").textContent="Text added.";
+ const t=readText();t.text=t.text.trim();
+ if(!t.text)return alert("Type your text first.");
+ texts.push(t);selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText();$("status").textContent="Text added.";
 };
-$("updateText").onclick=()=>{
- if(selectedText<0)return alert("Select a text overlay first.");
- const t=readText();if(!t.text||t.end<=t.start)return alert("Check your text and timing.");
- texts[selectedText]=t;renderTexts();updatePreviewText();$("status").textContent="Text updated.";
-};
-$("deleteText").onclick=()=>{if(selectedText<0)return;texts.splice(selectedText,1);selectedText=-1;renderTexts();updatePreviewText()};
-function setTextPreset(type){
- const set=(a,b,c,d,e,f,g,h)=>{$("textX").value=a;$("textY").value=b;$("textXEnd").value=c;$("textYEnd").value=d;$("textScaleStart").value=e;$("textScaleEnd").value=f;$("textOpacityStart").value=g;$("textOpacityEnd").value=h};
- if(type==="move")set(".15",".5",".85",".5","1","1","100","100");
- if(type==="zoom")set(".5",".5",".5",".5",".2","1.5","0","100");
- if(type==="fade")set(".5",".5",".5",".5","1","1","0","100");
- $("textEasing").value="ease";updatePreviewText();
-}
-$("textPresetMove").onclick=()=>setTextPreset("move");$("textPresetZoom").onclick=()=>setTextPreset("zoom");$("textPresetFade").onclick=()=>setTextPreset("fade");
+$("doneText").onclick=()=>{selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText()};
 
 function easeProgress(p,type){
  p=clamp(p,0,1);
  if(type==="ease")return p*p*(3-2*p);if(type==="ease-in")return p*p;if(type==="ease-out")return 1-(1-p)*(1-p);return p;
 }
 function textState(t,time){
- const raw=clamp((time-t.start)/Math.max(.001,t.end-t.start),0,1),p=easeProgress(raw,t.easing||"linear");
- let x=t.x+(t.x2-t.x)*p,y=t.y+(t.y2-t.y)*p,scale=t.scale1+(t.scale2-t.scale1)*p,opacity=(t.opacity1+(t.opacity2-t.opacity1)*p)/100;
- if(t.animation==="fade")opacity*=Math.min(1,raw/.12);
- if(t.animation==="zoom")scale*=Math.min(1,Math.max(.05,raw/.12));
- if(t.animation==="slide")y+=(1-Math.min(1,raw/.12))*.08;
- return {x,y,scale,opacity};
+ const e=easeProgress(clamp((time-t.start)/.8,0,1),"ease");
+ let y=t.y,scale=t.scale1,opacity=t.opacity1/100;
+ if(t.animation==="fade")opacity*=e;
+ if(t.animation==="zoom"){scale*=.2+.8*e;opacity*=e}
+ if(t.animation==="slide"){y+=(1-e)*.12;opacity*=e}
+ return {x:t.x,y,scale,opacity};
 }
 function timelineAtPreview(){
  let t=0;for(let i=0;i<selected;i++)t+=durationOf(clips[i]);
@@ -525,7 +509,7 @@ function timelineAtPreview(){
 }
 function updatePreviewText(){
  if(selected<0){$("previewText").innerHTML="";return}
- const time=timelineAtPreview(),k=$("previewWrap").clientWidth/canvasSize()[0],active=texts.filter(t=>time>=t.start&&time<=t.end);
+ const time=timelineAtPreview(),k=$("previewWrap").clientWidth/canvasSize()[0],active=texts.filter(t=>time>=t.start&&time<=textEnd(t));
  $("previewText").innerHTML=active.map(t=>{
   const s=textState(t,time);
   return `<div class="preview-overlay" style="left:${s.x*100}%;top:${s.y*100}%;color:${t.color};font-size:${t.size*k}px;opacity:${s.opacity};transform:translate(-50%,-50%) scale(${s.scale})">${esc(t.text)}</div>`;
@@ -573,7 +557,7 @@ function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress,k){
  ctx.drawImage(v,x,y,dw,dh);ctx.restore();
 }
 function drawOverlayText(ctx,t,time,w,h){
- if(time<t.start||time>t.end)return;
+ if(time<t.start||time>textEnd(t))return;
  const s=textState(t,time);ctx.save();ctx.globalAlpha=s.opacity;ctx.fillStyle=t.color;
  ctx.font=`bold ${t.size}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor="#000";ctx.shadowBlur=5;
  ctx.translate(w*s.x,h*s.y);ctx.scale(s.scale,s.scale);
