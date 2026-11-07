@@ -240,7 +240,14 @@ a{color:#b9a5ff}
 <div class="panel">
 <h2>Export</h2>
 <label>Aspect ratio</label>
-<select id="aspect"><option value="original">Original</option><option value="16:9">16:9 Landscape</option><option value="9:16" selected>9:16 Portrait</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Social</option></select>
+<select id="aspect">
+<option value="original">Original</option>
+<option value="16:9">16:9 Landscape – YouTube</option>
+<option value="9:16" selected>9:16 Portrait – Reels / Shorts</option>
+<option value="1:1">1:1 Square – Instagram</option>
+<option value="4:5">4:5 Portrait – Instagram</option>
+<option value="4:3">4:3 Classic</option>
+</select>
 <label>Video positioning</label><select id="fit"><option value="contain">Fit (show full video)</option><option value="cover">Fill (crop edges)</option></select>
 <label>Quality</label><select id="quality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Very High</option></select>
 <button id="exportBtn" type="button" style="width:100%;padding:11px">Export Video (WebM)</button>
