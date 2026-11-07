@@ -1,132 +1,20 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pikora Photo Editor – Redesigned Workspace</title>
-<meta name="description" content="Free browser-based photo editor by Pikora.">
-<meta name="theme-color" content="#090d19">
-<style>
-:root{color-scheme:dark;--bg:#090d19;--panel:#111a2c;--line:#263653;--muted:#9aabc5;--purple:#8b5cf6;--white:#f4f6ff}
-*{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at 50% -20%,#20234a 0,var(--bg) 55%);color:var(--white);font-family:Inter,Arial,sans-serif}
-.topbar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:#0d1425;position:sticky;top:0;z-index:5}
-.brand{font-weight:900;letter-spacing:2px;color:#b9a2ff;font-size:22px;text-decoration:none}
-.top-actions{display:flex;gap:8px;align-items:center}
-button{border:1px solid #354766;background:#1a2740;color:#eef2ff;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}
-button:hover{border-color:#9b7bff;background:#293858}
-button.primary{background:linear-gradient(135deg,#7954e8,#9b62f6);border-color:transparent}
-button:disabled{opacity:.4;cursor:not-allowed}
-main{max-width:1500px;margin:auto;padding:20px 18px 32px}
-.heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}
-h1{font-size:22px;margin:0 0 5px}
-.sub{font-size:13px;color:var(--muted);margin:0}
-.workspace{background:#10192b;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 18px 55px #0005}
-.preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-.preview-head strong{font-size:14px}
-.preview-actions{display:flex;gap:7px;align-items:center}
-.preview-actions button{padding:7px 10px;font-size:12px}
-.stage{height:min(58vh,650px);min-height:280px;border:1px solid #263653;border-radius:14px;background-color:#080d17;background-image:linear-gradient(45deg,#111a2b 25%,transparent 25%),linear-gradient(-45deg,#111a2b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#111a2b 75%),linear-gradient(-45deg,transparent 75%,#111a2b 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;display:flex;align-items:center;justify-content:center;overflow:auto;padding:14px}
-.stage iframe{width:100%;height:100%;border:0;background:transparent}
-.toolstrip{display:flex;gap:8px;overflow-x:auto;padding:13px 2px 7px;scrollbar-width:thin;scrollbar-color:#53658a transparent}
-.tool{flex:0 0 auto;min-width:78px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 9px;background:#17233a;border:1px solid #2b3c5b;border-radius:12px;color:#dbe4f7;font-size:11px}
-.tool .ico{font-size:20px;line-height:1}
-.tool.active{background:#34245f;border-color:#9b7bff;color:white}
-.hint{font-size:12px;color:var(--muted);margin:8px 2px 0}
-.statusline{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 2px 0;color:var(--muted);font-size:12px}
-#zoomLabel{font-variant-numeric:tabular-nums;min-width:42px;text-align:center}
-@media(max-width:700px){
- .topbar{height:58px;padding:0 12px}.brand{font-size:19px}.top-actions button{padding:8px 9px;font-size:11px}
- main{padding:13px 9px 24px}.heading{align-items:start;flex-direction:column}.workspace{padding:9px;border-radius:14px}
- .stage{height:48vh;min-height:260px;padding:5px}.tool{min-width:70px;padding:9px 7px}
- .statusline{flex-wrap:wrap}
-}
-</style>
+<title>Pikora Photo Editor – Free Online Photo Editing</title>
+<meta name="description" content="Edit photos for free with Pikora. Add text, stickers, shapes and filters. Crop, resize and download without watermarks.">
+<meta name="theme-color" content="#0b1020">
+<meta http-equiv="refresh" content="0;url=photo-editor-core.html">
+<link rel="canonical" href="https://pikora.pages.dev/photo-editor.html">
 </head>
 <body>
-<header class="topbar">
-<a class="brand" href="index.html">PIKORA</a>
-<div class="top-actions">
-<button id="undoTop" title="Undo">↶ Undo</button>
-<button id="redoTop" title="Redo">↷ Redo</button>
-<button id="resetTop" title="Reset all edits">Reset</button>
-<button class="primary" id="saveTop">↓ Export</button>
-</div>
-</header>
-<main>
-<div class="heading">
-<div><h1>Photo Editor</h1><p class="sub">A cleaner workspace for your creative edits. Your photo stays in your browser.</p></div>
-<a href="index.html" style="color:#c4b5fd;text-decoration:none;font-size:13px">← Back to Pikora</a>
-</div>
-<section class="workspace">
-<div class="preview-head"><strong>Preview</strong><div class="preview-actions">
-<button id="zoomOut">−</button><span id="zoomLabel">100%</span><button id="zoomIn">+</button><button id="fitView">Fit</button><button id="beforeAfter">Before</button>
-</div></div>
-<div class="stage" id="stage">
-<iframe id="editorFrame" title="Pikora photo editing controls" src="photo-editor-core.html"></iframe>
-</div>
-<nav class="toolstrip" aria-label="Photo editing tools">
-<button class="tool active" data-action="upload"><span class="ico">＋</span>Upload</button>
-<button class="tool" data-action="adjust"><span class="ico">☼</span>Adjust</button>
-<button class="tool" data-action="filters"><span class="ico">◐</span>Filters</button>
-<button class="tool" data-action="crop"><span class="ico">▧</span>Crop</button>
-<button class="tool" data-action="rotate"><span class="ico">⤾</span>Rotate</button>
-<button class="tool" data-action="text"><span class="ico">T</span>Text</button>
-<button class="tool" data-action="stickers"><span class="ico">☆</span>Stickers</button>
-<button class="tool" data-action="shapes"><span class="ico">◇</span>Shapes</button>
-<button class="tool" data-action="resize"><span class="ico">⤢</span>Resize</button>
-<button class="tool" data-action="layers"><span class="ico">▤</span>Layers</button>
-<button class="tool" data-action="download"><span class="ico">↓</span>Export</button>
-</nav>
-<div class="hint">Choose a tool to jump to its controls. On smaller screens, swipe the tool strip horizontally.</div>
-<div class="statusline"><span id="status">Ready. Upload a photo to begin.</span><span>Free · No watermark · Browser-based</span></div>
-</section>
-</main>
+<p>Opening Pikora Photo Editor...</p>
+<p><a href="photo-editor-core.html">Click here if the editor does not open automatically.</a></p>
 <script>
-const frame=document.getElementById('editorFrame');
-let zoom=100,showBefore=false,originalFrameSrc='photo-editor-core.html';
-function doc(){try{return frame.contentDocument}catch(e){return null}}
-function el(id){return doc()?.getElementById(id)}
-function jump(id){const target=el(id);if(!target)return;target.scrollIntoView({behavior:'smooth',block:'center'});target.focus?.()}
-function status(t){document.getElementById('status').textContent=t}
-frame.addEventListener('load',()=>{status('Editor loaded. Upload a photo to begin.');applyFrameStyle()});
-function applyFrameStyle(){
- const d=doc();if(!d)return;
- const style=d.createElement('style');
- style.textContent=`
- body{background:transparent!important;color:#eef2ff!important}
- header{display:none!important}
- main{max-width:none!important;padding:0!important}
- main>h1,main>.subtitle{display:none!important}
- .editor{display:grid!important;grid-template-columns:minmax(245px,310px) minmax(0,1fr)!important;gap:12px!important}
- .panel{background:#121d31!important;border:1px solid #2a3b5a!important;border-radius:13px!important;padding:12px!important;max-height:560px;overflow:auto;gap:12px!important}
- .workspace{background:#0a1020!important;border:1px solid #2a3b5a!important;border-radius:13px!important;padding:10px!important;min-height:560px!important}
- .canvas-area{min-height:490px!important;background:#080d17!important;border-color:#354766!important}
- canvas{max-height:490px!important}
- h2{color:#c4b5fd!important}
- input,select{border-radius:9px!important}
- @media(max-width:850px){.editor{grid-template-columns:1fr!important}.panel{max-height:none;order:2}.workspace{order:1;min-height:360px!important}.canvas-area{min-height:320px!important}canvas{max-height:420px!important}}
- `;
- d.head.appendChild(style);
-}
-document.querySelectorAll('.tool').forEach(btn=>btn.addEventListener('click',()=>{
- document.querySelectorAll('.tool').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
- const map={upload:'upload',adjust:'brightness',filters:'filter',crop:'crop',rotate:'rotateLeft',text:'textInput',stickers:'stickerInput',shapes:'shapeColor',resize:'resizeWidth',layers:'bringForward',download:'download'};
- jump(map[btn.dataset.action]);status(btn.textContent.trim()+' controls selected.');
-}));
-document.getElementById('undoTop').onclick=()=>{el('undo')?.click();status('Undo requested.')};
-document.getElementById('redoTop').onclick=()=>{el('redo')?.click();status('Redo requested.')};
-document.getElementById('resetTop').onclick=()=>{if(confirm('Reset all edits to the original uploaded photo?')){el('resetAll')?.click();status('Reset requested.')}};
-document.getElementById('saveTop').onclick=()=>{el('download')?.click();status('Export requested. Choose your format in the editor panel if needed.')};
-document.getElementById('zoomIn').onclick=()=>{zoom=Math.min(200,zoom+10);setZoom()};
-document.getElementById('zoomOut').onclick=()=>{zoom=Math.max(30,zoom-10);setZoom()};
-document.getElementById('fitView').onclick=()=>{zoom=100;setZoom()};
-function setZoom(){document.getElementById('zoomLabel').textContent=zoom+'%';const c=el('canvas');if(c){c.style.maxWidth=zoom===100?'100%':zoom+'%';c.style.maxHeight=zoom===100?'490px':'none'} }
-document.getElementById('beforeAfter').onclick=()=>{
- const b=document.getElementById('beforeAfter');
- if(!showBefore){const f=el('filter');if(f){f.dataset.saved=f.value;f.value='none'};['brightness','contrast','saturation','blur'].forEach(id=>{const x=el(id);if(x){x.dataset.saved=x.value;x.value=id==='blur'?0:100}});el('render') ; b.textContent='After';showBefore=true;status('Showing an unadjusted preview. Click After to restore adjustments.');}
- else{const f=el('filter');if(f&&f.dataset.saved!==undefined)f.value=f.dataset.saved;['brightness','contrast','saturation','blur'].forEach(id=>{const x=el(id);if(x&&x.dataset.saved!==undefined)x.value=x.dataset.saved});['brightness','contrast','saturation','blur'].forEach(id=>el(id)?.dispatchEvent(new Event('input')));el('filter')?.dispatchEvent(new Event('change'));b.textContent='Before';showBefore=false;status('Showing edited preview.');}
-};
+window.location.replace("photo-editor-core.html");
 </script>
 </body>
 </html>
