@@ -197,7 +197,7 @@ a{color:#b9a5ff}
 <section class="sec" id="tab-text">
 <div class="panel">
 <h2>Text</h2>
-<div class="kf" id="textMode" style="margin-top:0;font-size:12px">New text: type below, then press Add Text.</div>
+<div class="kf" id="textMode" style="margin-top:0;font-size:12px">Just type your text below. It shows on the video right away.</div>
 <label>Your text</label><input id="textInput" placeholder="Type your text here">
 <div class="g2">
 <div><label>Colour</label><input type="color" id="textColor" value="#ffffff"></div>
@@ -210,8 +210,8 @@ a{color:#b9a5ff}
 <div><label>Start (seconds)</label><input type="number" id="textStart" value="0" min="0" step=".5"></div>
 <div><label>End (0 = until the end)</label><input type="number" id="textEnd" value="0" min="0" step=".5"></div>
 </div>
-<div class="row"><button id="addText" type="button">＋ Add Text</button><button class="secondary" id="doneText" type="button" style="display:none">✓ Done</button></div>
-<p class="small">To change a text, press Edit in the list. Changes show instantly.</p>
+<button class="full" id="addText" type="button">＋ New Text</button>
+<p class="small">Just type — your text appears on the video instantly. Press New Text to start another one, or Edit in the list to change an old one.</p>
 <div id="textList" style="margin-top:10px"></div>
 </div>
 </section>
@@ -470,26 +470,27 @@ function loadTextControls(t){
  $("textPos").value=t.pos||"center";$("textAnimation").value=t.animation||"none";$("textStart").value=t.start;$("textEnd").value=t.end;
 }
 function renderTexts(){
- $("textList").innerHTML=texts.map((t,i)=>`<div class="textitem ${i===selectedText?"active":""}"><div><strong>${esc(t.text)||"(empty)"}</strong><div class="small">${fmt(t.start)}s – ${t.end>0?fmt(t.end)+"s":"end"}</div></div><div class="row"><button class="secondary" onclick="selectText(${i})">Edit</button><button class="danger" onclick="removeText(${i})">Delete</button></div></div>`).join("")||'<p class="small">No text yet. Type something and press Add Text.</p>';
- $("doneText").style.display=selectedText>=0?"":"none";
- $("textMode").textContent=selectedText>=0?"Editing text "+(selectedText+1)+". Changes apply instantly. Press Done when finished.":"New text: type below, then press Add Text.";
+ $("textList").innerHTML=texts.map((t,i)=>`<div class="textitem ${i===selectedText?"active":""}"><div><strong>${esc(t.text)||"(empty)"}</strong><div class="small">${fmt(t.start)}s – ${t.end>0?fmt(t.end)+"s":"end"}</div></div><div class="row"><button class="secondary" onclick="selectText(${i})">Edit</button><button class="danger" onclick="removeText(${i})">Delete</button></div></div>`).join("")||'<p class="small">No text yet. Type something above.</p>';
+  $("textMode").textContent=selectedText>=0?"Editing text "+(selectedText+1)+". Changes show instantly.":"Just type your text below. It shows on the video right away.";
 }
 function selectText(i){selectedText=i;loadTextControls(texts[i]);renderTexts();updatePreviewText()}
 function removeText(i){texts.splice(i,1);selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText()}
 function liveUpdateText(){
  $("textSizeVal").textContent=$("textSize").value;
- if(selectedText<0)return;
- texts[selectedText]=readText();renderTexts();updatePreviewText();
+ const t=readText();
+ if(selectedText<0){
+  if(!t.text.trim())return;
+  if(!clips.length)$("status").textContent="Add a video clip first to see your text.";
+  texts.push(t);selectedText=texts.length-1;
+ }else if(!t.text.trim()){
+  texts.splice(selectedText,1);selectedText=-1;
+ }else texts[selectedText]=t;
+ renderTexts();updatePreviewText();
 }
 ["textInput","textColor","textSize","textPos","textAnimation","textStart","textEnd"].forEach(id=>{
  $(id).addEventListener("input",liveUpdateText);$(id).addEventListener("change",liveUpdateText);
 });
-$("addText").onclick=()=>{
- const t=readText();t.text=t.text.trim();
- if(!t.text)return alert("Type your text first.");
- texts.push(t);selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText();$("status").textContent="Text added.";
-};
-$("doneText").onclick=()=>{selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText()};
+$("addText").onclick=()=>{selectedText=-1;$("textInput").value="";renderTexts();updatePreviewText();$("textInput").focus()};
 
 function easeProgress(p,type){
  p=clamp(p,0,1);
