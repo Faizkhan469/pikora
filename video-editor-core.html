@@ -66,7 +66,13 @@ header a.back{color:#ddd;text-decoration:none}
 main{max-width:1350px;margin:auto;padding:24px 16px}
 h1{font-size:29px;margin:0 0 8px}
 .sub{color:#aab3cc;margin-bottom:24px}
-.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(290px,1fr);gap:20px}
+.layout{display:block}
+aside{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.capcut-toolbar{position:sticky;top:0;z-index:20;display:flex;gap:8px;overflow-x:auto;padding:10px;background:#111831;border:1px solid #354263;border-radius:12px;margin:0 0 17px;scrollbar-width:thin}
+.capcut-toolbar button{flex:0 0 auto;min-width:88px;padding:11px 14px;background:#202c49;border:1px solid #3b4b70;color:#e8eaff}
+.capcut-toolbar button:hover,.capcut-toolbar button.active{background:#7854e8;border-color:#a78bfa}
+.capcut-toolbar button span{display:block;font-size:10px;font-weight:normal;color:#d7d2ff;margin-top:3px}
+.tool-target{scroll-margin-top:82px}
 .panel{background:#141d35;border:1px solid #293654;border-radius:15px;padding:17px;margin-bottom:17px;min-width:0}
 h2{font-size:18px;margin:0 0 14px;color:#c4b5fd}
 h3{font-size:15px;margin:0 0 12px;color:#ddd}
@@ -141,8 +147,9 @@ a{color:#b9a5ff}
 .preset-row{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
 .preset-row button{flex:1;min-width:120px}
 @media(max-width:800px){
- .layout{grid-template-columns:1fr}
+ aside{grid-template-columns:1fr}
  header{padding:15px}
+ .capcut-toolbar{top:0}
  .clipgrid,.keyframe-grid{grid-template-columns:1fr}
  .trim-controls{grid-template-columns:1fr}
  .track-label{width:60px;min-width:60px;font-size:10px}
@@ -175,7 +182,18 @@ a{color:#b9a5ff}
 <p class="small" id="timeInfo">Select a clip to preview it.</p>
 </div>
 
-<div class="panel">
+<nav class="capcut-toolbar" id="capcutToolbar" aria-label="Video editing tools">
+<button type="button" data-target="mediaTool">▣ Media<span>Import clips</span></button>
+<button type="button" data-target="timelineTool">▤ Timeline<span>Tracks</span></button>
+<button type="button" data-target="trimTool">✂ Trim<span>Cut & adjust</span></button>
+<button type="button" data-target="textTool">T Text<span>Titles</span></button>
+<button type="button" data-target="audioTool">♫ Audio<span>Music</span></button>
+<button type="button" data-target="effectsTool">✧ Effects<span>Filters</span></button>
+<button type="button" data-target="clipTool">▧ Clip<span>Animation</span></button>
+<button type="button" data-target="exportTool">⇩ Export<span>Save video</span></button>
+</nav>
+
+<div class="panel tool-target" id="timelineTool">
 <div class="timeline-top">
 <h2 style="margin:0">Multitrack Visual Timeline</h2>
 <span class="small" id="timelineDuration">0.0 seconds</span>
@@ -211,7 +229,7 @@ a{color:#b9a5ff}
 <p class="timeline-help">Drag video clips to reorder them. The audio waveform is generated locally from your selected music file.</p>
 </div>
 
-<div class="trim-visual">
+<div class="trim-visual tool-target" id="trimTool">
 <h3>Visual Trim Controls</h3>
 <div class="trim-controls">
 <div><label>Trim start: <span id="startReadout">0.0s</span></label><input type="range" id="startRange" min="0" max="1" step=".1" value="0"></div>
@@ -224,8 +242,8 @@ a{color:#b9a5ff}
 <p class="small">Use the sliders to adjust the selected clip's start and end points.</p>
 </div>
 
-<div class="panel">
-<h2>1. Video Clips</h2>
+<div class="panel tool-target" id="mediaTool">
+<h2>1. Video Clips & Media</h2>
 <label>Add video files (you can select multiple)</label>
 <input type="file" id="videoFiles" accept="video/*" multiple>
 <p class="small">Supported formats depend on your browser. Clips are processed locally.</p>
@@ -236,12 +254,12 @@ a{color:#b9a5ff}
 <button class="danger" id="deleteClip">Delete Clip</button>
 </div>
 <hr>
-<h3>Selected Clip Settings</h3>
+<h3 id="clipTool" class="tool-target">Selected Clip Settings & Effects</h3>
 <div class="clipgrid">
 <div><label>Trim start (seconds)</label><input type="number" id="trimStart" min="0" step=".1" value="0"></div>
 <div><label>Trim end (seconds)</label><input type="number" id="trimEnd" min="0" step=".1" value="0"></div>
 <div><label>Playback speed</label><select id="speed"><option value=".5">0.5x</option><option value=".75">0.75x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div>
-<div><label>Video filter</label><select id="filter">
+<div id="effectsTool" class="tool-target"><label>Video filter</label><select id="filter">
 <option value="none">Original</option><option value="grayscale(1)">Black & White</option><option value="sepia(.7) contrast(1.1)">Vintage</option><option value="contrast(1.2) saturate(1.2)">Cinematic</option><option value="saturate(1.8)">Vivid</option><option value="sepia(.25) saturate(1.3)">Warm</option><option value="contrast(1.6)">High Contrast</option><option value="blur(2px)">Blur</option>
 </select></div>
 </div>
@@ -291,7 +309,7 @@ a{color:#b9a5ff}
 <p class="small">To split: play or seek the selected clip to the desired position, pause, then press Split.</p>
 </div>
 
-<div class="panel">
+<div class="panel tool-target" id="textTool">
 <h2>2. Text Overlays & Keyframe Animation</h2>
 <label>Text to add</label><input id="textInput" placeholder="Type your text here">
 <div class="clipgrid">
@@ -335,7 +353,7 @@ a{color:#b9a5ff}
 </section>
 
 <aside>
-<div class="panel">
+<div class="panel tool-target" id="audioTool">
 <h2>3. Background Music</h2>
 <label>Choose music or audio</label><input type="file" id="musicFile" accept="audio/*">
 <label>Music volume</label><input type="range" id="musicVolume" min="0" max="1" step=".05" value=".35">
@@ -345,7 +363,7 @@ a{color:#b9a5ff}
 <p class="small" id="audioInfo">No background music selected.</p>
 <button class="secondary" id="removeMusic" type="button">Remove Background Music</button>
 </div>
-<div class="panel">
+<div class="panel tool-target" id="exportTool">
 <h2>4. Export Settings</h2>
 <label>Video aspect ratio</label>
 <select id="aspect"><option value="original">Original</option><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option><option value="4:5">4:5 Social</option></select>
@@ -377,6 +395,13 @@ a{color:#b9a5ff}
 "use strict";
 const $=id=>document.getElementById(id);
 const preview=$("preview");
+document.querySelectorAll("#capcutToolbar button[data-target]").forEach(button=>{
+ button.addEventListener("click",()=>{
+  const target=$(button.dataset.target);
+  if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
+  document.querySelectorAll("#capcutToolbar button").forEach(item=>item.classList.toggle("active",item===button));
+ });
+});
 let clips=[],selected=-1,texts=[],selectedText=-1,musicURL=null;
 let musicFileName="",musicDuration=0,musicWaveData=null;
 let exporting=false,dragIndex=-1,thumbJobs=new Set(),zoom=1;
