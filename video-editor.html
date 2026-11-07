@@ -2,108 +2,461 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pikora Video Editor</title>
-<meta name="description" content="Free browser-based video editing with clips, timeline, animated text, music and WebM export.">
-<meta name="theme-color" content="#090d18">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pikora Pro - Video Editor</title>
 <style>
-:root{color-scheme:dark;--bg:#090d18;--panel:#111827;--line:#263247;--muted:#9aa8bd;--accent:#9b7bff}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;background:var(--bg);color:#f4f6fb;font-family:Inter,Arial,sans-serif}
-body{overflow:hidden}
-.topbar{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#101727;border-bottom:1px solid var(--line);gap:12px}
-.brand{font-weight:900;letter-spacing:1.5px;color:#c4b5fd;text-decoration:none;font-size:19px}
-.top-actions{display:flex;align-items:center;gap:8px}
-.top-actions a,.top-actions button{border:1px solid #34415a;background:#1a2436;color:#fff;border-radius:9px;padding:9px 12px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer}
-.top-actions .export{background:#7654e8;border-color:#7654e8}
-.workspace{height:calc(100% - 116px);padding:10px 12px 0}
-#editorFrame{display:block;width:100%;height:100%;border:1px solid var(--line);border-radius:14px;background:#0b1020}
-.toolbar{height:58px;position:fixed;bottom:0;left:0;right:0;z-index:5;background:#101727;border-top:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:7px 10px;overflow-x:auto;scrollbar-width:thin}
-.tool{flex:0 0 auto;min-width:72px;border:1px solid transparent;background:transparent;color:#dbe2f0;border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;cursor:pointer}
-.tool .ico{font-size:18px;line-height:20px}
-.tool:active,.tool:hover{background:#202b42;border-color:#35445f}
-.hint{position:fixed;right:12px;top:67px;z-index:3;background:#171f31dd;border:1px solid #35415a;border-radius:8px;padding:7px 10px;color:#aab6ca;font-size:10px;pointer-events:none}
-@media(max-width:650px){
- .topbar{height:54px;padding:0 10px}.brand{font-size:17px}
- .top-actions a{display:none}.top-actions button{padding:8px 10px}
- .workspace{height:calc(100% - 108px);padding:7px 6px 0}
- #editorFrame{border-radius:10px}
- .toolbar{height:54px;padding:5px 6px;gap:3px}
- .tool{min-width:64px;padding:5px 7px}
- .hint{display:none}
+/* --- RESET & BASE --- */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark: #09090b;
+  --bg-panel: #18181b;
+  --bg-sidebar: #121214;
+  --bg-hover: #27272a;
+  --border: #27272a;
+  --accent: #00e5ff; 
+  --accent-hover: #00b8cc;
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --clip-color: #3b82f6;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* --- TOP BAR --- */
+.topbar {
+  height: 52px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 50;
+}
+.topbar-left { display: flex; align-items: center; gap: 20px; }
+.logo { font-weight: 800; font-size: 18px; color: var(--accent); letter-spacing: 1px; }
+.project-name { 
+  font-size: 14px; color: var(--text-muted); 
+  border: 1px solid transparent; padding: 6px 12px; border-radius: 6px; 
+  cursor: pointer; transition: 0.2s;
+}
+.project-name:hover { border-color: var(--border); background: var(--bg-hover); color: var(--text-main); }
+
+.topbar-center { display: flex; gap: 4px; }
+.tool-btn {
+  background: transparent; border: none; color: var(--text-muted);
+  padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; 
+  display: flex; align-items: center; gap: 6px; transition: 0.2s;
+}
+.tool-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+
+.topbar-right { display: flex; gap: 12px; align-items: center; }
+.btn-export {
+  background: var(--accent); color: #000; border: none; padding: 8px 24px;
+  border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: 0.2s;
+}
+.btn-export:hover { background: var(--accent-hover); }
+
+/* --- MAIN WORKSPACE LAYOUT --- */
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 1. Left Icon Sidebar */
+.sidebar-icons {
+  width: 64px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sidebar-icons::-webkit-scrollbar { display: none; }
+.icon-btn {
+  width: 52px; height: 56px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--text-muted); font-size: 10px; gap: 4px;
+  cursor: pointer; border-radius: 8px; margin-bottom: 4px;
+  transition: all 0.2s;
+}
+.icon-btn span { font-size: 20px; }
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+.icon-btn.active { color: var(--accent); background: rgba(0, 229, 255, 0.1); }
+
+/* 2. Left Content Panel */
+.sidebar-panel {
+  width: 340px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center;
+}
+.panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 40px 20px;
+  text-align: center; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+  background: rgba(255,255,255,0.02);
+}
+.upload-zone:hover { border-color: var(--accent); color: var(--accent); background: rgba(0, 229, 255, 0.05); }
+.upload-zone span { font-size: 32px; display: block; margin-bottom: 10px; }
+
+.media-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;
+}
+.media-item {
+  aspect-ratio: 9/16; background: #000; border-radius: 8px; position: relative; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: 0.2s;
+}
+.media-item:hover { border-color: var(--accent); transform: scale(1.02); }
+.media-item .thumb-placeholder { 
+  width: 100%; height: 100%; background: #222; 
+  display: flex; align-items: center; justify-content: center; font-size: 24px; 
+}
+.media-item .duration {
+  position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.8);
+  font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: 600;
+}
+
+/* 3. Center Stage (Canvas) */
+.stage-area {
+  flex: 1;
+  background: #0a0a0c;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.canvas-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  background-image: radial-gradient(#1a1a1f 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+#previewWrap {
+  position: relative;
+  background: #000;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+#preview { max-width: 100%; max-height: 100%; display: block; }
+#previewText { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+/* 4. Bottom Timeline */
+.timeline-area {
+  height: 240px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.timeline-toolbar {
+  height: 44px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; gap: 16px;
+}
+.play-controls { display: flex; gap: 8px; align-items: center; }
+.play-btn { 
+  background: var(--bg-hover); border: none; color: white; 
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer; 
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  transition: 0.2s;
+}
+.play-btn:hover { background: var(--accent); color: #000; }
+.time-display { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.timeline-tracks {
+  flex: 1; position: relative; overflow-x: auto; overflow-y: hidden;
+  background: #131316;
+}
+.track-labels {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 80px;
+  background: var(--bg-panel); border-right: 1px solid var(--border); z-index: 10;
+  display: flex; flex-direction: column;
+}
+.track-label { 
+  height: 64px; display: flex; align-items: center; padding-left: 16px; 
+  font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border); 
+  font-weight: 600;
+}
+.tracks-content { margin-left: 80px; position: relative; min-width: 100%; height: 100%; }
+.ruler { height: 24px; border-bottom: 1px solid var(--border); position: relative; background: var(--bg-panel); }
+.track-row { height: 64px; border-bottom: 1px solid var(--border); position: relative; }
+
+.clip-block {
+  position: absolute; top: 8px; bottom: 8px; background: var(--clip-color);
+  border-radius: 6px; border: 1px solid #60a5fa; cursor: grab;
+  display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: white; overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s;
+}
+.clip-block:hover { transform: translateY(-2px); border-color: white; }
+
+/* Toast Notification */
+.toast {
+  position: fixed; top: 70px; right: 20px; background: #fbbf24; color: #000;
+  padding: 16px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 100;
+  display: none; animation: slideIn 0.3s ease;
+}
+.toast.show { display: block; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Utilities */
+.hidden { display: none !important; }
+input[type="file"] { display: none; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sidebar-panel { width: 260px; }
+  .timeline-area { height: 180px; }
+}
+@media (max-width: 600px) {
+  .sidebar-panel { display: none; }
+  .sidebar-icons { width: 50px; }
+  .icon-btn { width: 40px; height: 44px; font-size: 9px; }
+  .icon-btn span { font-size: 16px; }
 }
 </style>
 </head>
 <body>
+
+<!-- TOP BAR -->
 <header class="topbar">
- <a class="brand" href="index.html">PIKORA</a>
- <div class="top-actions">
-  <a href="index.html">← Home</a>
-  <button type="button" id="jumpTimeline">Timeline</button>
-  <button type="button" class="export" id="jumpExport">Export</button>
- </div>
+  <div class="topbar-left">
+    <div class="logo">PIKORA</div>
+    <div class="project-name">Untitled Project ▾</div>
+  </div>
+  <div class="topbar-center">
+    <button class="tool-btn">↶ Undo</button>
+    <button class="tool-btn">↷ Redo</button>
+  </div>
+  <div class="topbar-right">
+    <button class="tool-btn">Share</button>
+    <button class="btn-export" id="goExport">Export</button>
+  </div>
 </header>
-<div class="hint">Your videos stay in your browser · Export format: WebM</div>
-<main class="workspace">
- <iframe id="editorFrame" src="video-editor-core.html" title="Pikora video editor workspace" allow="autoplay"></iframe>
-</main>
-<nav class="toolbar" aria-label="Video editing tools">
- <button class="tool" data-target="clips"><span class="ico">＋</span><span>Add Clips</span></button>
- <button class="tool" data-target="timeline"><span class="ico">▤</span><span>Timeline</span></button>
- <button class="tool" data-target="trim"><span class="ico">✂</span><span>Trim</span></button>
- <button class="tool" data-target="clipsettings"><span class="ico">⚙</span><span>Clip</span></button>
- <button class="tool" data-target="text"><span class="ico">T</span><span>Text</span></button>
- <button class="tool" data-target="music"><span class="ico">♫</span><span>Music</span></button>
- <button class="tool" data-target="export"><span class="ico">⇩</span><span>Export</span></button>
-</nav>
+
+<!-- MAIN WORKSPACE -->
+<div class="workspace">
+  
+  <!-- LEFT ICON SIDEBAR -->
+  <nav class="sidebar-icons">
+    <div class="icon-btn active" data-panel="media"><span>🎬</span>Media</div>
+    <div class="icon-btn" data-panel="text"><span>T</span>Text</div>
+    <div class="icon-btn" data-panel="audio"><span>🎵</span>Audio</div>
+    <div class="icon-btn" data-panel="stickers"><span>⭐</span>Stickers</div>
+    <div class="icon-btn" data-panel="filters"><span>✨</span>Filters</div>
+    <div class="icon-btn" data-panel="transitions"><span>🔀</span>Trans</div>
+    <div class="icon-btn" data-panel="effects"><span>🪄</span>Effects</div>
+  </nav>
+
+  <!-- LEFT CONTENT PANEL -->
+  <aside class="sidebar-panel" id="sidebarPanel">
+    <!-- Media Panel (Default) -->
+    <div class="panel-view" id="panel-media">
+      <div class="panel-header">Local Media</div>
+      <div class="panel-content">
+        <label class="upload-zone" for="videoFiles">
+          <span>☁️</span>
+          <strong>Click to upload</strong><br>
+          <small style="opacity: 0.7;">or drag and drop files here</small>
+        </label>
+        <input type="file" id="videoFiles" accept="video/*" multiple>
+        <div class="media-grid" id="mediaGrid">
+          <!-- Thumbnails go here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Text Panel (Hidden by default) -->
+    <div class="panel-view hidden" id="panel-text">
+      <div class="panel-header">Text</div>
+      <div class="panel-content">
+        <button class="btn-export" style="width:100%; justify-content:center; margin-bottom:12px;" id="addTitle">+ Add Title</button>
+        <button class="tool-btn" style="width:100%; justify-content:center; background:var(--bg-hover); margin-bottom:12px; height: 40px;" id="addSubtitle">+ Add Subtitle</button>
+        <div style="margin-top:20px; font-size:12px; color:var(--text-muted); text-align: center; line-height: 1.5;">Select text on canvas to edit properties.</div>
+      </div>
+    </div>
+
+    <!-- Other Panels Placeholders -->
+    <div class="panel-view hidden" id="panel-audio"><div class="panel-header">Audio</div><div class="panel-content"><p style="color:var(--text-muted); text-align:center; margin-top:40px;">Audio library coming soon.</p></div></div>
+    <div class="panel-view hidden" id="panel-stickers"><div class="panel-header">Stickers</div><div class="panel-content"><p style="color:var(--text-muted); text-align:center; margin-top:40px;">Sticker library coming soon.</p></div></div>
+    <div class="panel-view hidden" id="panel-filters"><div class="panel-header">Filters</div><div class="panel-content"><p style="color:var(--text-muted); text-align:center; margin-top:40px;">Filters coming soon.</p></div></div>
+    <div class="panel-view hidden" id="panel-transitions"><div class="panel-header">Transitions</div><div class="panel-content"><p style="color:var(--text-muted); text-align:center; margin-top:40px;">Transitions coming soon.</p></div></div>
+    <div class="panel-view hidden" id="panel-effects"><div class="panel-header">Effects</div><div class="panel-content"><p style="color:var(--text-muted); text-align:center; margin-top:40px;">Effects coming soon.</p></div></div>
+  </aside>
+
+  <!-- CENTER STAGE & TIMELINE -->
+  <main class="stage-area">
+    
+    <!-- Canvas Area -->
+    <div class="canvas-container">
+      <div id="previewWrap" style="width: 360px; height: 640px;">
+        <video id="preview" playsinline></video>
+        <div id="previewText"></div>
+      </div>
+    </div>
+
+    <!-- Timeline Area -->
+    <div class="timeline-area">
+      <div class="timeline-toolbar">
+        <div class="play-controls">
+          <button class="play-btn" id="playBtn">▶</button>
+          <button class="play-btn" id="pauseBtn">❚❚</button>
+        </div>
+        <div class="time-display" id="timeInfo">00:00 / 00:00</div>
+        <div style="flex:1"></div>
+        <button class="tool-btn">🗑️ Delete</button>
+        <button class="tool-btn">✂️ Split</button>
+      </div>
+      
+      <div class="timeline-tracks">
+        <div class="track-labels">
+          <div class="track-label">Video 1</div>
+          <div class="track-label">Audio 1</div>
+        </div>
+        <div class="tracks-content" id="timelineContent">
+          <div class="ruler"></div>
+          <div class="track-row" id="videoTrack">
+            <div id="timelinePlaceholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--text-muted); font-size:13px; pointer-events: none;">Drag and drop media here</div>
+          </div>
+          <div class="track-row"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+  <div style="font-weight: 800; margin-bottom: 4px;">Ready to export video</div>
+  <div style="font-weight: 400; font-size: 12px; opacity: 0.8;">Your video is ready. You can download it to your computer.</div>
+  <button onclick="document.getElementById('toast').classList.remove('show')" style="margin-top: 10px; background: #000; color: #fff; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: 600;">OK</button>
+</div>
+
 <script>
-(function(){
- const frame=document.getElementById('editorFrame');
- function getDoc(){try{return frame.contentDocument||frame.contentWindow.document}catch(e){return null}}
- function panelByHeading(doc,needle){
-  const heads=[...doc.querySelectorAll('h2')];
-  const h=heads.find(x=>x.textContent.toLowerCase().includes(needle));
-  return h?.closest('.panel')||h;
- }
- function go(target){
-  const d=getDoc();if(!d)return;
-  let el=null;
-  if(target==='clips')el=panelByHeading(d,'1. video clips');
-  if(target==='timeline')el=panelByHeading(d,'multitrack visual timeline');
-  if(target==='trim')el=d.querySelector('.trim-visual');
-  if(target==='clipsettings'){
-   const p=panelByHeading(d,'1. video clips');el=p;
-   const h=[...(p?.querySelectorAll('h3')||[])].find(x=>x.textContent.toLowerCase().includes('selected clip settings'));
-   if(h)el=h;
-  }
-  if(target==='text')el=panelByHeading(d,'2. text overlays');
-  if(target==='music')el=panelByHeading(d,'3. background music');
-  if(target==='export')el=panelByHeading(d,'4. export settings');
-  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
- }
- document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>go(b.dataset.target)));
- document.getElementById('jumpTimeline').addEventListener('click',()=>go('timeline'));
- document.getElementById('jumpExport').addEventListener('click',()=>go('export'));
- frame.addEventListener('load',()=>{
-  const d=getDoc();if(!d)return;
-  const style=d.createElement('style');
-  style.textContent=`
-   html{scroll-behavior:smooth;scroll-padding-top:12px}
-   body{background:#0b1020!important;color:#f4f5ff!important}
-   header{display:none!important}
-   main{max-width:1450px!important;padding:14px 12px!important}
-   main>h1,main>.sub{display:none!important}
-   .layout{grid-template-columns:minmax(0,1.55fr) minmax(280px,.9fr)!important;gap:14px!important}
-   .panel{background:#121b2d!important;border:1px solid #2b3953!important;border-radius:14px!important;padding:14px!important;box-shadow:0 8px 25px #0002}
-   h2{color:#c4b5fd!important}
-   button,.filebtn{border-radius:9px!important}
-   input,select,textarea{background:#0c1424!important;border-color:#35445f!important}
-   #previewWrap{border:1px solid #34415a}
-   @media(max-width:800px){.layout{grid-template-columns:1fr!important}main{padding:9px 7px!important}.panel{padding:11px!important}video{max-height:38vh!important}}
-  `;
-  d.head.appendChild(style);
- });
-})();
+// --- UI INTERACTION LOGIC ---
+
+// 1. Sidebar Navigation
+const iconBtns = document.querySelectorAll('.icon-btn');
+const panelViews = document.querySelectorAll('.panel-view');
+
+iconBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    iconBtns.forEach(b => b.classList.remove('active'));
+    panelViews.forEach(p => p.classList.add('hidden'));
+    
+    btn.classList.add('active');
+    const targetPanel = document.getElementById(`panel-${btn.dataset.panel}`);
+    if(targetPanel) targetPanel.classList.remove('hidden');
+  });
+});
+
+// 2. File Upload Handling
+const fileInput = document.getElementById('videoFiles');
+const mediaGrid = document.getElementById('mediaGrid');
+const videoTrack = document.getElementById('videoTrack');
+const preview = document.getElementById('preview');
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const timeInfo = document.getElementById('timeInfo');
+
+fileInput.addEventListener('change', (e) => {
+  const files = Array.from(e.target.files);
+  if(files.length === 0) return;
+
+  // Hide placeholder
+  document.getElementById('timelinePlaceholder').style.display = 'none';
+
+  files.forEach((file, index) => {
+    const url = URL.createObjectURL(file);
+    
+    // Add to Media Grid (Left Panel)
+    const thumb = document.createElement('div');
+    thumb.className = 'media-item';
+    thumb.innerHTML = `<div class="thumb-placeholder">🎬</div><span class="duration">0:00</span>`;
+    thumb.onclick = () => loadVideoToCanvas(url, file.name);
+    mediaGrid.appendChild(thumb);
+
+    // Add to Timeline (Bottom)
+    const clip = document.createElement('div');
+    clip.className = 'clip-block';
+    clip.style.left = `${index * 160}px`; 
+    clip.style.width = '150px';
+    clip.innerText = file.name.substring(0, 18) + (file.name.length > 18 ? '...' : '');
+    clip.onclick = () => loadVideoToCanvas(url, file.name);
+    videoTrack.appendChild(clip);
+  });
+});
+
+// 3. Canvas Playback Logic
+function loadVideoToCanvas(url, name) {
+  preview.src = url;
+  preview.load();
+  preview.onloadedmetadata = () => {
+    updateTimeDisplay();
+    // Adjust preview wrap aspect ratio
+    const ratio = preview.videoWidth / preview.videoHeight;
+    const wrap = document.getElementById('previewWrap');
+    if(ratio > 1) {
+      wrap.style.width = '640px'; wrap.style.height = '360px'; // 16:9
+    } else {
+      wrap.style.width = '360px'; wrap.style.height = '640px'; // 9:16
+    }
+  };
+}
+
+playBtn.onclick = () => preview.play();
+pauseBtn.onclick = () => preview.pause();
+
+preview.addEventListener('timeupdate', updateTimeDisplay);
+
+function updateTimeDisplay() {
+  const cur = formatTime(preview.currentTime);
+  const dur = formatTime(preview.duration || 0);
+  timeInfo.innerText = `${cur} / ${dur}`;
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec < 10 ? '0'+sec : sec}`;
+}
+
+// 4. Export Button & Toast
+document.getElementById('goExport').onclick = () => {
+  document.getElementById('toast').classList.add('show');
+};
+
+// 5. Add Text Buttons
+document.getElementById('addTitle').onclick = () => alert('Add Title logic here');
+document.getElementById('addSubtitle').onclick = () => alert('Add Subtitle logic here');
+
 </script>
 </body>
 </html>
