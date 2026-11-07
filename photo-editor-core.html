@@ -30,19 +30,39 @@ body{margin:0;background:var(--bg);color:#eef2ff;font-family:system-ui,-apple-sy
 .appbar .exp{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600}
 
 /* Stage / Canvas Area - FIXED LAYOUT */
-.stage{position:relative;z-index:1;background:var(--bg);padding:12px 16px;border-bottom:1px solid var(--line);margin-bottom:16px}
-main{max-width:900px;margin:0 auto;padding:0 16px 16px;position:relative;z-index:2}
+.stage{
+  position:relative;
+  z-index:1;
+  background:var(--bg);
+  padding:12px 16px;
+  border-bottom:1px solid var(--line);
+  margin-bottom:16px;
+  width:100%;
+  max-width:900px;
+  margin-left:auto;
+  margin-right:auto;
+}
+main{
+  max-width:900px;
+  margin:0 auto;
+  padding:0 16px 16px;
+  position:relative;
+  z-index:2;
+  width:100%;
+}
 
 .stage-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .stage-top .info{flex:1;font-size:12px;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
 
 /* Dynamic Frame Selector */
-.frame-selector{margin-bottom:12px;text-align:center;max-width:500px;margin-left:auto;margin-right:auto}
+.frame-selector{margin-bottom:12px;text-align:center;width:100%}
 .frame-selector label{margin-bottom:6px;display:block;text-align:left;font-size:13px;color:#a78bfa;font-weight:700}
-.frame-selector select{background:#141d35;border:1px solid #a78bfa}
+.frame-selector select{background:#141d35;border:1px solid #a78bfa;max-width:500px;margin:0 auto}
 
 .canvas-area{
-  width:100%;max-width:500px;margin:0 auto;
+  width:100%;
+  max-width:500px;
+  margin:0 auto;
   background-color:#080d19;
   background-image:linear-gradient(45deg, #111827 25%, transparent 25%), linear-gradient(-45deg, #111827 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111827 75%), linear-gradient(-45deg, transparent 75%, #111827 75%);
   background-size:16px 16px;
@@ -62,7 +82,7 @@ canvas.dragging{cursor:grabbing}
 h1{font-size:22px;margin:0 0 6px;font-weight:700}
 .sub{color:var(--mut);font-size:13px;margin:0 0 16px;line-height:1.5}
 .sec{display:none}.sec.on{display:block}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px;width:100%}
 h2{font-size:16px;margin:0 0 12px;color:var(--soft);display:flex;align-items:center;gap:8px}
 h3{font-size:14px;margin:16px 0 8px;color:#ddd}
 label{display:block;font-size:12px;color:#cbd5e1;margin-bottom:4px;font-weight:600}
@@ -112,14 +132,14 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <div class="appbar">
   <a class="logo" href="index.html">PIKORA</a>
   <a class="back" href="index.html">← Home</a>
-  <button class="exp" id="goSave" type="button">Save ✨</button>
+  <button class="exp" id="goSave" type="button">Save </button>
 </div>
 
 <div class="stage">
   <div class="stage-top">
     <button class="secondary" id="undo" disabled type="button" style="min-width:80px">↶ Undo</button>
     <button class="secondary" id="redo" disabled type="button" style="min-width:80px">↷ Redo</button>
-    <button class="secondary" id="pinBtn" type="button" title="Pin or unpin the photo" style="flex:0 0 auto;width:44px">📌</button>
+    <button class="secondary" id="pinBtn" type="button" title="Pin or unpin the photo" style="flex:0 0 auto;width:44px"></button>
     <span class="info" id="imageInfo">No image uploaded</span>
   </div>
 
@@ -141,7 +161,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
     <div class="placeholder" id="placeholder">
       <strong>Your photo will appear here</strong>
       Open the Photo tab below to upload an image.
-   2</div>
+    </div>
     <canvas id="canvas" hidden></canvas>
   </div>
   <div class="status" id="status">Ready to edit your photo.</div>
@@ -216,7 +236,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
         <option value="grayscale(100%) contrast(150%) brightness(90%)">Noir</option>
         <option value="sepia(50%) hue-rotate(-20deg) saturate(180%)">Sunset</option>
       </select>
-      <p class="note">💡 Safari may not apply adjustments and filters in the downloaded image due to browser limitations.</p>
+      <p class="note"> Safari may not apply adjustments and filters in the downloaded image due to browser limitations.</p>
     </div>
   </section>
 
@@ -293,7 +313,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
       <input type="range" id="curveAmount" min="45" max="360" value="180">
 
       <hr>
-      <h3>🔄 Rotation & Style</h3>
+      <h3> Rotation & Style</h3>
       <label>Rotation <span class="range-value" id="textRotationValue">0°</span></label>
       <input type="range" id="textRotation" min="0" max="360" value="0">
       <div class="g2 b">
@@ -314,7 +334,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
       <label>Vertical <span class="range-value" id="textShadowYValue">4px</span></label><input type="range" id="textShadowY" min="-30" max="30" value="4">
 
       <hr>
-      <h3>⬛ Text Background</h3>
+      <h3> Text Background</h3>
       <div class="checkline"><input type="checkbox" id="textBgEnabled"><label for="textBgEnabled">Enable text background</label></div>
       <label>Background Colour</label><input type="color" id="textBgColor" value="#000000">
       <div class="g2 b">
@@ -338,8 +358,8 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
       <h2>⭐ Stickers</h2>
       <label>Choose sticker</label>
       <select id="stickerInput">
-        <option>⭐</option><option>❤️</option><option>🔥</option><option>✨</option>
-        <option>😍</option><option>🎉</option><option>🌸</option><option>🌈</option>
+        <option>⭐</option><option>❤️</option><option></option><option>✨</option>
+        <option>😍</option><option></option><option>🌸</option><option>🌈</option>
         <option>👍</option><option>☀️</option><option>🎂</option><option>💯</option>
         <option>📍</option><option>💬</option><option>🎵</option><option>👑</option>
       </select>
@@ -401,7 +421,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
   <button type="button" data-tab="text"><b>T</b>Text</button>
   <button type="button" data-tab="add"><b>⭐</b>Add</button>
   <button type="button" data-tab="layers"><b>📚</b>Layers</button>
-  <button type="button" data-tab="save"><b>💾</b>Save</button>
+  <button type="button" data-tab="save"><b></b>Save</button>
 </nav>
 
 <script>
