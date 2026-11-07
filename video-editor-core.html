@@ -22,26 +22,16 @@
 }
 body{margin:0;background:var(--bg);color:#f4f5ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding-bottom:calc(70px + env(safe-area-inset-bottom));line-height:1.5}
 
-/* App Bar */
 .appbar{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));background:#0f1630;border-bottom:1px solid var(--line)}
 .logo{font-size:20px;font-weight:800;color:#a78bfa;text-decoration:none;letter-spacing:1.5px}
 .appbar a.back{color:#cdd3ea;text-decoration:none;font-size:13px;font-weight:500}
 .appbar .exp{padding:8px 16px;border-radius:20px;font-size:13px}
 
-/* Stage / Preview Area - FIXED LAYOUT */
-.stage{
-  position:relative;
-  z-index:1;
-  background:var(--bg);
-  padding:12px 16px;
-  border-bottom:1px solid var(--line);
-  margin-bottom:16px;
-}
+.stage{position:relative;z-index:1;background:var(--bg);padding:12px 16px;border-bottom:1px solid var(--line);margin-bottom:16px}
 main{max-width:900px;margin:0 auto;padding:0 16px 16px;position:relative;z-index:2}
 h1{font-size:22px;margin:0 0 6px;font-weight:700}
 .sub{color:var(--mut);font-size:13px;margin:0 0 16px;line-height:1.5}
 
-/* Preview Box */
 #previewWrap{
   width:100%;max-width:450px;aspect-ratio:var(--preview-ratio);
   margin:0 auto;background:#05070d;border-radius:16px;overflow:hidden;
@@ -58,13 +48,11 @@ h1{font-size:22px;margin:0 0 6px;font-weight:700}
 }
 .preview-overlay.selected{border-color:#a78bfa;background:rgba(167,139,250,0.1)}
 
-/* Controls */
 .ctrl{display:flex;gap:8px;margin-top:12px;align-items:center}
 .ctrl button{flex:1;min-height:44px;font-size:13px}
 .ctrl .small{flex:2;margin:0;text-align:right;font-variant-numeric:tabular-nums}
 #seekBar{width:100%;margin:10px 0 0;accent-color:var(--acc);height:6px}
 
-/* Panels & Inputs */
 .sec{display:none}.sec.on{display:block}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
 h2{font-size:16px;margin:0 0 12px;color:var(--soft);display:flex;align-items:center;gap:8px}
@@ -81,7 +69,6 @@ label{display:block;font-size:12px;color:#c5cce0;font-weight:600;margin-top:8px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:80px}
 .small{font-size:12px;color:var(--mut);margin:8px 0}
 
-/* Clips & Timeline */
 .clip,.textitem{padding:12px;border:1px solid #344365;border-radius:12px;margin-bottom:8px;background:#10182d;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .clip.active,.textitem.active{border-color:#a78bfa;background:#1e1e4a}
 .clip strong,.textitem strong{font-size:13px;display:block;margin-bottom:2px}
@@ -102,7 +89,7 @@ label{display:block;font-size:12px;color:#c5cce0;font-weight:600;margin-top:8px}
 .tcard{min-width:110px;border:2px solid #344365;border-radius:8px;background:#17223d;overflow:hidden;cursor:grab;position:relative;flex-shrink:0;transition:border-color 0.2s}
 .tcard.active{border-color:#a78bfa;box-shadow:0 0 0 2px rgba(167,139,250,0.3)}
 .tcard.dragging{opacity:.5}.tcard.dragover{border-color:var(--success);background:#1a3a2a}
-.tcard canvas{width:100%;height:60px;display:block;background:#05070d}
+.tcard canvas{width:100%;height:60px;display:block;background:#05070d;object-fit:cover}
 .tc-info{padding:6px 8px;font-size:11px;color:#dce2f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc-n{position:absolute;top:4px;left:4px;background:rgba(9,14,29,0.9);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;z-index:1;color:#a78bfa}
 .empty{color:#8794b2;font-size:13px;padding:30px 10px;text-align:center}
@@ -124,13 +111,11 @@ label{display:block;font-size:12px;color:#c5cce0;font-weight:600;margin-top:8px}
 hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 a{color:#b9a5ff;text-decoration:none}a:hover{text-decoration:underline}
 
-/* Tab Bar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(6,1fr);background:rgba(15,22,48,0.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
 .tabbar button{background:none;color:#8f9bbd;border-radius:10px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;min-height:auto;border:0}
 .tabbar button b{font-size:18px;line-height:1}
 .tabbar button.on{color:#fff;background:#262b5c}
 
-/* Export Overlay */
 .export-overlay{position:fixed;inset:0;background:rgba(11,16,32,0.9);z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
 .export-overlay.active{display:flex}
 .export-overlay h2{color:#fff;font-size:24px;margin-bottom:10px}
@@ -494,8 +479,24 @@ function makeThumbnail(c){
   const finish=()=>{thumbJobs.delete(c.url);v.removeAttribute("src");v.load();renderTimeline()};
   v.onloadedmetadata=()=>{try{v.currentTime=Math.min(1,Math.max(0,v.duration*.15))}catch(e){finish()}};
   v.onseeked=()=>{
-    try{const cv=document.createElement("canvas");cv.width=240;cv.height=100;const x=cv.getContext("2d"),s=Math.max(240/v.videoWidth,100/v.videoHeight),w=v.videoWidth*s,h=v.videoHeight*s;
-    x.drawImage(v,(240-w)/2,(100-h)/2,w,h);c.thumb=cv.toDataURL("image/jpeg",.65)}catch(e){}
+    try{
+      const cv=document.createElement("canvas");
+      cv.width=320;cv.height=120;
+      const x=cv.getContext("2d");
+      const videoRatio=v.videoWidth/v.videoHeight;
+      const canvasRatio=cv.width/cv.height;
+      let dw,dh,dx,dy;
+      if(videoRatio>canvasRatio){
+        dw=cv.width;dh=cv.width/videoRatio;
+        dx=0;dy=(cv.height-dh)/2;
+      }else{
+        dh=cv.height;dw=cv.height*videoRatio;
+        dx=(cv.width-dw)/2;dy=0;
+      }
+      x.fillStyle="#05070d";x.fillRect(0,0,cv.width,cv.height);
+      x.drawImage(v,dx,dy,dw,dh);
+      c.thumb=cv.toDataURL("image/jpeg",.75);
+    }catch(e){}
     finish();
   };
   v.onerror=finish;
@@ -510,9 +511,9 @@ function renderTimeline(){
   if(!clips.length){track.innerHTML='<div class="empty">Add video clips to build your timeline.</div>';track.style.width="100%";ruler.innerHTML="";ruler.style.width="100%";return}
   const widths=clips.map(c=>Math.max(110,durationOf(c)*scale)),width=widths.reduce((a,b)=>a+b,0)+Math.max(0,clips.length-1)*6;
   track.style.width=width+"px";
-  track.innerHTML=clips.map((c,i)=>`<div class="tcard ${i===selected?"active":""}" draggable="true" data-index="${i}" style="width:${widths[i]}px"><span class="tc-n">CLIP ${i+1}</span><canvas id="thumb${i}" width="240" height="100"></canvas><div class="tc-info">${esc(c.name)} · ${fmt(durationOf(c))}s</div></div>`).join("");
+  track.innerHTML=clips.map((c,i)=>`<div class="tcard ${i===selected?"active":""}" draggable="true" data-index="${i}" style="width:${widths[i]}px"><span class="tc-n">CLIP ${i+1}</span><canvas id="thumb${i}" width="320" height="120"></canvas><div class="tc-info">${esc(c.name)} · ${fmt(durationOf(c))}s</div></div>`).join("");
   clips.forEach((c,i)=>{
-    if(c.thumb){const cv=$("thumb"+i);if(cv){const x=cv.getContext("2d"),img=new Image();img.onload=()=>x.drawImage(img,0,0,240,100);img.src=c.thumb}}
+    if(c.thumb){const cv=$("thumb"+i);if(cv){const x=cv.getContext("2d"),img=new Image();img.onload=()=>{x.fillStyle="#05070d";x.fillRect(0,0,320,120);x.drawImage(img,0,0,320,120)};img.src=c.thumb}}
     else makeThumbnail(c);
   });
   ruler.style.width=width+"px";
@@ -572,7 +573,6 @@ $("deleteClip").onclick=()=>{
   renderAll();
 };
 
-// AUTO-APPLY FUNCTIONALITY
 let applyTimeout;
 function autoApplyClip(){
   clearTimeout(applyTimeout);
@@ -869,7 +869,6 @@ window.addEventListener("resize",updateFrame);
 $("seekBar").addEventListener("input",()=>{const c=selectedClip();if(!c)return;preview.currentTime=c.start+Number($("seekBar").value)/1000*(c.end-c.start)});
 preview.addEventListener("timeupdate",()=>{const c=selectedClip();if(c&&c.end>c.start)$("seekBar").value=clamp((preview.currentTime-c.start)/(c.end-c.start),0,1)*1000});
 
-/* Touch: drag text with one finger, pinch with two fingers to resize */
 const ptrs=new Map();let pinch=null,drag=null;
 const wrapEl=$("previewWrap");
 wrapEl.addEventListener("pointerdown",e=>{
