@@ -19,7 +19,7 @@
 <meta name="twitter:title" content="Free Online Video Editor – Pikora">
 <meta name="twitter:description" content="Edit videos online for free. Trim, add text, filters and music, and export in WebM with Pikora.">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pikora Free Online Video Editor","applicationCategory":"MultimediaApplication","operatingSystem":"Any","browserRequirements":"Requires a modern web browser with JavaScript enabled.","description":"A free browser-based video editor for combining and trimming clips, adding animated text, filters, transitions and music, and exporting WebM videos.","url":"https://pikora.pages.dev/video-editor-core.html","featureList":["Combine multiple video clips","Visual timeline","Trimming and splitting","Filters and transitions","Animated keyframes","Animated text overlays","Background music and waveform","Video frame extraction","WebM export"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pikora Free Online Video Editor","applicationCategory":"MultimediaApplication","operatingSystem":"Any","browserRequirements":"Requires a modern web browser with JavaScript enabled.","description":"A free browser-based video editor for combining and trimming clips, adding animated text, filters, transitions and music, extracting frames, and exporting WebM videos.","url":"https://pikora.pages.dev/video-editor-core.html","featureList":["Combine multiple video clips","Visual timeline","Trimming and splitting","Filters and transitions","Animated keyframes","Animated text overlays","Background music and waveform","Video frame extraction","YouTube, TikTok and Instagram frame sizes","WebM export"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
 </script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -96,7 +96,7 @@ a{color:#b9a5ff}
 .tabbar button b{font-size:17px;line-height:1}
 .tabbar button.on{color:#fff;background:#262b5c}
 .frames-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:10px;max-height:420px;overflow:auto}
-.frame-card{border:1px solid #344365;border-radius:8px;overflow:hidden;background:#10182d}
+.frame-card{border:1px solid #344365;border-radius:8px;overflow:hidden;background:#10182d;cursor:pointer}
 .frame-card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#05070d}
 .frame-card span{display:block;font-size:9px;color:#9ba8c4;padding:3px 4px;text-align:center}
 .frame-card.active{border-color:#a78bfa}
@@ -124,7 +124,7 @@ a{color:#b9a5ff}
 
 <main>
 <h1>Free Online Video Editor</h1>
-<p class="sub">Combine clips, trim, add filters, animated text and music, then export a WebM video. Everything runs in your browser — no registration, no watermark.</p>
+<p class="sub">Combine clips, trim, add filters, animated text and music, extract frames, and export a WebM video. Everything runs in your browser — no registration, no watermark.</p>
 
 <section class="sec on" id="tab-media">
 <div class="panel">
@@ -141,6 +141,32 @@ a{color:#b9a5ff}
 </div>
 
 <div class="panel">
+<h2>Frame Size</h2>
+<label>Choose video size</label>
+<select id="frameSize">
+<option value="original">Original video size</option>
+<option value="youtube">YouTube — 16:9 Landscape</option>
+<option value="tiktok" selected>TikTok / Reels / Shorts — 9:16 Portrait</option>
+<option value="instagram-square">Instagram Post — 1:1 Square</option>
+<option value="instagram-portrait">Instagram Portrait — 4:5</option>
+<option value="instagram-story">Instagram Story — 9:16</option>
+</select>
+
+<div class="g2">
+<div><label>Width (px)</label><input type="number" id="frameWidth" value="720" min="240" max="3840" step="2"></div>
+<div><label>Height (px)</label><input type="number" id="frameHeight" value="1280" min="240" max="3840" step="2"></div>
+</div>
+
+<p class="small" id="frameSizeInfo">TikTok / Reels / Shorts — 720 × 1280</p>
+
+<label>Video positioning</label>
+<select id="fit">
+<option value="contain">Fit — show full video</option>
+<option value="cover">Fill — crop edges</option>
+</select>
+</div>
+
+<div class="panel">
 <h2>Video Frames</h2>
 <label>Extract frames from selected clip</label>
 <div class="g2">
@@ -151,7 +177,7 @@ a{color:#b9a5ff}
 <button id="extractFrames" type="button">Extract Frames</button>
 <button class="secondary" id="clearFrames" type="button">Clear Frames</button>
 </div>
-<p class="small">Frames are taken from the selected clip’s trimmed start and end. Use a lower FPS for long videos.</p>
+<p class="small">Frames are taken from the selected clip’s trimmed start and end. Tap a frame to move the preview there.</p>
 <div id="framesList" class="frames-list"></div>
 </div>
 </section>
@@ -259,14 +285,14 @@ a{color:#b9a5ff}
 <section class="sec" id="tab-export">
 <div class="panel">
 <h2>Export</h2>
-<label>Aspect ratio</label>
+<label>Export frame size</label>
 <select id="aspect">
-<option value="original">Original</option>
-<option value="16:9">16:9 Landscape – YouTube</option>
-<option value="9:16" selected>9:16 Portrait – Reels / Shorts</option>
-<option value="1:1">1:1 Square – Instagram</option>
-<option value="4:5">4:5 Portrait – Instagram</option>
-<option value="4:3">4:3 Classic</option>
+<option value="original" selected>Same as Frame Size</option>
+<option value="16:9">YouTube — 16:9</option>
+<option value="9:16">TikTok / Reels / Shorts — 9:16</option>
+<option value="1:1">Instagram Square — 1:1</option>
+<option value="4:5">Instagram Portrait — 4:5</option>
+<option value="4:3">Classic — 4:3</option>
 </select>
 <label>Video positioning</label><select id="fit"><option value="contain">Fit (show full video)</option><option value="cover">Fill (crop edges)</option></select>
 <label>Quality</label><select id="quality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Very High</option></select>
@@ -573,12 +599,77 @@ $("removeMusic").onclick=()=>{
  musicURL=null;musicFileName="";musicDuration=0;musicWaveData=null;$("musicFile").value="";$("audioInfo").textContent="No background music selected.";renderAudioTrack();
 };
 
+function getFrameSize(){
+ const preset=$("frameSize").value;
+ const sizes={
+  youtube:[1920,1080],
+  tiktok:[720,1280],
+  "instagram-square":[1080,1080],
+  "instagram-portrait":[1080,1350],
+  "instagram-story":[1080,1920]
+ };
+ if(preset==="original"){
+  return preview.videoWidth&&preview.videoHeight?[preview.videoWidth,preview.videoHeight]:[1280,720];
+ }
+ return sizes[preset]||[720,1280];
+}
+
 function canvasSize(){
- let w=1280,h=720;const a=$("aspect").value;
- if(a==="9:16"){w=720;h=1280}else if(a==="1:1"){w=1080;h=1080}else if(a==="4:5"){w=864;h=1080}
+ const preset=$("frameSize").value;
+ if(preset!=="original"){
+  const [w,h]=getFrameSize();
+  return [w,h];
+ }
+ const a=$("aspect").value;
+ let w=1280,h=720;
+ if(a==="9:16"){w=720;h=1280}
+ else if(a==="1:1"){w=1080;h=1080}
+ else if(a==="4:5"){w=864;h=1080}
  else if(a==="original"&&preview.videoWidth){w=preview.videoWidth;h=preview.videoHeight}
  return [w,h];
 }
+
+function frameRatio(){
+ const [w,h]=getFrameSize();
+ return w/h;
+}
+
+function applyFrameSize(){
+ const preset=$("frameSize").value;
+ const [w,h]=getFrameSize();
+ $("frameWidth").value=w;
+ $("frameHeight").value=h;
+
+ const names={
+  original:"Original video size",
+  youtube:"YouTube — 1920 × 1080",
+  tiktok:"TikTok / Reels / Shorts — 720 × 1280",
+  "instagram-square":"Instagram Post — 1080 × 1080",
+  "instagram-portrait":"Instagram Portrait — 1080 × 1350",
+  "instagram-story":"Instagram Story — 1080 × 1920"
+ };
+ $("frameSizeInfo").textContent=names[preset]||"Custom frame size";
+ updateFrame();
+}
+
+$("frameSize").addEventListener("change",applyFrameSize);
+$("frameWidth").addEventListener("change",()=>{
+ const w=clamp(Number($("frameWidth").value)||720,240,3840);
+ const h=clamp(Number($("frameHeight").value)||1280,240,3840);
+ $("frameWidth").value=w;$("frameHeight").value=h;
+ $("frameSize").value="custom";
+ $("frameSizeInfo").textContent="Custom frame size — "+w+" × "+h;
+ updateFrame();
+});
+$("frameHeight").addEventListener("change",()=>{
+ const w=clamp(Number($("frameWidth").value)||720,240,3840);
+ const h=clamp(Number($("frameHeight").value)||1280,240,3840);
+ $("frameWidth").value=w;$("frameHeight").value=h;
+ $("frameSize").value="custom";
+ $("frameSizeInfo").textContent="Custom frame size — "+w+" × "+h;
+ updateFrame();
+});
+
 function drawVideo(ctx,v,w,h,fit,filter,alpha,transition,progress,k){
  if(!v.videoWidth||!v.videoHeight)return;
  ctx.save();k=k||{x:0,y:0,scale:1,rotation:0,opacity:1};
@@ -769,11 +860,6 @@ async function exportVideo(){
 const _ab=()=>document.documentElement.style.setProperty("--ab",document.querySelector(".appbar").offsetHeight+"px");
 _ab();window.addEventListener("resize",_ab);
 $("pinBtn").onclick=()=>{const st=document.querySelector(".stage");st.classList.toggle("unpinned");$("pinBtn").style.opacity=st.classList.contains("unpinned")?".5":"1";setTimeout(_ab,0)};
-function frameRatio(){
- const a=$("aspect").value;
- if(a==="original")return preview.videoWidth?preview.videoWidth/preview.videoHeight:9/16;
- const [w,h]=a.split(":").map(Number);return w/h;
-}
 function updateFrame(){
  const wrap=$("previewWrap"),r=frameRatio(),maxH=window.innerHeight*.34,maxW=wrap.parentElement.clientWidth-20;
  let h=maxH,w=h*r;if(w>maxW){w=maxW;h=w/r}
@@ -817,6 +903,7 @@ wrapEl.addEventListener("pointermove",e=>{
 function endPtr(e){ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(drag&&e.pointerId===drag.id)drag=null}
 wrapEl.addEventListener("pointerup",endPtr);wrapEl.addEventListener("pointercancel",endPtr);
 updateFrame();
+applyFrameSize();
 $("exportBtn").onclick=exportVideo;
 renderAll();
 renderFrames();
