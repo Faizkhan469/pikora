@@ -156,8 +156,10 @@ input[type=file]{display:none}
           <label>Speed</label>
           <select id="speed"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
           <div class="g2"><button class="sec" id="splitBtn" type="button">✂ Split</button><button class="sec dan" id="deleteClipBtn" type="button">🗑 Delete</button></div>
+          <div class="g2"><button class="sec" id="dupClipBtn" type="button">⧉ Duplicate</button><button class="sec" id="moveLeftBtn" type="button">◀ Move left</button></div>
+          <button class="sec" id="moveRightBtn" type="button">Move right ▶</button>
           <button class="act" id="applyTrimBtn" type="button">Apply Trim & Speed</button>
-          <div class="note">💡 Scrub or play to a point, pause, then use "Start/End = playhead" or Split.</div>
+          <div class="note">💡 Scrub or play to a point, pause, then use "Start/End = playhead" or Split.<br>Shortcuts: Space = play/pause, S = split, Delete = remove, Ctrl+Z = undo.</div>
         </div>
       </div>
     </div>
@@ -205,7 +207,7 @@ input[type=file]{display:none}
           <input type="range" id="videoVolume" min="0" max="1" step="0.05" value="1">
           <button class="sec" id="previewMusicBtn" type="button">▶ Test music from playhead</button>
           <button class="sec dan" id="removeMusicBtn" type="button">Remove Music</button>
-          <div class="note">🎧 Music now plays in sync while you preview (press ▶). Export stays locked in sync automatically.</div>
+          <div class="note">🎧 Music plays in sync while you preview (press ▶). Export stays locked in sync automatically.</div>
         </div>
       </div>
     </div>
@@ -229,6 +231,7 @@ input[type=file]{display:none}
           <div><label>End (0=end)</label><input type="number" id="textEnd" value="0" min="0" step="0.5"></div>
         </div>
         <button class="act" id="addTextBtn" type="button">+ Add Text</button>
+        <button class="sec" id="updateTextBtn" type="button">✎ Update selected text</button>
         <button class="sec dan" id="deleteTextBtn" type="button">Delete Selected Text</button>
         <div id="textList" style="margin-top:10px"></div>
       </div>
@@ -403,6 +406,7 @@ const $=id=>document.getElementById(id);
 const preview=$("preview"),previewWrap=$("previewWrap"),previewText=$("previewText"),captionLayer=$("captionLayer"),flashOverlay=$("flashOverlay"),seekBar=$("seekBar"),sidebarPanel=$("sidebarPanel");
 const fmt=n=>Number(n||0).toFixed(1);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 const durationOf=c=>Math.max(.1,(c.end-c.start)/c.speed);
 const totalDuration=()=>clips.reduce((s,c)=>s+durationOf(c),0);
 const isMobile=()=>window.innerWidth<=700;
@@ -410,7 +414,7 @@ const musicStartVal=()=>parseFloat($("musicStart").value)||0;
 
 let clips=[],selectedClip=-1,texts=[],selectedText=-1,captions=[],selectedCaption=-1,stickers=[],selectedSticker=-1;
 let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
-let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),defaultFont="Arial";
+let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),defaultFont="Arial",playingAll=false;
 const imgCache={};
 
 /* ---------- HISTORY ---------- */
@@ -495,13 +499,12 @@ function renderTimeline(){
     b.onclick=()=>selectClip(i);track.appendChild(b);left+=w+4;
   });
   if(!clips.length)track.innerHTML='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:12px">Upload media to start editing</div>';
-  // MUSIC BAR on audio track at its real start position
   if(musicURL){
     const ms=musicStartVal(),mw=Math.max(60,(musicDuration||0)*scale);
     $("audioTrackRow").innerHTML=`<div class="music-block" style="left:${10+ms*scale}px;width:${mw}px">🎵 Music @ ${fmt(ms)}s</div>`;
   }else $("audioTrackRow").innerHTML="";
 }
-function selectClip(i){selectedClip=i;loadSelected();renderAll()}
+function selectClip(i){playingAll=false;selectedClip=i;loadSelected();renderAll()}
 function loadSelected(){
   const c=clips[selectedClip];if(!c)return;
   preview.pause();preview.src=c.url;preview.load();
@@ -559,24 +562,34 @@ function syncMusicPreview(){
 $("previewMusicBtn").onclick=()=>{
   if(!musicURL){showToast("No music","Upload music first.");return}
   if(selectedClip<0){showToast("No clip","Upload a video first.");return}
-  preview.muted=true; // hear only music while testing
+  preview.muted=true;
   preview.play();
   showToast("Music test","Playing music in sync from playhead.");
 };
 
-/* ---------- PLAYBACK (TRIM-AWARE) ---------- */
+/* ---------- PLAYBACK (TRIM-AWARE, PLAYS ALL CLIPS) ---------- */
 $("playBtn").onclick=()=>{
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
+  playingAll=true;
   preview.muted=false;preview.volume=+$("videoVolume").value;
   preview.play();
 };
-$("pauseBtn").onclick=()=>preview.pause();
-$("stopBtn").onclick=()=>{preview.pause();const c=clips[selectedClip];if(c){preview.currentTime=c.start;syncSeekBar()}};
+$("pauseBtn").onclick=()=>{playingAll=false;preview.pause()};
+$("stopBtn").onclick=()=>{playingAll=false;preview.pause();const c=clips[selectedClip];if(c){preview.currentTime=c.start;syncSeekBar()}};
+function nextClip(){
+  if(!playingAll)return;
+  if(selectedClip>=clips.length-1){playingAll=false;return}
+  preview.addEventListener("loadedmetadata",()=>setTimeout(()=>{
+    if(!playingAll)return;
+    preview.muted=false;preview.volume=+$("videoVolume").value;preview.play().catch(()=>{});
+  },60),{once:true});
+  selectedClip++;loadSelected();renderAll();
+}
 preview.addEventListener("timeupdate",()=>{
   const c=clips[selectedClip];
   if(c){
-    if(!preview.paused&&preview.currentTime>=c.end-0.03){preview.pause();preview.currentTime=Math.max(c.start,c.end-0.05)}
+    if(!preview.paused&&preview.currentTime>=c.end-0.03){preview.pause();preview.currentTime=Math.max(c.start,c.end-0.05);nextClip()}
     syncSeekBar();
   }
   updateTimeInfo();updatePreviewText();updateCaptionLayer();
@@ -588,6 +601,7 @@ function syncSeekBar(){
 }
 seekBar.addEventListener("input",()=>{
   const c=clips[selectedClip];if(!c)return;
+  playingAll=false;
   preview.currentTime=c.start+(+seekBar.value)/1000*(c.end-c.start);
   updateTimeInfo();updatePreviewText();updateCaptionLayer();
 });
@@ -641,7 +655,7 @@ $("applyTrimBtn").onclick=()=>{
   showToast("Trim applied ✅",`Clip now plays ${fmt(a)}s → ${fmt(b)}s (${fmt(durationOf(c))}s long).`);
 };
 
-/* ---------- SPLIT ---------- */
+/* ---------- SPLIT / DELETE / DUPLICATE / MOVE ---------- */
 function doSplit(){
   const c=clips[selectedClip];if(!c){showToast("No clip","Select a clip first.");return}
   const cut=preview.currentTime;
@@ -660,13 +674,23 @@ function doSplit(){
 $("splitBtn").onclick=doSplit;$("splitBtn2").onclick=doSplit;
 
 $("deleteClipBtn").onclick=()=>{
-  if(selectedClip<0)return;snapshot();
+  if(selectedClip<0)return;snapshot();playingAll=false;
   const url=clips[selectedClip].url;clips.splice(selectedClip,1);
   if(!clips.some(c=>c.url===url))URL.revokeObjectURL(url);
   selectedClip=Math.min(selectedClip,clips.length-1);
   if(selectedClip>=0)loadSelected();else{preview.pause();preview.removeAttribute("src");$("clipControls").classList.add("hidden")}
   renderAll();
 };
+$("dupClipBtn").onclick=()=>{
+  const c=clips[selectedClip];if(!c)return;snapshot();
+  clips.splice(selectedClip+1,0,{...c,name:c.name.replace(/ \(copy\)$/,"")+" (copy)"});
+  selectedClip++;loadSelected();renderAll();showToast("Duplicated","Copy added after the clip.");
+};
+function moveClip(d){
+  const j=selectedClip+d;if(selectedClip<0||j<0||j>=clips.length)return;snapshot();
+  [clips[selectedClip],clips[j]]=[clips[j],clips[selectedClip]];selectedClip=j;renderAll();
+}
+$("moveLeftBtn").onclick=()=>moveClip(-1);$("moveRightBtn").onclick=()=>moveClip(1);
 
 /* ---------- FILTERS / EFFECTS / TRANSITIONS ---------- */
 ["brightness","contrast","saturation"].forEach(id=>$(id).addEventListener("input",e=>{
@@ -697,11 +721,23 @@ $("addTextBtn").onclick=()=>{
   selectedText=texts.length-1;$("textInput").value="";
   renderTextList();updatePreviewText();showToast("Text added","Drag it on the video.");
 };
+$("updateTextBtn").onclick=()=>{
+  const t=texts[selectedText];if(!t){showToast("Select text","Tap a text item in the list first.");return}
+  snapshot();
+  t.text=$("textInput").value.trim()||t.text;t.color=$("textColor").value;t.size=parseInt($("textSize").value)||t.size;
+  t.font=$("textFont").value;t.anim=$("textAnim").value;t.start=parseFloat($("textStart").value)||0;t.end=parseFloat($("textEnd").value)||0;
+  renderTextList();updatePreviewText();showToast("Text updated","");
+};
 $("deleteTextBtn").onclick=()=>{if(selectedText<0)return;snapshot();texts.splice(selectedText,1);selectedText=-1;renderTextList();updatePreviewText()};
 function renderTextList(){
-  $("textList").innerHTML=texts.map((t,i)=>`<div class="list-item ${i===selectedText?'selected':''}" onclick="selectText(${i})"><div class="t">${t.text.substring(0,28)||'(empty)'}</div><div class="m">${fmt(t.start)}s – ${t.end>0?fmt(t.end)+'s':'end'}</div></div>`).join("");
+  $("textList").innerHTML=texts.map((t,i)=>`<div class="list-item ${i===selectedText?'selected':''}" onclick="selectText(${i})"><div class="t">${esc(t.text.substring(0,28))||'(empty)'}</div><div class="m">${fmt(t.start)}s – ${t.end>0?fmt(t.end)+'s':'end'}</div></div>`).join("");
 }
-window.selectText=i=>{selectedText=i;renderTextList();updatePreviewText()};
+window.selectText=i=>{
+  selectedText=i;renderTextList();updatePreviewText();
+  const t=texts[i];if(!t)return;
+  $("textInput").value=t.text;$("textColor").value=t.color;$("textSize").value=t.size;$("textFont").value=t.font||"Arial";
+  $("textAnim").value=t.anim||"none";$("textStart").value=t.start;$("textEnd").value=t.end;
+};
 
 /* ---------- OVERLAY LAYER ---------- */
 function updatePreviewText(){
@@ -712,7 +748,7 @@ function updatePreviewText(){
     if(gt<t.start||(t.end>0&&gt>t.end))return;
     let op=1,sc=1,yo=0;const p=clamp((gt-t.start)/.5,0,1);
     if(t.anim==="fade")op=p;if(t.anim==="zoom"){sc=.5+.5*p;op=p}if(t.anim==="slide"){yo=(1-p)*20;op=p}
-    html+=`<div class="preview-overlay ${i===selectedText?'selected':''}" data-kind="text" data-i="${i}" style="left:${t.x}%;top:${t.y+yo}%;color:${t.color};font-size:${t.size}px;font-family:${t.font||'Arial'};opacity:${op};transform:translate(-50%,-50%) scale(${sc})">${t.text.replace(/</g,'&lt;')}</div>`;
+    html+=`<div class="preview-overlay ${i===selectedText?'selected':''}" data-kind="text" data-i="${i}" style="left:${t.x}%;top:${t.y+yo}%;color:${t.color};font-size:${t.size}px;font-family:${t.font||'Arial'};opacity:${op};transform:translate(-50%,-50%) scale(${sc})">${esc(t.text)}</div>`;
   });
   stickers.forEach((s,i)=>{
     const sel=i===selectedSticker?"selected":"";
@@ -745,7 +781,7 @@ previewText.addEventListener("pointerup",()=>{if(dragI>=0)snapshot();dragI=-1;dr
 previewText.addEventListener("pointercancel",()=>{dragI=-1;dragKind=null});
 
 /* ---------- ELEMENTS ---------- */
-const EMOJIS=["⭐","❤️","🔥","✨","😂","","","👍","️","💯","","","💬","📍","🌸","😍","","💎","🏆",""];
+const EMOJIS=["⭐","❤️","🔥","✨","😂","🎉","😎","👍","👏","💯","🚀","🎵","💬","📍","🌸","😍","👑","💎","🏆","🎯"];
 $("emojiGrid").innerHTML=EMOJIS.map(e=>`<div class="emoji-btn" onclick="addSticker('emoji','${e}')">${e}</div>`).join("");
 window.addSticker=(type,value)=>{
   if(selectedClip<0){showToast("Upload first","Add a video before elements.");return}
@@ -779,7 +815,7 @@ $("capColor").addEventListener("input",e=>{captionStyle.color=e.target.value;upd
 $("capBg").addEventListener("input",e=>{captionStyle.bg=hexToRgba(e.target.value,.65);updateCaptionLayer()});
 function hexToRgba(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
 function renderCaptionList(){
-  $("capList").innerHTML=captions.map((c,i)=>`<div class="list-item ${i===selectedCaption?'selected':''}" onclick="selectCaption(${i})"><div class="t">${c.text.substring(0,30)}</div><div class="m">${fmt(c.start)}s – ${fmt(c.end)}s</div></div>`).join("")||'<div class="note">No captions yet.</div>';
+  $("capList").innerHTML=captions.map((c,i)=>`<div class="list-item ${i===selectedCaption?'selected':''}" onclick="selectCaption(${i})"><div class="t">${esc(c.text.substring(0,30))}</div><div class="m">${fmt(c.start)}s – ${fmt(c.end)}s</div></div>`).join("")||'<div class="note">No captions yet.</div>';
 }
 window.selectCaption=i=>{selectedCaption=i;renderCaptionList();updateCaptionLayer()};
 function updateCaptionLayer(){
@@ -889,6 +925,23 @@ $("applyBrandTextBtn").onclick=()=>{
   updatePreviewText();showToast("Brand applied","To selected text.");
 };
 
+/* ---------- KEYBOARD SHORTCUTS ---------- */
+document.addEventListener("keydown",e=>{
+  if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+  const k=e.key.toLowerCase();
+  if(k===" "){e.preventDefault();preview.paused?$("playBtn").click():$("pauseBtn").click()}
+  else if(k==="s"&&!e.ctrlKey&&!e.metaKey){doSplit()}
+  else if(k==="delete"||k==="backspace"){
+    if(selectedText>=0)$("deleteTextBtn").click();
+    else if(selectedSticker>=0)$("deleteStickerBtn").click();
+    else if(selectedClip>=0)$("deleteClipBtn").click();
+  }
+  else if((e.ctrlKey||e.metaKey)&&k==="z"){e.preventDefault();(e.shiftKey?$("redoBtn"):$("undoBtn")).click()}
+  else if((e.ctrlKey||e.metaKey)&&k==="y"){e.preventDefault();$("redoBtn").click()}
+  else if(k==="arrowleft"){preview.currentTime=Math.max(0,preview.currentTime-(e.shiftKey?1:0.1))}
+  else if(k==="arrowright"){preview.currentTime=preview.currentTime+(e.shiftKey?1:0.1)}
+});
+
 /* ---------- EXPORT (SYNC-LOCKED MUSIC) ---------- */
 $("goExport").onclick=()=>$("exportPanelFloat").classList.toggle("hidden");
 $("aspectRatio").addEventListener("change",updateFrame);
@@ -897,6 +950,7 @@ $("startExportBtn").onclick=async()=>{
   if(!clips.length){showToast("No clips","Upload videos first.");return}
   for(const c of clips)if(c.end<=c.start){showToast("Bad trim","Fix clip trim.");return}
   if(!window.MediaRecorder){showToast("Unsupported","Use Chrome/Firefox.");return}
+  playingAll=false;preview.pause();
   exporting=true;$("startExportBtn").disabled=true;$("startExportBtn").textContent="Exporting 0%";$("downloadLink").style.display="none";
   const[w,h]=getExportSize();
   const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
@@ -939,7 +993,6 @@ $("startExportBtn").onclick=async()=>{
         const local=(v.currentTime-c.start)/c.speed,progress=transDur?Math.min(1,local/transDur):1;
         let alpha=1;if(transDur&&local<transDur&&trans==="fade")alpha=progress;
         if(audioEls[i])audioEls[i].gain.gain.value=+$("videoVolume").value;
-        /* ---- MUSIC SYNC LOCK ---- */
         if(musicEl&&musicEl._gain){
           const mt=elapsed-mStart;
           if(mt<0){if(!musicEl.paused)musicEl.pause();musicEl._gain.gain.value=0;}
