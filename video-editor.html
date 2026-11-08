@@ -191,6 +191,12 @@ input[type=file]{display:none}
     <div class="panel-view hidden" id="panel-audio">
       <div class="panel-header">Audio</div>
       <div class="panel-content">
+        <label>🌐 Music library (free, online)</label>
+        <input type="text" id="musicSearch" placeholder="Search music: chill, happy, sad, epic...">
+        <button class="act" id="musicSearchBtn" type="button">🔍 Search music</button>
+        <div id="musicResults" style="margin-top:10px"></div>
+        <div class="note">Free Creative Commons music from Openverse. Always check the licence and credit shown. Or upload your own file below.</div>
+        <div style="height:12px"></div>
         <label class="upload-zone" for="musicFile" style="padding:18px 14px"><span>🎵</span><strong>Upload Music</strong></label>
         <input type="file" id="musicFile" accept="audio/*">
         <div id="audioInfo" class="note">No music selected.</div>
@@ -862,15 +868,56 @@ function renderTranscript(){
 window.editCaption=(i,v)=>{captions[i].text=v;renderCaptionList();updateCaptionLayer()};
 
 /* ---------- AUDIO LOAD / REMOVE ---------- */
-$("musicFile").addEventListener("change",e=>{
-  const f=e.target.files[0];if(!f)return;
-  if(musicURL)URL.revokeObjectURL(musicURL);musicURL=URL.createObjectURL(f);
+let musicBlob=false;
+function setMusicSource(url,name,isBlob){
+  if(musicURL&&musicBlob)URL.revokeObjectURL(musicURL);
+  musicURL=url;musicBlob=!!isBlob;musicDuration=0;
   const v=document.createElement("video");v.src=musicURL;v.onloadedmetadata=()=>{musicDuration=v.duration;v.removeAttribute("src");renderTimeline()};
   if(!musicPreviewEl)musicPreviewEl=new Audio();
   musicPreviewEl.src=musicURL;musicPreviewEl.loop=true;musicPreviewEl.volume=+$("musicVolume").value;
-  $("audioInfo").textContent="🎵 "+f.name;$("audioControls").classList.remove("hidden");
-  renderTimeline();showToast("Music loaded","Press ▶ to hear it in sync.");
+  $("audioInfo").textContent="🎵 "+name;$("audioControls").classList.remove("hidden");
+  renderTimeline();
+}
+$("musicFile").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  setMusicSource(URL.createObjectURL(f),f.name,true);
+  showToast("Music loaded","Press ▶ to hear it in sync.");
 });
+
+/* ---------- MUSIC LIBRARY (Openverse, free CC music) ---------- */
+let libResults=[],libAudio=new Audio();
+async function searchMusic(){
+  const q=$("musicSearch").value.trim();if(!q){showToast("Type a word","Example: chill, happy, epic.");return}
+  const box=$("musicResults");box.innerHTML='<div class="note">Searching...</div>';
+  try{
+    const r=await fetch("https://api.openverse.org/v1/audio/?q="+encodeURIComponent(q)+"&category=music&license_type=commercial&page_size=15");
+    if(!r.ok)throw new Error("error "+r.status);
+    libResults=(await r.json()).results||[];
+    box.innerHTML=libResults.map((t,i)=>{
+      const sec=Math.round((t.duration||0)/1000),d=sec?Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"):"";
+      return `<div class="list-item" style="cursor:default"><div class="t">${esc(t.title||"Untitled")}</div><div class="m">${esc(t.creator||"Unknown")} · ${d} · CC ${esc((t.license||"").toUpperCase())}</div><div class="g2"><button class="sec" type="button" onclick="libPlay(${i})">▶ Preview</button><button class="sec" type="button" onclick="libAdd(${i})">+ Add</button></div></div>`;
+    }).join("")||'<div class="note">No music found. Try another word.</div>';
+  }catch(err){box.innerHTML='<div class="note">Could not load music ('+esc(err.message)+'). Check your internet and try again in a minute.</div>'}
+}
+window.libPlay=i=>{
+  const t=libResults[i];if(!t)return;
+  libAudio.pause();libAudio.src=t.url;libAudio.play().catch(()=>showToast("Cannot preview","This track would not play. Try another."));
+};
+window.libAdd=async i=>{
+  const t=libResults[i];if(!t)return;libAudio.pause();
+  showToast("Adding music","Downloading the track...");
+  const credit=(t.title||"Untitled")+" – "+(t.creator||"Unknown")+" (CC "+(t.license||"").toUpperCase()+")";
+  try{
+    const r=await fetch(t.url);if(!r.ok)throw new Error("blocked");
+    setMusicSource(URL.createObjectURL(await r.blob()),credit,true);
+    showToast("Music added ✅","Press ▶ to hear it. Credit: "+credit);
+  }catch(err){
+    setMusicSource(t.url,credit,false);
+    showToast("Music added","Plays in preview, but this site blocks copying, so export may have no music. Try another track.");
+  }
+};
+$("musicSearchBtn").onclick=searchMusic;
+$("musicSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchMusic()});
 $("musicVolume").addEventListener("input",e=>{$("musicVolVal").textContent=Math.round(e.target.value*100)+"%"});
 $("videoVolume").addEventListener("input",e=>{$("vidVolVal").textContent=Math.round(e.target.value*100)+"%";preview.volume=+e.target.value});
 $("musicStart").addEventListener("change",()=>renderTimeline());
