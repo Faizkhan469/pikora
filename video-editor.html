@@ -31,6 +31,11 @@ body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg)
 .icon-btn.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .sidebar-panel{width:320px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
 .panel-close{display:none;position:absolute;top:8px;right:8px;z-index:6;background:var(--hover);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px}
+.panel-view{flex:1;min-height:0;display:flex;flex-direction:column}
+.panel-content{min-height:0}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0;scrollbar-width:thin}
+.chip{flex:0 0 auto;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
 .panel-header{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
 .panel-content{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
 .upload-zone{border:2px dashed var(--border);border-radius:8px;padding:26px 14px;text-align:center;color:var(--muted);cursor:pointer;transition:.2s;background:rgba(255,255,255,.02)}
@@ -214,16 +219,17 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
     <div class="panel-view hidden" id="panel-audio">
       <div class="panel-header">Audio</div>
       <div class="panel-content">
-        <label>🌐 Music library (free, online)</label>
-        <select id="musicSource"><option value="all">All types of music (everything)</option><option value="openverse">Free music (Openverse)</option><option value="archive">Naats, Nasheeds, Bhajans, Arabic, Urdu (Archive.org)</option></select>
-        <div class="g2" id="musicTags"><button class="sec" type="button" data-q="naat" data-s="archive">Naat</button><button class="sec" type="button" data-q="nasheed" data-s="archive">Nasheed</button><button class="sec" type="button" data-q="arabic nasheed" data-s="archive">Arabic</button><button class="sec" type="button" data-q="urdu" data-s="archive">Urdu</button><button class="sec" type="button" data-q="bhajan" data-s="archive">Hindi Bhajan</button><button class="sec" type="button" data-q="pop" data-s="openverse">Pop</button><button class="sec" type="button" data-q="rock" data-s="openverse">Rock</button><button class="sec" type="button" data-q="hip hop" data-s="openverse">Hip-hop</button><button class="sec" type="button" data-q="lofi" data-s="openverse">Lo-fi</button><button class="sec" type="button" data-q="cinematic" data-s="openverse">Cinematic</button><button class="sec" type="button" data-q="acoustic" data-s="openverse">Acoustic</button><button class="sec" type="button" data-q="electronic" data-s="openverse">Electronic</button><button class="sec" type="button" data-q="classical" data-s="openverse">Classical</button><button class="sec" type="button" data-q="instrumental" data-s="openverse">Instrumental</button></div>
-        <input type="text" id="musicSearch" placeholder="Search any music: song, artist, mood, genre..." style="margin-top:8px">
-        <button class="act" id="musicSearchBtn" type="button">🔍 Search music</button>
-        <button class="sec dan" id="stopLibBtn" type="button">⏹ Stop music preview</button>
+        <label>🌐 Music library (free, from all over the world)</label>
+        <div style="display:flex;gap:6px;align-items:stretch">
+          <input type="text" id="musicSearch" placeholder="Search any song, language or mood..." style="margin-bottom:0">
+          <button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 16px">🔍</button>
+        </div>
+        <div class="chips" id="musicTags"><button class="chip" type="button" data-q="naat">Naat</button><button class="chip" type="button" data-q="nasheed">Nasheed</button><button class="chip" type="button" data-q="quran">Quran</button><button class="chip" type="button" data-q="arabic">Arabic</button><button class="chip" type="button" data-q="urdu">Urdu</button><button class="chip" type="button" data-q="hindi">Hindi</button><button class="chip" type="button" data-q="bhajan">Bhajan</button><button class="chip" type="button" data-q="punjabi">Punjabi</button><button class="chip" type="button" data-q="turkish">Turkish</button><button class="chip" type="button" data-q="latin">Latin</button><button class="chip" type="button" data-q="african">African</button><button class="chip" type="button" data-q="indian classical">Indian classical</button><button class="chip" type="button" data-q="pop">Pop</button><button class="chip" type="button" data-q="rock">Rock</button><button class="chip" type="button" data-q="hip hop">Hip hop</button><button class="chip" type="button" data-q="lo-fi">Lo-fi</button><button class="chip" type="button" data-q="jazz">Jazz</button><button class="chip" type="button" data-q="cinematic">Cinematic</button><button class="chip" type="button" data-q="acoustic">Acoustic</button><button class="chip" type="button" data-q="electronic">Electronic</button><button class="chip" type="button" data-q="classical">Classical</button><button class="chip" type="button" data-q="instrumental">Instrumental</button><button class="chip" type="button" data-q="relaxing">Relaxing</button><button class="chip" type="button" data-q="happy">Happy</button><button class="chip" type="button" data-q="sad">Sad</button><button class="chip" type="button" data-q="epic">Epic</button></div>
+        <button class="sec dan hidden" id="stopLibBtn" type="button" style="margin-top:0">⏹ Stop music preview</button>
         <div id="musicResults" style="margin-top:10px"></div>
         <div class="note">⚠ Many naats, nasheeds and songs are copyrighted. Archive.org tracks have no guaranteed licence: tap "details" to check before you publish a video. Film songs are not available here.</div>
-        <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:4px">
-          <label>📖 Quran recitation (free, with captions)</label>
+        <details style="border-top:1px solid var(--border);margin-top:14px;padding-top:10px">
+          <summary style="cursor:pointer;font-size:12px;font-weight:700">📖 Quran recitation (free, with captions)</summary>
           <select id="qReciter"><option value="ar.alafasy">Mishary Alafasy</option></select>
           <div class="g2">
             <div><label>Surah (1-114)</label><input type="number" id="qSurah" value="1" min="1" max="114"></div>
@@ -233,7 +239,7 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
           <select id="qCaps"><option value="ar">Arabic only</option><option value="ar+en">Arabic + English</option><option value="ar+ur">Arabic + Urdu</option><option value="ar+hi">Arabic + Hindi</option><option value="none">No captions</option></select>
           <button class="act" id="qAddBtn" type="button">+ Add recitation to video</button>
           <div class="note">Up to 40 ayahs at a time. The recitation is added as your music track and the captions are timed automatically.</div>
-        </div>
+        </details>
         <div style="height:12px"></div>
         <div class="note">Or upload your own file:</div>
         <div style="height:12px"></div>
@@ -1064,7 +1070,7 @@ async function getOpenverse(q){
 }
 async function searchMusic(){
   const q=$("musicSearch").value.trim();if(!q){showToast("Type a word","Example: naat, pop, lofi, happy.");return}
-  const src=$("musicSource").value,box=$("musicResults");box.innerHTML='<div class="note">Searching...</div>';stopLib();
+  const src="all",box=$("musicResults");box.innerHTML='<div class="note">Searching...</div>';stopLib();
   const jobs=[];if(src!=="openverse")jobs.push(getArchive(q));if(src!=="archive")jobs.push(getOpenverse(q));
   const res=await Promise.allSettled(jobs),ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
   if(!ok.length){box.innerHTML='<div class="note">Could not load music ('+esc(res[0].reason&&res[0].reason.message||"error")+'). Check your internet and try again in a minute.</div>';return}
@@ -1077,7 +1083,7 @@ async function searchMusic(){
   }).join("")||'<div class="note">Nothing found. Try another word.</div>';
 }
 let libNow=-1;
-function paintLib(){document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹ Stop":"▶ Preview")}
+function paintLib(){$("stopLibBtn").classList.toggle("hidden",libAudio.paused);document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹ Stop":"▶ Preview")}
 function stopLib(){libAudio.pause();libNow=-1;paintLib()}
 libAudio.addEventListener("ended",stopLib);libAudio.addEventListener("pause",paintLib);
 async function resolveUrl(t){
@@ -1106,9 +1112,10 @@ window.libAdd=async i=>{
     showToast("Music added","Plays in preview, but this site blocks copying, so export may have no music. Try another track.");
   }
 };
+$("musicTags").addEventListener("wheel",e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.preventDefault();$("musicTags").scrollLeft+=e.deltaY}},{passive:false});
 $("musicSearchBtn").onclick=searchMusic;$("stopLibBtn").onclick=stopLib;$("playBtn").addEventListener("click",stopLib);
 $("musicSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchMusic()});
-document.querySelectorAll("#musicTags button").forEach(b=>b.onclick=()=>{$("musicSearch").value=b.dataset.q;$("musicSource").value=b.dataset.s;searchMusic()});
+document.querySelectorAll("#musicTags button").forEach(b=>b.onclick=()=>{$("musicSearch").value=b.dataset.q;searchMusic()});
 
 /* ---------- QURAN RECITATION + CAPTIONS (alquran.cloud) ---------- */
 fetch("https://api.alquran.cloud/v1/edition?format=audio&language=ar&type=versebyverse").then(r=>r.json()).then(d=>{
