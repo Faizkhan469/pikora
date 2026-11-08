@@ -214,11 +214,26 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
     <div class="panel-view hidden" id="panel-audio">
       <div class="panel-header">Audio</div>
       <div class="panel-content">
-        <input type="text" id="musicSearch" placeholder="🔍 Search any music or audio, from all over the world...">
-        <button class="act" id="musicSearchBtn" type="button">🔍 Search</button>
+        <label>🌐 Music library (free, online)</label>
+        <select id="musicSource"><option value="all">All types of music (everything)</option><option value="openverse">Free music (Openverse)</option><option value="archive">Naats, Nasheeds, Bhajans, Arabic, Urdu (Archive.org)</option></select>
+        <div class="g2" id="musicTags"><button class="sec" type="button" data-q="naat" data-s="archive">Naat</button><button class="sec" type="button" data-q="nasheed" data-s="archive">Nasheed</button><button class="sec" type="button" data-q="arabic nasheed" data-s="archive">Arabic</button><button class="sec" type="button" data-q="urdu" data-s="archive">Urdu</button><button class="sec" type="button" data-q="bhajan" data-s="archive">Hindi Bhajan</button><button class="sec" type="button" data-q="pop" data-s="openverse">Pop</button><button class="sec" type="button" data-q="rock" data-s="openverse">Rock</button><button class="sec" type="button" data-q="hip hop" data-s="openverse">Hip-hop</button><button class="sec" type="button" data-q="lofi" data-s="openverse">Lo-fi</button><button class="sec" type="button" data-q="cinematic" data-s="openverse">Cinematic</button><button class="sec" type="button" data-q="acoustic" data-s="openverse">Acoustic</button><button class="sec" type="button" data-q="electronic" data-s="openverse">Electronic</button><button class="sec" type="button" data-q="classical" data-s="openverse">Classical</button><button class="sec" type="button" data-q="instrumental" data-s="openverse">Instrumental</button></div>
+        <input type="text" id="musicSearch" placeholder="Search any music: song, artist, mood, genre..." style="margin-top:8px">
+        <button class="act" id="musicSearchBtn" type="button">🔍 Search music</button>
+        <button class="sec dan" id="stopLibBtn" type="button">⏹ Stop music preview</button>
         <div id="musicResults" style="margin-top:10px"></div>
-        <button class="sec hidden" id="musicMoreBtn" type="button">Load more results</button>
-        <div class="note">Type a song, naat, nasheed, artist, mood, language or a surah name (example: "baqra", "yasin", "baqra 255"). Check the licence before you publish a video.</div>
+        <div class="note">⚠ Many naats, nasheeds and songs are copyrighted. Archive.org tracks have no guaranteed licence: tap "details" to check before you publish a video. Film songs are not available here.</div>
+        <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:4px">
+          <label>📖 Quran recitation (free, with captions)</label>
+          <select id="qReciter"><option value="ar.alafasy">Mishary Alafasy</option></select>
+          <div class="g2">
+            <div><label>Surah (1-114)</label><input type="number" id="qSurah" value="1" min="1" max="114"></div>
+            <div><label>Ayah from – to</label><div class="g2"><input type="number" id="qFrom" value="1" min="1"><input type="number" id="qTo" value="7" min="1"></div></div>
+          </div>
+          <label>Captions</label>
+          <select id="qCaps"><option value="ar">Arabic only</option><option value="ar+en">Arabic + English</option><option value="ar+ur">Arabic + Urdu</option><option value="ar+hi">Arabic + Hindi</option><option value="none">No captions</option></select>
+          <button class="act" id="qAddBtn" type="button">+ Add recitation to video</button>
+          <div class="note">Up to 40 ayahs at a time. The recitation is added as your music track and the captions are timed automatically.</div>
+        </div>
         <div style="height:12px"></div>
         <div class="note">Or upload your own file:</div>
         <div style="height:12px"></div>
@@ -469,20 +484,18 @@ const imgCache={};
 let tlScale=80,pendingSeek=null;
 
 /* ---------- HISTORY ---------- */
-let history=[],hIndex=-1;
-function snapshot(){
-  const s=JSON.stringify({clips,texts,captions,captionStyle,stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),selectedClip});
-  history=history.slice(0,hIndex+1);history.push(s);if(history.length>40)history.shift();hIndex=history.length-1;
-}
-function restore(idx){
-  const o=JSON.parse(history[idx]);
+let history=[],redoStack=[];
+function stateJSON(){return JSON.stringify({clips,texts,captions,captionStyle,stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),selectedClip})}
+function snapshot(){history.push(stateJSON());if(history.length>60)history.shift();redoStack=[]}
+function restore(json){
+  const o=JSON.parse(json);
   clips=o.clips;texts=o.texts;captions=o.captions;captionStyle=o.captionStyle;
   stickers=o.stickers.map(st=>{if(st.type==="image"&&imgCache[st.src])st.img=imgCache[st.src];return st});
   selectedClip=Math.min(o.selectedClip,clips.length-1);selectedText=-1;selectedCaption=-1;selectedSticker=-1;
   if(selectedClip>=0)loadSelected();renderAll();
 }
-$("undoBtn").onclick=()=>{if(hIndex>0){hIndex--;restore(hIndex);showToast("Undo","Reverted last change.")}};
-$("redoBtn").onclick=()=>{if(hIndex<history.length-1){hIndex++;restore(hIndex);showToast("Redo","Re-applied change.")}};
+$("undoBtn").onclick=()=>{if(!history.length){showToast("Nothing to undo","");return}redoStack.push(stateJSON());playingAll=false;restore(history.pop());showToast("Undo","Reverted last change.")};
+$("redoBtn").onclick=()=>{if(!redoStack.length){showToast("Nothing to redo","");return}history.push(stateJSON());playingAll=false;restore(redoStack.pop());showToast("Redo","Re-applied change.")};
 
 /* ---------- SIDEBAR NAV ---------- */
 document.querySelectorAll(".icon-btn").forEach(btn=>{
@@ -797,8 +810,7 @@ $("splitBtn").onclick=doSplit;$("splitBtn2").onclick=doSplit;
 
 $("deleteClipBtn").onclick=()=>{
   if(selectedClip<0)return;snapshot();playingAll=false;
-  const url=clips[selectedClip].url;clips.splice(selectedClip,1);
-  if(!clips.some(c=>c.url===url))URL.revokeObjectURL(url);
+  clips.splice(selectedClip,1);
   selectedClip=Math.min(selectedClip,clips.length-1);
   if(selectedClip>=0)loadSelected();else{preview.pause();preview.removeAttribute("src");$("clipControls").classList.add("hidden")}
   renderAll();
@@ -912,7 +924,7 @@ function updatePreviewText(){
   });
   previewText.innerHTML=html;
 }
-let dragKind=null,dragI=-1,dragOX=0,dragOY=0,rsX=0,rsY=0,rsSize=0;
+let dragKind=null,dragI=-1,dragOX=0,dragOY=0,rsX=0,rsY=0,rsSize=0,dragSnapped=false;
 previewText.addEventListener("pointerdown",e=>{
   const rh=e.target.closest(".rh");
   if(rh){const ol=rh.closest(".preview-overlay");e.stopPropagation();e.preventDefault();dragKind="resize";dragI=+ol.dataset.i;rsX=e.clientX;rsY=e.clientY;rsSize=texts[dragI].size;previewText.setPointerCapture(e.pointerId);snapshot();return}
@@ -924,7 +936,7 @@ previewText.addEventListener("pointerdown",e=>{
   const r=previewWrap.getBoundingClientRect();
   const arr=dragKind==="text"?texts:stickers;
   dragOX=(e.clientX-r.left)/r.width*100-arr[dragI].x;dragOY=(e.clientY-r.top)/r.height*100-arr[dragI].y;
-  previewText.setPointerCapture(e.pointerId);updatePreviewText();
+  previewText.setPointerCapture(e.pointerId);dragSnapped=false;updatePreviewText();
 });
 previewText.addEventListener("pointermove",e=>{
   if(dragI<0)return;
@@ -933,10 +945,11 @@ previewText.addEventListener("pointermove",e=>{
     $("textSize").value=t.size;paintText();updatePreviewText();return}
   const r=previewWrap.getBoundingClientRect();
   const arr=dragKind==="text"?texts:stickers;const o=arr[dragI];if(!o)return;
+  if(!dragSnapped){snapshot();dragSnapped=true}
   o.x=clamp((e.clientX-r.left)/r.width*100-dragOX,0,100);o.y=clamp((e.clientY-r.top)/r.height*100-dragOY,0,100);
   updatePreviewText();
 });
-previewText.addEventListener("pointerup",()=>{if(dragI>=0&&dragKind!=="resize")snapshot();dragI=-1;dragKind=null});
+previewText.addEventListener("pointerup",()=>{dragI=-1;dragKind=null});
 previewText.addEventListener("pointercancel",()=>{dragI=-1;dragKind=null});
 
 /* ---------- ELEMENTS ---------- */
@@ -1037,146 +1050,50 @@ $("musicFile").addEventListener("change",e=>{
   showToast("Music loaded","Press ▶ to hear it in sync.");
 });
 
-/* ---------- ONE SEARCH BOX: music, any audio, and Quran ---------- */
-let libResults=[],libAudio=new Audio(),libNow=-1,libQueue=null,musicQ="",musicPage=1,searchId=0;
-const SURAHS="Al-Fatihah|Al-Baqarah|Ali Imran|An-Nisa|Al-Maidah|Al-Anam|Al-Araf|Al-Anfal|At-Tawbah|Yunus|Hud|Yusuf|Ar-Rad|Ibrahim|Al-Hijr|An-Nahl|Al-Isra|Al-Kahf|Maryam|Ta-Ha|Al-Anbiya|Al-Hajj|Al-Muminun|An-Nur|Al-Furqan|Ash-Shuara|An-Naml|Al-Qasas|Al-Ankabut|Ar-Rum|Luqman|As-Sajdah|Al-Ahzab|Saba|Fatir|Ya-Sin|As-Saffat|Sad|Az-Zumar|Ghafir|Fussilat|Ash-Shura|Az-Zukhruf|Ad-Dukhan|Al-Jathiyah|Al-Ahqaf|Muhammad|Al-Fath|Al-Hujurat|Qaf|Adh-Dhariyat|At-Tur|An-Najm|Al-Qamar|Ar-Rahman|Al-Waqiah|Al-Hadid|Al-Mujadila|Al-Hashr|Al-Mumtahanah|As-Saff|Al-Jumuah|Al-Munafiqun|At-Taghabun|At-Talaq|At-Tahrim|Al-Mulk|Al-Qalam|Al-Haqqah|Al-Maarij|Nuh|Al-Jinn|Al-Muzzammil|Al-Muddaththir|Al-Qiyamah|Al-Insan|Al-Mursalat|An-Naba|An-Naziat|Abasa|At-Takwir|Al-Infitar|Al-Mutaffifin|Al-Inshiqaq|Al-Buruj|At-Tariq|Al-Ala|Al-Ghashiyah|Al-Fajr|Al-Balad|Ash-Shams|Al-Layl|Ad-Duha|Ash-Sharh|At-Tin|Al-Alaq|Al-Qadr|Al-Bayyinah|Az-Zalzalah|Al-Adiyat|Al-Qariah|At-Takathur|Al-Asr|Al-Humazah|Al-Fil|Quraysh|Al-Maun|Al-Kawthar|Al-Kafirun|An-Nasr|Al-Masad|Al-Ikhlas|Al-Falaq|An-Nas".split("|");
-const RECS=[["ar.alafasy","Mishary Alafasy"],["ar.abdulbasitmurattal","Abdul Basit"],["ar.husary","Mahmoud Al-Husary"]];
-const ALIAS={kausar:108,kosar:108,kawsar:108,kauthar:108};
-const rn=s=>s.toLowerCase().replace(/[^a-z]/g,"");
-const keys=s=>{const f=rn(s),p=f.replace(/^(adh|ash|al|an|ar|as|ad|at|az)(?=.)/,"");return[...new Set([f,p].map(x=>x.replace(/[aeiou]/g,"").replace(/(.)\1+/g,"$1")))].filter(x=>x.length>1)};
-function lev(a,b){const d=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=d[0];d[0]=i;for(let j=1;j<=b.length;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return d[b.length]}
-
-/* understands "baqra", "surah yasin", "baqra 255", "baqra 1-20", "ayat ul kursi" */
-function quranCards(q){
-  const low=q.toLowerCase(),kw=/\b(surah|surat|sura|soorah|ayat|ayah|quran|quraan)\b/.test(low),kwS=/\b(surah|surat|sura|soorah)\b/.test(low);
-  const nums=(low.match(/\d+/g)||[]).map(Number);
-  const words=low.replace(/\d+/g," ").replace(/\b(surah|surat|sura|soorah|ayat|ayah|verse|verses|quran|quraan|recitation|tilawat|by|full|of|from|to)\b/g," ").trim();
-  let hit=[],from=0,to=0;
-  if(/ayat\W*(ul|al|e)?\W*kursi/.test(low)){hit=[2];from=to=255}
-  else{
-    const w=rn(words);
-    if(ALIAS[w])hit=[ALIAS[w]];
-    else if(kw||w.length>=4){
-      const qk=keys(words);
-      SURAHS.forEach((n,i)=>{if(keys(n).some(a=>qk.includes(a)))hit.push(i+1)});
-      if(!hit.length)SURAHS.forEach((n,i)=>{if(keys(n).some(a=>qk.some(b=>a.length>2&&b.length>2&&lev(a,b)<=1)))hit.push(i+1)});
-    }
-    if(hit.length){from=nums[0]||0;to=nums[1]||0}
-    else if(kwS&&nums[0]>=1&&nums[0]<=114){hit=[nums[0]];from=nums[1]||0;to=nums[2]||0}
-  }
-  hit=hit.slice(0,3);if(!hit.length)return[];
-  if(!from){from=1;to=10}else if(!to||to<from)to=from;
-  to=Math.min(to,from+39);
-  const out=[];
-  hit.forEach((sn,k)=>(k?RECS.slice(0,1):RECS).forEach(r=>out.push({src:"quran",sn,from,to,rec:r[0],recName:r[1],title:"Surah "+SURAHS[sn-1]+" ("+sn+")"})));
-  return out;
-}
-
-async function getArchive(q,pg){
-  const u="https://archive.org/advancedsearch.php?q="+encodeURIComponent("("+q+") AND mediatype:audio")+"&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=creator&fl%5B%5D=licenseurl&rows=15&page="+pg+"&sort%5B%5D=downloads+desc&output=json";
+/* ---------- MUSIC LIBRARY (Openverse + Archive.org) ---------- */
+let libResults=[],libAudio=new Audio();
+async function getArchive(q){
+  const u="https://archive.org/advancedsearch.php?q="+encodeURIComponent("("+q+") AND mediatype:audio")+"&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=creator&fl%5B%5D=licenseurl&rows=15&sort%5B%5D=downloads+desc&output=json";
   const r=await fetch(u);if(!r.ok)throw new Error("error "+r.status);
   return((await r.json()).response.docs||[]).map(d=>({src:"archive",id:d.identifier,title:d.title,creator:[].concat(d.creator||[])[0],license:d.licenseurl?"Creative Commons":"licence unknown"}));
 }
-async function getOpenverse(q,pg){
-  const r=await fetch("https://api.openverse.org/v1/audio/?q="+encodeURIComponent(q)+"&license_type=commercial&page_size=20&page="+pg);
+async function getOpenverse(q){
+  const r=await fetch("https://api.openverse.org/v1/audio/?q="+encodeURIComponent(q)+"&license_type=commercial&page_size=20");
   if(!r.ok)throw new Error("error "+r.status);
   return((await r.json()).results||[]).map(t=>({src:"openverse",url:t.url,title:t.title,creator:t.creator,duration:t.duration,license:"CC "+(t.license||"").toUpperCase()}));
 }
-
-function cardHTML(t,i){
-  let meta;
-  if(t.src==="quran")meta="Quran recitation · ayah "+t.from+(t.to>t.from?"–"+t.to:"")+" · "+esc(t.recName);
-  else{
+async function searchMusic(){
+  const q=$("musicSearch").value.trim();if(!q){showToast("Type a word","Example: naat, pop, lofi, happy.");return}
+  const src=$("musicSource").value,box=$("musicResults");box.innerHTML='<div class="note">Searching...</div>';stopLib();
+  const jobs=[];if(src!=="openverse")jobs.push(getArchive(q));if(src!=="archive")jobs.push(getOpenverse(q));
+  const res=await Promise.allSettled(jobs),ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
+  if(!ok.length){box.innerHTML='<div class="note">Could not load music ('+esc(res[0].reason&&res[0].reason.message||"error")+'). Check your internet and try again in a minute.</div>';return}
+  libResults=[];const mx=Math.max(...ok.map(a=>a.length));
+  for(let i=0;i<mx;i++)ok.forEach(a=>{if(a[i])libResults.push(a[i])});
+  box.innerHTML=libResults.map((t,i)=>{
     const sec=Math.round((t.duration||0)/1000),d=sec?" · "+Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"):"";
     const link=t.src==="archive"?` · <a href="https://archive.org/details/${esc(t.id)}" target="_blank" rel="noopener" style="color:var(--accent)">details</a>`:"";
-    meta=esc(t.creator||"Unknown")+d+" · "+esc(t.license)+link;
-  }
-  return `<div class="list-item" style="cursor:default"><div class="t">${esc(t.title||"Untitled")}</div><div class="m">${meta}</div><div class="g2"><button class="sec lp" type="button" onclick="libPlay(${i})">▶ Preview</button><button class="sec" type="button" onclick="libAdd(${i})">+ Add</button></div></div>`;
+    return `<div class="list-item" style="cursor:default"><div class="t">${esc(t.title||"Untitled")}</div><div class="m">${esc(t.creator||"Unknown")}${d} · ${esc(t.license)}${link}</div><div class="g2"><button class="sec lp" type="button" onclick="libPlay(${i})">▶ Preview</button><button class="sec" type="button" onclick="libAdd(${i})">+ Add</button></div></div>`;
+  }).join("")||'<div class="note">Nothing found. Try another word.</div>';
 }
-function renderLib(){$("musicResults").innerHTML=libResults.map(cardHTML).join("");paintLib()}
-
-async function searchMusic(more){
-  const my=more===true?searchId:++searchId;
-  if(more===true)musicPage++;
-  else{
-    const q=$("musicSearch").value.trim();if(!q){showToast("Type a word","Example: naat, baqra, pop, lofi, happy.");return}
-    musicQ=q;musicPage=1;stopLib();libResults=quranCards(q);renderLib();
-    if(!libResults.length)$("musicResults").innerHTML='<div class="note">Searching...</div>';
-  }
-  $("musicMoreBtn").classList.add("hidden");
-  const res=await Promise.allSettled([getArchive(musicQ,musicPage),getOpenverse(musicQ,musicPage)]);
-  if(my!==searchId)return;
-  const ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
-  if(!ok.length){
-    if(!libResults.length)$("musicResults").innerHTML='<div class="note">Could not load music ('+esc(res[0].reason&&res[0].reason.message||"error")+'). Check your internet and try again in a minute.</div>';
-    else showToast("Libraries not reachable","Try again in a minute.");
-    return;
-  }
-  const mx=Math.max(...ok.map(a=>a.length)),add=[];
-  for(let i=0;i<mx;i++)ok.forEach(a=>{if(a[i])add.push(a[i])});
-  libResults=libResults.concat(add);renderLib();
-  if(!libResults.length)$("musicResults").innerHTML='<div class="note">Nothing found. Try another word.</div>';
-  if(add.length)$("musicMoreBtn").classList.remove("hidden");
-}
-
-/* ---- preview / stop ---- */
+let libNow=-1;
 function paintLib(){document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹ Stop":"▶ Preview")}
-function stopLib(){libQueue=null;libAudio.pause();libNow=-1;paintLib()}
-libAudio.addEventListener("ended",()=>{if(libQueue&&libQueue.length){libAudio.src=libQueue.shift();libAudio.play().catch(stopLib)}else stopLib()});
-libAudio.addEventListener("pause",paintLib);libAudio.addEventListener("play",paintLib);
+function stopLib(){libAudio.pause();libNow=-1;paintLib()}
+libAudio.addEventListener("ended",stopLib);libAudio.addEventListener("pause",paintLib);
 async function resolveUrl(t){
   if(t.url)return t.url;
   const m=await (await fetch("https://archive.org/metadata/"+encodeURIComponent(t.id))).json();
   const f=(m.files||[]).find(x=>/\.mp3$/i.test(x.name));if(!f)throw new Error("no mp3");
   t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+f.name.split("/").map(encodeURIComponent).join("/");return t.url;
 }
-async function quranData(t){
-  if(t.data)return t.data;
-  const d=(await (await fetch(`https://api.alquran.cloud/v1/surah/${t.sn}/editions/${t.rec},quran-uthmani`)).json()).data;
-  if(!Array.isArray(d))throw new Error("not found");
-  const pick=id=>((d.find(e=>e.edition.identifier===id)||{ayahs:[]}).ayahs).slice(t.from-1,t.to);
-  const data={au:pick(t.rec),ar:pick("quran-uthmani")};
-  if(!data.au.length||!data.au[0].audio)throw new Error("no audio");
-  return t.data=data;
-}
 window.libPlay=async i=>{
   const t=libResults[i];if(!t)return;
   if(libNow===i&&!libAudio.paused){stopLib();return}
-  libQueue=null;libAudio.pause();libNow=i;preview.pause();
-  try{
-    if(t.src==="quran"){const d=await quranData(t);if(libNow!==i)return;libQueue=d.au.slice(1).map(a=>a.audio);libAudio.src=d.au[0].audio}
-    else{const u=await resolveUrl(t);if(libNow!==i)return;libAudio.src=u}
-    await libAudio.play();paintLib();
-  }catch(e){if(libNow===i){libNow=-1;libQueue=null;paintLib();showToast("Cannot preview","This one would not play. Try another.")}}
+  libAudio.pause();libNow=i;preview.pause();
+  try{libAudio.src=await resolveUrl(t);await libAudio.play();paintLib()}catch(e){libNow=-1;paintLib();showToast("Cannot preview","This track would not play. Try another.")}
 };
-
-/* ---- add to video ---- */
-function wavBlob(buf){
-  const n=buf.length,sr=buf.sampleRate,d=buf.getChannelData(0),b=new ArrayBuffer(44+n*2),v=new DataView(b);
-  const w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
-  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
-  for(let i=0;i<n;i++){const x=Math.max(-1,Math.min(1,d[i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
-  return new Blob([b],{type:"audio/wav"});
-}
-async function addQuran(t){
-  let ac;showToast("Downloading","Getting the recitation, please wait...");
-  try{
-    const d=await quranData(t);
-    const AC=window.AudioContext||window.webkitAudioContext;ac=new AC();const bufs=[];
-    for(const a of d.au){const r=await fetch(a.audio);if(!r.ok)throw new Error("download blocked");bufs.push(await ac.decodeAudioData(await r.arrayBuffer()))}
-    const sr=bufs[0].sampleRate,total=bufs.reduce((s,b)=>s+b.length,0),out=ac.createBuffer(1,total,sr),ch=out.getChannelData(0);
-    let off=0;const caps=[],base=musicStartVal();
-    bufs.forEach((b,i)=>{ch.set(b.getChannelData(0),off);const st=base+off/sr;off+=b.length;caps.push({text:d.ar[i]?d.ar[i].text:"",start:+st.toFixed(2),end:+(st+b.length/sr).toFixed(2)})});
-    setMusicSource(URL.createObjectURL(wavBlob(out)),"Quran "+t.sn+":"+t.from+"-"+t.to+" ("+t.recName+")",true);
-    snapshot();captions=captions.concat(caps).sort((x,y)=>x.start-y.start);renderCaptionList();renderTranscript();updateCaptionLayer();
-    showToast("Recitation added ✅","With timed Arabic captions. Press ▶ to play.");
-  }catch(err){showToast("Could not add","Check your internet or try another reciter ("+err.message+").")}
-  finally{if(ac)ac.close().catch(()=>{})}
-}
 window.libAdd=async i=>{
   const t=libResults[i];if(!t)return;stopLib();
-  if(t.src==="quran"){addQuran(t);return}
   showToast("Adding music","Downloading the track...");
   const credit=(t.title||"Untitled")+" – "+(t.creator||"Unknown")+" ("+t.license+")";
   let url;try{url=await resolveUrl(t)}catch(e){showToast("Cannot add","This item has no playable file. Try another.");return}
@@ -1189,10 +1106,53 @@ window.libAdd=async i=>{
     showToast("Music added","Plays in preview, but this site blocks copying, so export may have no music. Try another track.");
   }
 };
-$("musicSearchBtn").onclick=()=>searchMusic();
-$("musicMoreBtn").onclick=()=>searchMusic(true);
-$("playBtn").addEventListener("click",stopLib);
+$("musicSearchBtn").onclick=searchMusic;$("stopLibBtn").onclick=stopLib;$("playBtn").addEventListener("click",stopLib);
 $("musicSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchMusic()});
+document.querySelectorAll("#musicTags button").forEach(b=>b.onclick=()=>{$("musicSearch").value=b.dataset.q;$("musicSource").value=b.dataset.s;searchMusic()});
+
+/* ---------- QURAN RECITATION + CAPTIONS (alquran.cloud) ---------- */
+fetch("https://api.alquran.cloud/v1/edition?format=audio&language=ar&type=versebyverse").then(r=>r.json()).then(d=>{
+  if(d.data&&d.data.length)$("qReciter").innerHTML=d.data.map(e=>`<option value="${esc(e.identifier)}">${esc(e.englishName)}</option>`).join("");
+  $("qReciter").value="ar.alafasy";
+}).catch(()=>{});
+function wavBlob(buf){
+  const n=buf.length,sr=buf.sampleRate,d=buf.getChannelData(0),b=new ArrayBuffer(44+n*2),v=new DataView(b);
+  const w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const x=Math.max(-1,Math.min(1,d[i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
+  return new Blob([b],{type:"audio/wav"});
+}
+$("qAddBtn").onclick=async()=>{
+  const sn=+$("qSurah").value,from=+$("qFrom").value,to=+$("qTo").value,rec=$("qReciter").value,mode=$("qCaps").value;
+  if(!(sn>=1&&sn<=114&&from>=1&&to>=from)){showToast("Check numbers","Surah 1-114, and ayah 'to' must be after 'from'.");return}
+  if(to-from+1>40){showToast("Too many ayahs","Choose up to 40 ayahs at a time.");return}
+  const tr=mode==="ar+en"?"en.sahih":mode==="ar+ur"?"ur.jalandhry":mode==="ar+hi"?"hi.hindi":"";
+  $("qAddBtn").disabled=true;showToast("Downloading","Getting the recitation, please wait...");
+  let ac;
+  try{
+    const eds=[rec,"quran-uthmani"].concat(tr?[tr]:[]).join(",");
+    const r=await fetch(`https://api.alquran.cloud/v1/surah/${sn}/editions/${eds}`);
+    const d=(await r.json()).data;if(!Array.isArray(d))throw new Error("not found");
+    const pick=id=>(d.find(e=>e.edition.identifier===id)||{ayahs:[]}).ayahs.slice(from-1,to);
+    const au=pick(rec),ar=pick("quran-uthmani"),tx=tr?pick(tr):[];
+    if(!au.length||!au[0].audio)throw new Error("no audio");
+    const AC=window.AudioContext||window.webkitAudioContext;ac=new AC();
+    const bufs=[];
+    for(const a of au){const res=await fetch(a.audio);if(!res.ok)throw new Error("download blocked");bufs.push(await ac.decodeAudioData(await res.arrayBuffer()))}
+    const sr=bufs[0].sampleRate,total=bufs.reduce((t,b)=>t+b.length,0),out=ac.createBuffer(1,total,sr);
+    const ch=out.getChannelData(0);let off=0;const caps=[],base=musicStartVal();
+    bufs.forEach((b,i)=>{
+      ch.set(b.getChannelData(0),off);
+      const st=base+off/sr,en=st+b.length/sr;off+=b.length;
+      if(mode!=="none")caps.push({text:(ar[i]?ar[i].text:"")+(tx[i]?" — "+tx[i].text:""),start:+st.toFixed(2),end:+en.toFixed(2)});
+    });
+    setMusicSource(URL.createObjectURL(wavBlob(out)),"Quran "+sn+":"+from+"-"+to,true);
+    if(caps.length){snapshot();captions=captions.concat(caps).sort((x,y)=>x.start-y.start);renderCaptionList();renderTranscript();updateCaptionLayer()}
+    showToast("Recitation added ✅","Surah "+sn+", ayah "+from+"-"+to+(caps.length?" with captions.":"."));
+  }catch(err){showToast("Could not add","Check your internet or try another reciter ("+err.message+").")}
+  finally{$("qAddBtn").disabled=false;if(ac)ac.close().catch(()=>{})}
+};
 
 $("musicVolume").addEventListener("input",e=>{$("musicVolVal").textContent=Math.round(e.target.value*100)+"%"});
 $("videoVolume").addEventListener("input",e=>{$("vidVolVal").textContent=Math.round(e.target.value*100)+"%";preview.volume=+e.target.value});
@@ -1425,7 +1385,7 @@ function drawCaption(ctx,gt,w,h){
 }
 
 function showToast(t,m){$("toastTitle").textContent=t;$("toastMsg").textContent=m;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),4000)}
-snapshot();renderAll();updateFrame();
+renderAll();updateFrame();
 </script>
 </body>
 </html>
