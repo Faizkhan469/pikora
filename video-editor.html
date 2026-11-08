@@ -71,11 +71,12 @@ body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg)
 #flashOverlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 #captionLayer{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);pointer-events:none;text-align:center;max-width:90%;padding:6px 12px;border-radius:6px;font-weight:700;display:none}
 .timeline-area{height:210px;background:var(--panel);border-top:1px solid var(--border);display:flex;flex-direction:column}
-.timeline-toolbar{height:42px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px}
+.timeline-toolbar{height:46px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px}
 .play-controls{display:flex;gap:6px;align-items:center}
-.play-btn{background:var(--hover);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
+.play-btn{background:var(--hover);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
 .play-btn:hover{background:var(--accent);color:#000}
-.time-display{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600}
+.time-display{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+#seekBar{flex:1;accent-color:var(--accent);margin:0 6px;height:6px;cursor:pointer}
 .timeline-tracks{flex:1;position:relative;overflow-x:auto;overflow-y:hidden;background:#0f0f12}
 .track-labels{position:absolute;left:0;top:0;bottom:0;width:70px;background:var(--panel);border-right:1px solid var(--border);z-index:10;display:flex;flex-direction:column}
 .track-label{height:52px;display:flex;align-items:center;padding-left:12px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600}
@@ -131,10 +132,15 @@ input[type=file]{display:none}
           <div style="font-size:12px;font-weight:600;margin-bottom:6px" id="selectedClipName">Clip</div>
           <label>Trim Start (s)</label><input type="number" id="trimStart" min="0" step="0.1" value="0">
           <label>Trim End (s)</label><input type="number" id="trimEnd" min="0" step="0.1" value="0">
+          <div class="g2">
+            <button class="sec" id="setStartBtn" type="button">⏮ Start = playhead</button>
+            <button class="sec" id="setEndBtn" type="button">⏭ End = playhead</button>
+          </div>
           <label>Speed</label>
           <select id="speed"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
-          <div class="g2"><button class="sec" id="splitBtn">✂ Split</button><button class="sec dan" id="deleteClipBtn">🗑 Delete</button></div>
-          <button class="act" id="applyTrimBtn">Apply Trim & Speed</button>
+          <div class="g2"><button class="sec" id="splitBtn" type="button">✂ Split</button><button class="sec dan" id="deleteClipBtn" type="button">🗑 Delete</button></div>
+          <button class="act" id="applyTrimBtn" type="button">Apply Trim & Speed</button>
+          <div class="note">💡 Scrub or play to a point, pause, then use "Start/End = playhead" or Split.</div>
         </div>
       </div>
     </div>
@@ -143,7 +149,7 @@ input[type=file]{display:none}
       <div class="panel-header">Templates</div>
       <div class="panel-content">
         <div class="card-grid" id="templateGrid"></div>
-        <div class="note">Templates set aspect ratio, filter, transition, effect and add a title text to your project instantly.</div>
+        <div class="note">Templates set aspect ratio, filter, transition, effect and add a title text instantly.</div>
       </div>
     </div>
     <!-- ELEMENTS -->
@@ -153,11 +159,11 @@ input[type=file]{display:none}
         <label>Stickers</label>
         <div class="emoji-grid" id="emojiGrid"></div>
         <label>Shape colour</label><input type="color" id="stickerColor" value="#00e5ff">
-        <div class="g2"><button class="sec" id="addRectBtn">▭ Rectangle</button><button class="sec" id="addCircleBtn">◯ Circle</button></div>
+        <div class="g2"><button class="sec" id="addRectBtn" type="button">▭ Rectangle</button><button class="sec" id="addCircleBtn" type="button">◯ Circle</button></div>
         <div id="stickerEdit" class="hidden" style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px">
           <label>Selected element size <span id="stickerSizeVal" style="float:right;color:var(--muted)">120</span></label>
           <input type="range" id="stickerSize" min="30" max="500" value="120">
-          <button class="sec dan" id="deleteStickerBtn">Delete Element</button>
+          <button class="sec dan" id="deleteStickerBtn" type="button">Delete Element</button>
         </div>
         <div class="note">Click a sticker or shape to add it. Drag it on the video to move.</div>
       </div>
@@ -178,7 +184,7 @@ input[type=file]{display:none}
           </div>
           <label>Video volume <span id="vidVolVal" style="float:right;color:var(--muted)">100%</span></label>
           <input type="range" id="videoVolume" min="0" max="1" step="0.05" value="1">
-          <button class="sec dan" id="removeMusicBtn">Remove Music</button>
+          <button class="sec dan" id="removeMusicBtn" type="button">Remove Music</button>
         </div>
       </div>
     </div>
@@ -201,8 +207,8 @@ input[type=file]{display:none}
           <div><label>Start (s)</label><input type="number" id="textStart" value="0" min="0" step="0.5"></div>
           <div><label>End (0=end)</label><input type="number" id="textEnd" value="0" min="0" step="0.5"></div>
         </div>
-        <button class="act" id="addTextBtn">+ Add Text</button>
-        <button class="sec dan" id="deleteTextBtn">Delete Selected Text</button>
+        <button class="act" id="addTextBtn" type="button">+ Add Text</button>
+        <button class="sec dan" id="deleteTextBtn" type="button">Delete Selected Text</button>
         <div id="textList" style="margin-top:10px"></div>
       </div>
     </div>
@@ -210,21 +216,21 @@ input[type=file]{display:none}
     <div class="panel-view hidden" id="panel-captions">
       <div class="panel-header">Captions</div>
       <div class="panel-content">
-        <div class="g2"><button class="sec" id="importSrtBtn">📥 Import .srt</button><button class="sec" id="exportSrtBtn">📤 Export .srt</button></div>
+        <div class="g2"><button class="sec" id="importSrtBtn" type="button">📥 Import .srt</button><button class="sec" id="exportSrtBtn" type="button">📤 Export .srt</button></div>
         <input type="file" id="srtFile" accept=".srt">
         <label>Caption text</label><input type="text" id="capText" placeholder="Type caption line...">
         <div class="g2">
           <div><label>Start (s)</label><input type="number" id="capStart" value="0" min="0" step="0.5"></div>
           <div><label>End (s)</label><input type="number" id="capEnd" value="3" min="0" step="0.5"></div>
         </div>
-        <button class="act" id="addCapBtn">+ Add Caption</button>
+        <button class="act" id="addCapBtn" type="button">+ Add Caption</button>
         <label>Caption size <span id="capSizeVal" style="float:right;color:var(--muted)">28</span></label>
         <input type="range" id="capSize" min="14" max="80" value="28">
         <div class="g2">
           <div><label>Text colour</label><input type="color" id="capColor" value="#ffffff"></div>
           <div><label>Box colour</label><input type="color" id="capBg" value="#000000"></div>
         </div>
-        <button class="sec dan" id="deleteCapBtn">Delete Selected Caption</button>
+        <button class="sec dan" id="deleteCapBtn" type="button">Delete Selected Caption</button>
         <label>Caption list</label>
         <div id="capList"></div>
       </div>
@@ -235,7 +241,7 @@ input[type=file]{display:none}
       <div class="panel-content">
         <label>Paste your script (one line per caption)</label>
         <textarea id="scriptBox" placeholder="Hello everyone&#10;Today we show something amazing&#10;Don't forget to like and follow"></textarea>
-        <button class="act" id="autoSplitBtn">⚡ Auto-time script to video</button>
+        <button class="act" id="autoSplitBtn" type="button">⚡ Auto-time script to video</button>
         <div class="note">Splits your script into caption lines and spreads them evenly across your video duration.</div>
         <label style="margin-top:14px">Edit caption lines</label>
         <div id="transcriptList"></div>
@@ -248,7 +254,7 @@ input[type=file]{display:none}
         <label>Effect for selected clip</label>
         <select id="effectSelect">
           <option value="none">None</option>
-          <option value="shake"> Camera Shake</option>
+          <option value="shake">📳 Camera Shake</option>
           <option value="zoompulse">🔍 Zoom Pulse</option>
           <option value="flash">⚡ Flash Strobe</option>
           <option value="glitch">👾 Glitch</option>
@@ -302,7 +308,7 @@ input[type=file]{display:none}
         <input type="range" id="contrast" min="0" max="200" value="100">
         <label>Saturation <span id="satVal" style="float:right;color:var(--muted)">100%</span></label>
         <input type="range" id="saturation" min="0" max="200" value="100">
-        <button class="act" id="applyFilterBtn">Apply to Clip</button>
+        <button class="act" id="applyFilterBtn" type="button">Apply to Clip</button>
       </div>
     </div>
     <!-- BRAND KIT -->
@@ -317,8 +323,8 @@ input[type=file]{display:none}
         <select id="brandFont"><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Impact</option><option>Courier New</option></select>
         <label class="upload-zone" for="logoFile" style="padding:16px 12px"><span>🏷️</span><strong>Upload Logo</strong></label>
         <input type="file" id="logoFile" accept="image/*">
-        <button class="act" id="addLogoBtn">+ Add Logo to Video</button>
-        <button class="sec" id="applyBrandTextBtn">Apply Brand Colours + Font to Selected Text</button>
+        <button class="act" id="addLogoBtn" type="button">+ Add Logo to Video</button>
+        <button class="sec" id="applyBrandTextBtn" type="button">Apply Brand Colours + Font to Selected Text</button>
         <div class="note">Your brand kit is saved in this browser automatically.</div>
       </div>
     </div>
@@ -336,13 +342,13 @@ input[type=file]{display:none}
     <div class="timeline-area">
       <div class="timeline-toolbar">
         <div class="play-controls">
-          <button class="play-btn" id="playBtn">▶</button>
-          <button class="play-btn" id="pauseBtn">❚❚</button>
-          <button class="play-btn" id="stopBtn">■</button>
+          <button class="play-btn" id="playBtn" type="button">▶</button>
+          <button class="play-btn" id="pauseBtn" type="button">❚❚</button>
+          <button class="play-btn" id="stopBtn" type="button">■</button>
         </div>
         <div class="time-display" id="timeInfo">00:00 / 00:00</div>
-        <div style="flex:1"></div>
-        <button class="tool-btn" id="splitBtn2">✂ Split</button>
+        <input type="range" id="seekBar" min="0" max="1000" value="0" title="Scrub playhead">
+        <button class="tool-btn" id="splitBtn2" type="button">✂ Split at playhead</button>
       </div>
       <div class="timeline-tracks">
         <div class="track-labels"><div class="track-label">Video</div><div class="track-label">Audio</div></div>
@@ -365,7 +371,7 @@ input[type=file]{display:none}
   <select id="fitMode"><option value="contain">Fit (bars)</option><option value="cover" selected>Fill (crop)</option></select>
   <label>Quality</label>
   <select id="exportQuality"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Ultra</option></select>
-  <button class="act" id="startExportBtn" style="padding:12px;font-size:13px">🚀 Start Export</button>
+  <button class="act" id="startExportBtn" type="button" style="padding:12px;font-size:13px">🚀 Start Export</button>
   <a id="downloadLink" style="display:none;margin-top:8px;padding:10px;background:#10b981;color:#000;text-align:center;border-radius:6px;font-weight:700;text-decoration:none">⬇ Download Video</a>
   <button class="sec" onclick="document.getElementById('exportPanelFloat').classList.add('hidden')">Close</button>
 </div>
@@ -373,7 +379,7 @@ input[type=file]{display:none}
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
-const preview=$("preview"),previewWrap=$("previewWrap"),previewText=$("previewText"),captionLayer=$("captionLayer"),flashOverlay=$("flashOverlay");
+const preview=$("preview"),previewWrap=$("previewWrap"),previewText=$("previewText"),captionLayer=$("captionLayer"),flashOverlay=$("flashOverlay"),seekBar=$("seekBar");
 const fmt=n=>Number(n||0).toFixed(1);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const durationOf=c=>Math.max(.1,(c.end-c.start)/c.speed);
@@ -438,7 +444,7 @@ function makeThumbnail(c){
 }
 
 /* ---------- RENDER ---------- */
-function renderAll(){renderMediaGrid();renderTimeline();renderTextList();renderCaptionList();renderTranscript();updateStickerEdit();updatePreviewText();updateCaptionLayer()}
+function renderAll(){renderMediaGrid();renderTimeline();renderTextList();renderCaptionList();renderTranscript();updateStickerEdit();updatePreviewText();updateCaptionLayer();syncSeekBar()}
 function renderMediaGrid(){
   $("mediaGrid").innerHTML=clips.map((c,i)=>`<div class="media-item ${i===selectedClip?'selected':''}" onclick="selectClip(${i})">
     ${c.thumb?`<img src="${c.thumb}">`:'<div style="width:100%;height:100%;background:#222;display:flex;align-items:center;justify-content:center">🎬</div>'}
@@ -459,7 +465,6 @@ function renderTimeline(){
     b.onclick=()=>selectClip(i);track.appendChild(b);left+=w+4;
   });
   if(!clips.length)track.innerHTML='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:12px">Upload media to start editing</div>';
-  // audio track waveform placeholder
   $("audioTrackRow").innerHTML=musicURL?'<div style="position:absolute;left:10px;top:6px;bottom:6px;right:40%;background:linear-gradient(90deg,#7c3aed55,#00e5ff55);border-radius:5px;display:flex;align-items:center;padding:0 10px;font-size:10px;color:#fff">🎵 Music</div>':"";
 }
 function selectClip(i){selectedClip=i;loadSelected();renderAll()}
@@ -467,12 +472,14 @@ function loadSelected(){
   const c=clips[selectedClip];if(!c)return;
   preview.pause();preview.src=c.url;preview.load();
   preview.onloadedmetadata=()=>{
-    preview.currentTime=Math.min(c.start,Math.max(0,preview.duration-.05));preview.playbackRate=c.speed;
+    preview.currentTime=clamp(c.start,0,Math.max(0,preview.duration-.05));
+    preview.playbackRate=c.speed;
     $("trimStart").value=fmt(c.start);$("trimEnd").value=fmt(c.end);$("speed").value=c.speed;
+    $("trimStart").max=c.duration;$("trimEnd").max=c.duration;
     $("filterSelect").value=c.filter;$("brightness").value=c.brightness;$("contrast").value=c.contrast;$("saturation").value=c.saturation;
     $("brightVal").textContent=c.brightness+"%";$("contrastVal").textContent=c.contrast+"%";$("satVal").textContent=c.saturation+"%";
     $("effectSelect").value=c.effect||"none";$("transDur").value=c.transitionDuration;
-    updateFrame();updateTimeInfo();applyPreviewFilters();
+    updateFrame();updateTimeInfo();applyPreviewFilters();syncSeekBar();
   };
   $("clipControls").classList.remove("hidden");$("selectedClipName").textContent="✂ "+c.name;
 }
@@ -488,10 +495,39 @@ function applyPreviewFilters(){
   preview.style.filter=`${f}brightness(${c.brightness}%) contrast(${c.contrast}%) saturate(${c.saturation}%)`;
 }
 
-/* ---------- PLAYBACK + EFFECTS LOOP ---------- */
-$("playBtn").onclick=()=>preview.play();$("pauseBtn").onclick=()=>preview.pause();
-$("stopBtn").onclick=()=>{preview.pause();if(selectedClip>=0)preview.currentTime=clips[selectedClip].start};
-preview.addEventListener("timeupdate",()=>{updateTimeInfo();updatePreviewText();updateCaptionLayer()});
+/* ---------- PLAYBACK (TRIM-AWARE) ---------- */
+$("playBtn").onclick=()=>{
+  const c=clips[selectedClip];
+  if(c){
+    // If outside the trimmed range, restart from trim start
+    if(preview.currentTime<c.start||preview.currentTime>=c.end-0.05)preview.currentTime=c.start;
+  }
+  preview.play();
+};
+$("pauseBtn").onclick=()=>preview.pause();
+$("stopBtn").onclick=()=>{preview.pause();const c=clips[selectedClip];if(c){preview.currentTime=c.start;syncSeekBar()}};
+preview.addEventListener("timeupdate",()=>{
+  const c=clips[selectedClip];
+  if(c){
+    // STOP playback at trim end
+    if(!preview.paused&&preview.currentTime>=c.end-0.03){
+      preview.pause();
+      preview.currentTime=Math.max(c.start,c.end-0.05);
+    }
+    syncSeekBar();
+  }
+  updateTimeInfo();updatePreviewText();updateCaptionLayer();
+});
+preview.addEventListener("seeked",()=>{updateTimeInfo();updatePreviewText();updateCaptionLayer();syncSeekBar()});
+function syncSeekBar(){
+  const c=clips[selectedClip];if(!c||!(c.end>c.start))return;
+  seekBar.value=clamp((preview.currentTime-c.start)/(c.end-c.start),0,1)*1000;
+}
+seekBar.addEventListener("input",()=>{
+  const c=clips[selectedClip];if(!c)return;
+  preview.currentTime=c.start+(+seekBar.value)/1000*(c.end-c.start);
+  updateTimeInfo();updatePreviewText();updateCaptionLayer();
+});
 function updateTimeInfo(){const c=clips[selectedClip];if(!c)return;$("timeInfo").textContent=`${fmt(preview.currentTime)} / ${fmt(c.end)}`}
 function globalTime(){
   const c=clips[selectedClip];if(!c)return 0;
@@ -510,31 +546,55 @@ function effectState(c,t){
   if(c){const es=effectState(c,(preview.currentTime-c.start)/c.speed);
     preview.style.transform=`translate(${es.dx}px,${es.dy}px) scale(${es.scale})`;
     flashOverlay.style.opacity=es.flash;
-    if(es.glitch)preview.style.filter=(preview.style.filter||"")+" hue-rotate(60deg)";
-    else applyPreviewFilters();
   }
   requestAnimationFrame(loop);
 })();
 
-/* ---------- TRIM / SPLIT / DELETE ---------- */
-$("applyTrimBtn").onclick=()=>{
+/* ---------- TRIM ---------- */
+$("setStartBtn").onclick=()=>{
   const c=clips[selectedClip];if(!c)return;
-  const a=parseFloat($("trimStart").value),b=parseFloat($("trimEnd").value);
-  if(!(b>a+.05)){showToast("Invalid trim","End must be after start.");return}
-  snapshot();c.start=a;c.end=b;c.speed=parseFloat($("speed").value);
-  preview.currentTime=c.start;preview.playbackRate=c.speed;
-  renderAll();showToast("Applied","Trim & speed saved.");
+  const t=clamp(preview.currentTime,0,Math.max(0,(parseFloat($("trimEnd").value)||c.end)-0.05));
+  $("trimStart").value=fmt(t);showToast("Start set","At playhead "+fmt(t)+"s. Press Apply.");
 };
-function doSplit(){
+$("setEndBtn").onclick=()=>{
   const c=clips[selectedClip];if(!c)return;
-  const cut=preview.currentTime;
-  if(cut<=c.start+.05||cut>=c.end-.05){showToast("Move playhead","Pause inside the clip first.");return}
+  const t=clamp(preview.currentTime,(parseFloat($("trimStart").value)||0)+0.05,c.duration||preview.duration||0);
+  $("trimEnd").value=fmt(t);showToast("End set","At playhead "+fmt(t)+"s. Press Apply.");
+};
+$("applyTrimBtn").onclick=()=>{
+  const c=clips[selectedClip];if(!c){showToast("No clip","Select a clip first.");return}
+  const dur=c.duration||preview.duration||0;
+  let a=parseFloat($("trimStart").value),b=parseFloat($("trimEnd").value);
+  if(!isFinite(a))a=c.start;if(!isFinite(b))b=c.end;
+  a=clamp(a,0,dur);b=clamp(b,0,dur);
+  if(b-a<0.05){showToast("Invalid trim","End must be at least 0.05s after start.");return}
   snapshot();
-  const second={...c,name:c.name+" (split)",start:cut,end:c.end,transition:"cut",transitionDuration:1,thumb:c.thumb};
-  c.end=cut;clips.splice(selectedClip+1,0,second);
-  renderAll();showToast("Split done","Clip cut at playhead.");
+  c.start=a;c.end=b;c.speed=parseFloat($("speed").value)||1;
+  $("trimStart").value=fmt(a);$("trimEnd").value=fmt(b);
+  preview.playbackRate=c.speed;
+  preview.pause();preview.currentTime=a;
+  renderAll();
+  showToast("Trim applied ✅",`Clip now plays ${fmt(a)}s → ${fmt(b)}s (${fmt(durationOf(c))}s long).`);
+};
+
+/* ---------- SPLIT ---------- */
+function doSplit(){
+  const c=clips[selectedClip];if(!c){showToast("No clip","Select a clip first.");return}
+  const cut=preview.currentTime;
+  if(!(cut>c.start+0.05&&cut<c.end-0.05)){
+    showToast("Position the playhead","▶ play or drag the scrubber to the cut point, pause, then Split.");return;
+  }
+  snapshot();
+  const baseName=c.name.replace(/ \(part \d+\)$/,"");
+  const second={...c,name:baseName+" (part 2)",start:cut,end:c.end,transition:"cut",transitionDuration:1,thumb:c.thumb};
+  c.end=cut;c.name=baseName+" (part 1)";
+  clips.splice(selectedClip+1,0,second);
+  preview.pause();
+  loadSelected();renderAll();
+  showToast("Split done ✂","Timeline now has 2 clips.");
 }
 $("splitBtn").onclick=doSplit;$("splitBtn2").onclick=doSplit;
+
 $("deleteClipBtn").onclick=()=>{
   if(selectedClip<0)return;snapshot();
   const url=clips[selectedClip].url;clips.splice(selectedClip,1);
@@ -579,7 +639,7 @@ function renderTextList(){
 }
 window.selectText=i=>{selectedText=i;renderTextList();updatePreviewText()};
 
-/* ---------- OVERLAY LAYER (text + stickers) ---------- */
+/* ---------- OVERLAY LAYER ---------- */
 function updatePreviewText(){
   if(selectedClip<0){previewText.innerHTML="";return}
   const gt=globalTime();
@@ -599,7 +659,6 @@ function updatePreviewText(){
   });
   previewText.innerHTML=html;
 }
-/* drag any overlay */
 let dragKind=null,dragI=-1,dragOX=0,dragOY=0;
 previewText.addEventListener("pointerdown",e=>{
   const el=e.target.closest(".preview-overlay");if(!el)return;
@@ -620,7 +679,7 @@ previewText.addEventListener("pointermove",e=>{
 previewText.addEventListener("pointerup",()=>{if(dragI>=0)snapshot();dragI=-1;dragKind=null});
 
 /* ---------- ELEMENTS ---------- */
-const EMOJIS=["⭐","❤️","🔥","✨","😂","","","👍","️","💯","🎵","","💬","📍","","😍","","💎","","⚡"];
+const EMOJIS=["⭐","❤️","🔥","✨","😂","","","👍","️","💯","","👑","💬","📍","🌸","😍","","💎","🏆",""];
 $("emojiGrid").innerHTML=EMOJIS.map(e=>`<div class="emoji-btn" onclick="addSticker('emoji','${e}')">${e}</div>`).join("");
 window.addSticker=(type,value)=>{
   if(selectedClip<0){showToast("Upload first","Add a video before elements.");return}
@@ -663,7 +722,6 @@ function updateCaptionLayer(){
   captionLayer.style.display="block";captionLayer.textContent=cap.text;
   captionLayer.style.fontSize=captionStyle.size+"px";captionLayer.style.color=captionStyle.color;captionLayer.style.background=captionStyle.bg;
 }
-/* SRT import/export */
 $("importSrtBtn").onclick=()=>$("srtFile").click();
 $("srtFile").addEventListener("change",e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
@@ -688,7 +746,6 @@ $("exportSrtBtn").onclick=()=>{
   const a=document.createElement("a");a.href=url;a.download="captions.srt";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   showToast("SRT exported","captions.srt downloaded.");
 };
-/* Transcript auto-timing */
 $("autoSplitBtn").onclick=()=>{
   const raw=$("scriptBox").value.trim();if(!raw){showToast("Empty script","Paste your script first.");return}
   const lines=raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
@@ -815,7 +872,7 @@ $("startExportBtn").onclick=async()=>{
         ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
         ctx.save();
         ctx.translate(w/2+es.dx*(w/720),h/2+es.dy*(h/720));ctx.scale(es.scale,es.scale);ctx.translate(-w/2,-h/2);
-        drawVideo(ctx,v,w,h,$("fitMode").value,c.filter+" brightness("+c.brightness+"%) contrast("+c.contrast+"%) saturate("+c.saturation+"%)",alpha,trans,progress);
+        drawVideo(ctx,v,w,h,$("fitMode").value,(c.filter==="none"?"":c.filter+" ")+"brightness("+c.brightness+"%) contrast("+c.contrast+"%) saturate("+c.saturation+"%)",alpha,trans,progress);
         ctx.restore();
         if(es.glitch){for(let s=0;s<5;s++){const sy=Math.random()*h,sh=8+Math.random()*18,off=(Math.random()-.5)*30;ctx.drawImage(canvas,0,sy,w,sh,off,sy,w,sh)}}
         if(es.flash>0){ctx.fillStyle=`rgba(255,255,255,${es.flash})`;ctx.fillRect(0,0,w,h)}
