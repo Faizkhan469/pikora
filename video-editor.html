@@ -90,6 +90,7 @@ body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg)
 .clip-block:hover{border-color:white}
 .clip-block.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,229,255,.4)}
 .clip-block img{height:100%;width:auto;margin-right:6px}
+.music-block{position:absolute;top:5px;bottom:5px;background:linear-gradient(90deg,#7c3aed88,#00e5ff88);border:1px solid #a78bfa;border-radius:5px;display:flex;align-items:center;padding:0 10px;font-size:10px;color:#fff;overflow:hidden;white-space:nowrap}
 .toast{position:fixed;top:60px;right:12px;left:auto;background:#fbbf24;color:#000;padding:14px 18px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:100;display:none;max-width:min(300px,86vw)}
 .toast.show{display:block;animation:slideIn .3s}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
@@ -192,6 +193,8 @@ input[type=file]{display:none}
         <input type="file" id="musicFile" accept="audio/*">
         <div id="audioInfo" class="note">No music selected.</div>
         <div id="audioControls" class="hidden">
+          <label>Music starts at timeline second (s)</label>
+          <input type="number" id="musicStart" value="0" min="0" step="0.5">
           <label>Music volume <span id="musicVolVal" style="float:right;color:var(--muted)">35%</span></label>
           <input type="range" id="musicVolume" min="0" max="1" step="0.05" value="0.35">
           <div class="g2">
@@ -200,7 +203,9 @@ input[type=file]{display:none}
           </div>
           <label>Video volume <span id="vidVolVal" style="float:right;color:var(--muted)">100%</span></label>
           <input type="range" id="videoVolume" min="0" max="1" step="0.05" value="1">
+          <button class="sec" id="previewMusicBtn" type="button">▶ Test music from playhead</button>
           <button class="sec dan" id="removeMusicBtn" type="button">Remove Music</button>
+          <div class="note">🎧 Music now plays in sync while you preview (press ▶). Export stays locked in sync automatically.</div>
         </div>
       </div>
     </div>
@@ -401,10 +406,11 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const durationOf=c=>Math.max(.1,(c.end-c.start)/c.speed);
 const totalDuration=()=>clips.reduce((s,c)=>s+durationOf(c),0);
 const isMobile=()=>window.innerWidth<=700;
+const musicStartVal=()=>parseFloat($("musicStart").value)||0;
 
 let clips=[],selectedClip=-1,texts=[],selectedText=-1,captions=[],selectedCaption=-1,stickers=[],selectedSticker=-1;
 let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
-let musicURL=null,musicDuration=0,exporting=false,thumbJobs=new Set(),defaultFont="Arial";
+let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),defaultFont="Arial";
 const imgCache={};
 
 /* ---------- HISTORY ---------- */
@@ -423,7 +429,7 @@ function restore(idx){
 $("undoBtn").onclick=()=>{if(hIndex>0){hIndex--;restore(hIndex);showToast("Undo","Reverted last change.")}};
 $("redoBtn").onclick=()=>{if(hIndex<history.length-1){hIndex++;restore(hIndex);showToast("Redo","Re-applied change.")}};
 
-/* ---------- SIDEBAR NAV (MOBILE DRAWER) ---------- */
+/* ---------- SIDEBAR NAV ---------- */
 document.querySelectorAll(".icon-btn").forEach(btn=>{
   btn.onclick=()=>{
     const wasActive=btn.classList.contains("active");
@@ -489,7 +495,11 @@ function renderTimeline(){
     b.onclick=()=>selectClip(i);track.appendChild(b);left+=w+4;
   });
   if(!clips.length)track.innerHTML='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:12px">Upload media to start editing</div>';
-  $("audioTrackRow").innerHTML=musicURL?'<div style="position:absolute;left:10px;top:6px;bottom:6px;right:40%;background:linear-gradient(90deg,#7c3aed55,#00e5ff55);border-radius:5px;display:flex;align-items:center;padding:0 10px;font-size:10px;color:#fff">🎵 Music</div>':"";
+  // MUSIC BAR on audio track at its real start position
+  if(musicURL){
+    const ms=musicStartVal(),mw=Math.max(60,(musicDuration||0)*scale);
+    $("audioTrackRow").innerHTML=`<div class="music-block" style="left:${10+ms*scale}px;width:${mw}px">🎵 Music @ ${fmt(ms)}s</div>`;
+  }else $("audioTrackRow").innerHTML="";
 }
 function selectClip(i){selectedClip=i;loadSelected();renderAll()}
 function loadSelected(){
@@ -507,7 +517,6 @@ function loadSelected(){
   };
   $("clipControls").classList.remove("hidden");$("selectedClipName").textContent="✂ "+c.name;
 }
-/* FIT PREVIEW TO AVAILABLE SPACE (works on any screen) */
 function updateFrame(){
   const a=$("aspectRatio").value;let r;
   if(a==="9:16")r=9/16;else if(a==="16:9")r=16/9;else if(a==="1:1")r=1;else if(a==="4:5")r=4/5;
@@ -526,10 +535,40 @@ function applyPreviewFilters(){
   preview.style.filter=`${f}brightness(${c.brightness}%) contrast(${c.contrast}%) saturate(${c.saturation}%)`;
 }
 
+/* ---------- MUSIC SYNC ENGINE ---------- */
+function musicFade(mt,gt,total){
+  const mi=+$("musicFadeIn").value,mo=+$("musicFadeOut").value,mv=+$("musicVolume").value;
+  let ma=1;
+  if(mi>0)ma=Math.min(1,Math.max(0,mt/mi));
+  if(mo>0)ma=Math.min(ma,Math.max(0,(total-gt)/mo));
+  return clamp(mv*ma,0,1);
+}
+function syncMusicPreview(){
+  if(!musicURL||!musicPreviewEl)return;
+  const c=clips[selectedClip];
+  if(!c){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
+  const gt=globalTime(),mt=gt-musicStartVal(),total=totalDuration();
+  if(mt<0||preview.paused){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
+  musicPreviewEl.volume=musicFade(mt,gt,total);
+  if(musicPreviewEl.paused)musicPreviewEl.play().catch(()=>{});
+  let target=mt;
+  const d=musicPreviewEl.duration;
+  if(d&&isFinite(d)&&mt>d)target=mt%d;
+  if(Math.abs(musicPreviewEl.currentTime-target)>0.4)musicPreviewEl.currentTime=target;
+}
+$("previewMusicBtn").onclick=()=>{
+  if(!musicURL){showToast("No music","Upload music first.");return}
+  if(selectedClip<0){showToast("No clip","Upload a video first.");return}
+  preview.muted=true; // hear only music while testing
+  preview.play();
+  showToast("Music test","Playing music in sync from playhead.");
+};
+
 /* ---------- PLAYBACK (TRIM-AWARE) ---------- */
 $("playBtn").onclick=()=>{
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
+  preview.muted=false;preview.volume=+$("videoVolume").value;
   preview.play();
 };
 $("pauseBtn").onclick=()=>preview.pause();
@@ -571,6 +610,7 @@ function effectState(c,t){
     preview.style.transform=`translate(${es.dx}px,${es.dy}px) scale(${es.scale})`;
     flashOverlay.style.opacity=es.flash;
   }
+  syncMusicPreview();
   requestAnimationFrame(loop);
 })();
 
@@ -705,7 +745,7 @@ previewText.addEventListener("pointerup",()=>{if(dragI>=0)snapshot();dragI=-1;dr
 previewText.addEventListener("pointercancel",()=>{dragI=-1;dragKind=null});
 
 /* ---------- ELEMENTS ---------- */
-const EMOJIS=["⭐","❤️","🔥","✨","😂","","","👍","️","💯","","👑","💬","📍","🌸","😍","","💎","🏆",""];
+const EMOJIS=["⭐","❤️","🔥","✨","😂","","","👍","️","💯","","","💬","📍","🌸","😍","","💎","🏆",""];
 $("emojiGrid").innerHTML=EMOJIS.map(e=>`<div class="emoji-btn" onclick="addSticker('emoji','${e}')">${e}</div>`).join("");
 window.addSticker=(type,value)=>{
   if(selectedClip<0){showToast("Upload first","Add a video before elements.");return}
@@ -785,17 +825,24 @@ function renderTranscript(){
 }
 window.editCaption=(i,v)=>{captions[i].text=v;renderCaptionList();updateCaptionLayer()};
 
-/* ---------- AUDIO ---------- */
+/* ---------- AUDIO LOAD / REMOVE ---------- */
 $("musicFile").addEventListener("change",e=>{
   const f=e.target.files[0];if(!f)return;
   if(musicURL)URL.revokeObjectURL(musicURL);musicURL=URL.createObjectURL(f);
-  const v=document.createElement("video");v.src=musicURL;v.onloadedmetadata=()=>{musicDuration=v.duration;v.removeAttribute("src")};
+  const v=document.createElement("video");v.src=musicURL;v.onloadedmetadata=()=>{musicDuration=v.duration;v.removeAttribute("src");renderTimeline()};
+  if(!musicPreviewEl)musicPreviewEl=new Audio();
+  musicPreviewEl.src=musicURL;musicPreviewEl.loop=true;musicPreviewEl.volume=+$("musicVolume").value;
   $("audioInfo").textContent="🎵 "+f.name;$("audioControls").classList.remove("hidden");
-  renderTimeline();showToast("Music loaded",f.name);
+  renderTimeline();showToast("Music loaded","Press ▶ to hear it in sync.");
 });
-$("musicVolume").addEventListener("input",e=>$("musicVolVal").textContent=Math.round(e.target.value*100)+"%");
-$("videoVolume").addEventListener("input",e=>$("vidVolVal").textContent=Math.round(e.target.value*100)+"%");
-$("removeMusicBtn").onclick=()=>{if(musicURL)URL.revokeObjectURL(musicURL);musicURL=null;$("musicFile").value="";$("audioInfo").textContent="No music selected.";$("audioControls").classList.add("hidden");renderTimeline()};
+$("musicVolume").addEventListener("input",e=>{$("musicVolVal").textContent=Math.round(e.target.value*100)+"%"});
+$("videoVolume").addEventListener("input",e=>{$("vidVolVal").textContent=Math.round(e.target.value*100)+"%";preview.volume=+e.target.value});
+$("musicStart").addEventListener("change",()=>renderTimeline());
+$("removeMusicBtn").onclick=()=>{
+  if(musicURL)URL.revokeObjectURL(musicURL);musicURL=null;musicDuration=0;
+  if(musicPreviewEl){musicPreviewEl.pause();musicPreviewEl.removeAttribute("src")}
+  $("musicFile").value="";$("audioInfo").textContent="No music selected.";$("audioControls").classList.add("hidden");renderTimeline();
+};
 
 /* ---------- TEMPLATES ---------- */
 const TEMPLATES=[
@@ -842,7 +889,7 @@ $("applyBrandTextBtn").onclick=()=>{
   updatePreviewText();showToast("Brand applied","To selected text.");
 };
 
-/* ---------- EXPORT ---------- */
+/* ---------- EXPORT (SYNC-LOCKED MUSIC) ---------- */
 $("goExport").onclick=()=>$("exportPanelFloat").classList.toggle("hidden");
 $("aspectRatio").addEventListener("change",updateFrame);
 $("startExportBtn").onclick=async()=>{
@@ -863,7 +910,7 @@ $("startExportBtn").onclick=async()=>{
         const src=audioCtx.createMediaElementSource(el),g=audioCtx.createGain();g.gain.value=+$("videoVolume").value;src.connect(g);g.connect(dest);audioEls.push({el,gain:g});}
       if(musicURL){musicEl=new Audio(musicURL);musicEl.loop=true;
         await new Promise(res=>{musicEl.onloadedmetadata=res;musicEl.onerror=res;musicEl.load()});
-        const ms=audioCtx.createMediaElementSource(musicEl),mg=audioCtx.createGain();ms.connect(mg);mg.connect(dest);musicEl._gain=mg;}
+        const ms=audioCtx.createMediaElementSource(musicEl),mg=audioCtx.createGain();mg.gain.value=0;ms.connect(mg);mg.connect(dest);musicEl._gain=mg;}
       dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));}
   }catch(err){console.warn("audio",err)}
   const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
@@ -872,9 +919,9 @@ $("startExportBtn").onclick=async()=>{
   const chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
   const done=new Promise(r=>rec.onstop=r);
   const total=totalDuration();let elapsed=0;
+  const mStart=musicStartVal();
   try{
     if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();
-    if(musicEl){musicEl.currentTime=0;await musicEl.play().catch(()=>{})}
     rec.start(250);
     for(let i=0;i<clips.length;i++){
       const c=clips[i];
@@ -892,8 +939,18 @@ $("startExportBtn").onclick=async()=>{
         const local=(v.currentTime-c.start)/c.speed,progress=transDur?Math.min(1,local/transDur):1;
         let alpha=1;if(transDur&&local<transDur&&trans==="fade")alpha=progress;
         if(audioEls[i])audioEls[i].gain.gain.value=+$("videoVolume").value;
-        if(musicEl&&musicEl._gain){const mi=+$("musicFadeIn").value,mo=+$("musicFadeOut").value,mv=+$("musicVolume").value;
-          let ma=mi>0?Math.min(1,elapsed/mi):1;if(mo>0)ma=Math.min(ma,Math.max(0,(total-elapsed)/mo));musicEl._gain.gain.value=mv*ma;}
+        /* ---- MUSIC SYNC LOCK ---- */
+        if(musicEl&&musicEl._gain){
+          const mt=elapsed-mStart;
+          if(mt<0){if(!musicEl.paused)musicEl.pause();musicEl._gain.gain.value=0;}
+          else{
+            if(musicEl.paused)await musicEl.play().catch(()=>{});
+            let target=mt;const d=musicEl.duration;
+            if(d&&isFinite(d)&&mt>d)target=mt%d;
+            if(Math.abs(musicEl.currentTime-target)>0.25)musicEl.currentTime=target;
+            musicEl._gain.gain.value=musicFade(mt,elapsed,total);
+          }
+        }
         const es=effectState(c,local);
         ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
         ctx.save();
@@ -916,7 +973,7 @@ $("startExportBtn").onclick=async()=>{
     $("downloadLink").href=url;$("downloadLink").style.display="block";
     $("downloadLink").textContent="⬇ Download ("+(chunks.reduce((s,c)=>s+c.size,0)/1048576).toFixed(1)+" MB)";
     $("startExportBtn").textContent="✅ Done – Export Again";
-    showToast("Export complete!","Tap Download.");
+    showToast("Export complete!","Music + video in sync.");
   }catch(err){if(rec.state!=="inactive")rec.stop();await done;$("startExportBtn").textContent="🚀 Start Export";showToast("Export failed",err.message)}
   finally{cleanup()}
   function cleanup(){exporting=false;$("startExportBtn").disabled=false;
