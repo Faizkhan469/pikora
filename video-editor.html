@@ -146,6 +146,11 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .filter-btn{position:relative;aspect-ratio:1;border-radius:6px;background:#222;border:2px solid transparent;cursor:pointer;overflow:hidden;background-size:cover;background-position:center}
 .filter-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
 .filter-btn span{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px;text-align:center;font-weight:600}
+.giphy-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.giphy-item{aspect-ratio:1;background:var(--bg);border:2px solid var(--border);border-radius:6px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.giphy-item:hover{border-color:var(--accent)}
+.giphy-item img{width:100%;height:100%;object-fit:contain}
+.giphy-attr{font-size:9px;color:var(--muted);text-align:center;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)}
 </style>
 </head>
 <body>
@@ -220,6 +225,18 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
           <button class="sec dan" id="deleteStickerBtn" type="button">Delete Element</button>
         </div>
         <div class="note">Tap a sticker or shape to add it. Drag it on the video to move.</div>
+
+        <!-- GIPHY STICKERS -->
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+          <label style="margin-top:0">🌐 Giphy Stickers</label>
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <input type="text" id="giphySearch" placeholder="Search stickers..." style="margin-bottom:0">
+            <button class="act" id="giphySearchBtn" type="button" style="width:auto;margin-top:0;padding:0 12px">🔍</button>
+          </div>
+          <button class="sec" id="giphyTrendingBtn" type="button" style="margin-top:6px">🔥 Trending Stickers</button>
+          <div class="giphy-grid" id="giphyGrid"></div>
+          <div class="giphy-attr">Powered by GIPHY</div>
+        </div>
       </div>
     </div>
     <!-- AUDIO -->
@@ -355,6 +372,8 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
     <div class="panel-view hidden" id="panel-effects">
       <div class="panel-header">Effects</div>
       <div class="panel-content">
+        <label>🔎 Search effects</label>
+        <input type="text" id="effectSearch" placeholder="Type: shake, zoom, glitch, rgb, vhs..." style="margin-bottom:6px">
         <label>Effect for selected clip</label>
         <select id="effectSelect">
           <option value="none">None</option>
@@ -372,18 +391,18 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
         </select>
         <label style="margin-top:14px">Quick pick</label>
         <div class="card-grid" id="effectGrid">
-          <div class="tool-card" data-eff="shake" onclick="setEffect('shake')"><b>📳</b>Shake</div>
-          <div class="tool-card" data-eff="shakeHard" onclick="setEffect('shakeHard')"><b>💥</b>Intense</div>
-          <div class="tool-card" data-eff="zoompulse" onclick="setEffect('zoompulse')"><b>🔍</b>Zoom Pulse</div>
-          <div class="tool-card" data-eff="smoothzoom" onclick="setEffect('smoothzoom')"><b>🎥</b>Smooth Zoom</div>
-          <div class="tool-card" data-eff="beatpulse" onclick="setEffect('beatpulse')"><b>🥁</b>Beat Pulse</div>
-          <div class="tool-card" data-eff="flash" onclick="setEffect('flash')"><b>⚡</b>Flash</div>
-          <div class="tool-card" data-eff="glitch" onclick="setEffect('glitch')"><b>👾</b>Glitch</div>
-          <div class="tool-card" data-eff="rgbsplit" onclick="setEffect('rgbsplit')"><b>🌈</b>RGB Split</div>
-          <div class="tool-card" data-eff="motionblur" onclick="setEffect('motionblur')"><b>💨</b>Motion Blur</div>
-          <div class="tool-card" data-eff="vhs" onclick="setEffect('vhs')"><b>📼</b>VHS</div>
-          <div class="tool-card" data-eff="speedramp" onclick="setEffect('speedramp')"><b>⏩</b>Speed Ramp</div>
-          <div class="tool-card" data-eff="none" onclick="setEffect('none')"><b>🚫</b>None</div>
+          <div class="tool-card" data-eff="shake" data-name="Camera Shake" onclick="setEffect('shake')"><b>📳</b>Shake</div>
+          <div class="tool-card" data-eff="shakeHard" data-name="Intense Shake" onclick="setEffect('shakeHard')"><b>💥</b>Intense</div>
+          <div class="tool-card" data-eff="zoompulse" data-name="Zoom Pulse" onclick="setEffect('zoompulse')"><b>🔍</b>Zoom Pulse</div>
+          <div class="tool-card" data-eff="smoothzoom" data-name="Smooth Zoom" onclick="setEffect('smoothzoom')"><b>🎥</b>Smooth Zoom</div>
+          <div class="tool-card" data-eff="beatpulse" data-name="Beat Pulse" onclick="setEffect('beatpulse')"><b>🥁</b>Beat Pulse</div>
+          <div class="tool-card" data-eff="flash" data-name="Flash Strobe" onclick="setEffect('flash')"><b>⚡</b>Flash</div>
+          <div class="tool-card" data-eff="glitch" data-name="Glitch" onclick="setEffect('glitch')"><b>👾</b>Glitch</div>
+          <div class="tool-card" data-eff="rgbsplit" data-name="RGB Split" onclick="setEffect('rgbsplit')"><b>🌈</b>RGB Split</div>
+          <div class="tool-card" data-eff="motionblur" data-name="Motion Blur" onclick="setEffect('motionblur')"><b>💨</b>Motion Blur</div>
+          <div class="tool-card" data-eff="vhs" data-name="VHS Retro" onclick="setEffect('vhs')"><b>📼</b>VHS</div>
+          <div class="tool-card" data-eff="speedramp" data-name="Speed Ramp" onclick="setEffect('speedramp')"><b>⏩</b>Speed Ramp</div>
+          <div class="tool-card" data-eff="none" data-name="None" onclick="setEffect('none')"><b>🚫</b>None</div>
         </div>
         <div class="note">Effects apply to the selected clip and appear in preview AND export.</div>
       </div>
@@ -514,6 +533,9 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 
 <script>
 "use strict";
+/* ⚠️ PASTE YOUR GIPHY API KEY HERE ⚠️ */
+const GIPHY_KEY = "PASTE_YOUR_KEY_HERE";
+
 const $=id=>document.getElementById(id);
 const preview=$("preview"),previewWrap=$("previewWrap"),previewText=$("previewText"),captionLayer=$("captionLayer"),flashOverlay=$("flashOverlay"),seekBar=$("seekBar"),sidebarPanel=$("sidebarPanel");
 const fmt=n=>Number(n||0).toFixed(1);
@@ -530,7 +552,6 @@ let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
 let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),defaultFont="Arial",playingAll=false;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
-let effPrevCanvas=null,effPrevCtx=null;
 
 /* ---------- HISTORY ---------- */
 let history=[],redoStack=[];
@@ -727,7 +748,7 @@ function applyPreviewFilters(){
   preview.style.filter=`${f}brightness(${c.brightness}%) contrast(${c.contrast}%) saturate(${c.saturation}%)`;
 }
 
-/* ---------- MUSIC SYNC ENGINE ---------- */
+/* ---------- MUSIC SYNC ---------- */
 function musicFade(mt,gt,total){
   const mi=+$("musicFadeIn").value,mo=+$("musicFadeOut").value,mv=+$("musicVolume").value;
   let ma=1;
@@ -751,8 +772,7 @@ function syncMusicPreview(){
 $("previewMusicBtn").onclick=()=>{
   if(!musicURL){showToast("No music","Upload music first.");return}
   if(selectedClip<0){showToast("No clip","Upload a video first.");return}
-  preview.muted=true;
-  preview.play();
+  preview.muted=true;preview.play();
   showToast("Music test","Playing music in sync from playhead.");
 };
 
@@ -760,9 +780,7 @@ $("previewMusicBtn").onclick=()=>{
 $("playBtn").onclick=()=>{
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
-  playingAll=true;
-  preview.muted=false;preview.volume=+$("videoVolume").value;
-  preview.play();
+  playingAll=true;preview.muted=false;preview.volume=+$("videoVolume").value;preview.play();
 };
 $("pauseBtn").onclick=()=>{playingAll=false;preview.pause()};
 $("stopBtn").onclick=()=>{playingAll=false;preview.pause();seekGlobal(0)};
@@ -792,7 +810,7 @@ function globalTime(){
   return clips.slice(0,selectedClip).reduce((s,x)=>s+durationOf(x),0)+Math.max(0,(preview.currentTime-c.start)/c.speed);
 }
 
-/* ---------- NEW EFFECTS ENGINE ---------- */
+/* ---------- EFFECTS ---------- */
 function effectState(c,t,clipDuration){
   const e=c.effect||"none";
   let dx=0,dy=0,scale=1,flash=0,glitch=0,rgb=0,blur=0,vhs=0,rot=0;
@@ -861,13 +879,12 @@ $("applyTrimBtn").onclick=()=>{
   snapshot();
   c.start=a;c.end=b;c.speed=parseFloat($("speed").value)||1;
   $("trimStart").value=fmt(a);$("trimEnd").value=fmt(b);
-  preview.playbackRate=c.speed;
-  preview.pause();preview.currentTime=a;
+  preview.playbackRate=c.speed;preview.pause();preview.currentTime=a;
   renderAll();
   showToast("Trim applied ✅",`Clip now plays ${fmt(a)}s → ${fmt(b)}s (${fmt(durationOf(c))}s long).`);
 };
 
-/* ---------- SPLIT / DELETE / DUPLICATE / MOVE ---------- */
+/* ---------- SPLIT / DELETE / DUP / MOVE ---------- */
 function doSplit(){
   const c=clips[selectedClip];if(!c){showToast("No clip","Select a clip first.");return}
   const cut=preview.currentTime;
@@ -879,12 +896,10 @@ function doSplit(){
   const second={...c,name:baseName+" (part 2)",start:cut,end:c.end,transition:"cut",transitionDuration:1,thumb:c.thumb};
   c.end=cut;c.name=baseName+" (part 1)";
   clips.splice(selectedClip+1,0,second);
-  preview.pause();
-  loadSelected();renderAll();
+  preview.pause();loadSelected();renderAll();
   showToast("Split done ✂","Timeline now has 2 clips.");
 }
 $("splitBtn").onclick=doSplit;$("splitBtn2").onclick=doSplit;
-
 $("deleteClipBtn").onclick=()=>{
   if(selectedClip<0)return;snapshot();playingAll=false;
   clips.splice(selectedClip,1);
@@ -926,12 +941,23 @@ function paintEffectActive(){
     el.classList.toggle("active",el.dataset.eff===eff);
   });
 }
+/* EFFECT SEARCH BAR */
+$("effectSearch").addEventListener("input",e=>{
+  const q=e.target.value.trim().toLowerCase();
+  document.querySelectorAll("#effectGrid .tool-card").forEach(el=>{
+    const name=(el.dataset.name||"").toLowerCase();
+    const eff=(el.dataset.eff||"").toLowerCase();
+    const match=!q||name.includes(q)||eff.includes(q);
+    el.style.display=match?"":"none";
+  });
+});
+
 function setTransition(v){const c=clips[selectedClip];if(!c){showToast("Select clip","Upload & pick a clip first.");return}
   snapshot();c.transition=v;c.transitionDuration=parseFloat($("transDur").value)||1;showToast("Transition",v+" applied to clip.")}
 window.setTransition=setTransition;
 $("transDur").addEventListener("change",e=>{const c=clips[selectedClip];if(c)c.transitionDuration=parseFloat(e.target.value)||1});
 
-/* Filter grid with live thumbnails from the selected clip */
+/* Filter grid */
 const FILTER_PRESETS=[
   {name:"Original",v:"none"},
   {name:"B&W",v:"grayscale(100%)"},
@@ -958,7 +984,7 @@ function renderFilterGrid(){
   grid.innerHTML=FILTER_PRESETS.map((p,i)=>{
     const bg=thumb?`background-image:url('${thumb}');`:"background:linear-gradient(135deg,#334155,#1e293b);";
     const active=p.v===activeVal?" active":"";
-    return `<div class="filter-btn${active}" data-fv="${esc(p.v)}" style="${bg}filter:${p.v==='none'?'none':p.v};" onclick="applyFilterPreset('${esc(p.v).replace(/'/g,"\\'")}')"><span>${p.name}</span></div>`;
+    return `<div class="filter-btn${active}" style="${bg}filter:${p.v==='none'?'none':p.v};" onclick="applyFilterPreset('${esc(p.v).replace(/'/g,"\\'")}')"><span>${p.name}</span></div>`;
   }).join("");
 }
 window.applyFilterPreset=(v)=>{
@@ -966,6 +992,63 @@ window.applyFilterPreset=(v)=>{
   snapshot();c.filter=v;$("filterSelect").value=v;applyPreviewFilters();renderFilterGrid();
   showToast("Filter","Applied.");
 };
+
+/* ---------- GIPHY STICKERS ---------- */
+let giphyResults=[];
+async function giphyFetch(url){
+  if(!GIPHY_KEY||GIPHY_KEY==="PASTE_YOUR_KEY_HERE"){
+    showToast("Giphy key missing","Paste your free API key into the code.");
+    return null;
+  }
+  const sep=url.includes("?")?"&":"?";
+  const full=url+sep+"api_key="+encodeURIComponent(GIPHY_KEY);
+  const r=await fetch(full);
+  if(!r.ok)throw new Error("Giphy error "+r.status);
+  return await r.json();
+}
+async function giphySearch(q){
+  const box=$("giphyGrid");box.innerHTML='<div class="note">Searching...</div>';
+  try{
+    const data=await giphyFetch("https://api.giphy.com/v1/stickers/search?q="+encodeURIComponent(q)+"&limit=20&rating=g");
+    if(!data)return;
+    giphyResults=data.data||[];
+    renderGiphyGrid();
+  }catch(err){box.innerHTML='<div class="note">Could not load: '+esc(err.message)+'</div>'}
+}
+async function giphyTrending(){
+  const box=$("giphyGrid");box.innerHTML='<div class="note">Loading trending...</div>';
+  try{
+    const data=await giphyFetch("https://api.giphy.com/v1/stickers/trending?limit=20&rating=g");
+    if(!data)return;
+    giphyResults=data.data||[];
+    renderGiphyGrid();
+  }catch(err){box.innerHTML='<div class="note">Could not load: '+esc(err.message)+'</div>'}
+}
+function renderGiphyGrid(){
+  const box=$("giphyGrid");
+  if(!giphyResults.length){box.innerHTML='<div class="note">Nothing found.</div>';return}
+  box.innerHTML=giphyResults.map((g,i)=>{
+    const url=g.images&&g.images.fixed_width_small?g.images.fixed_width_small.url:(g.images&&g.images.original?g.images.original.url:"");
+    return `<div class="giphy-item" onclick="addGiphySticker(${i})"><img src="${url}" loading="lazy" alt="sticker"></div>`;
+  }).join("");
+}
+window.addGiphySticker=i=>{
+  const g=giphyResults[i];if(!g)return;
+  if(selectedClip<0){showToast("Upload first","Add a video before stickers.");return}
+  const url=g.images&&g.images.original?g.images.original.url:"";
+  if(!url){showToast("No image","This sticker has no usable image.");return}
+  snapshot();
+  stickers.push({type:"image",src:url,size:140,x:50,y:50});
+  selectedSticker=stickers.length-1;updateStickerEdit();updatePreviewText();
+  showToast("Sticker added","Drag it on the video.");
+};
+$("giphySearchBtn").onclick=()=>{
+  const q=$("giphySearch").value.trim();
+  if(!q){showToast("Type a word","Example: cat, love, party.");return}
+  giphySearch(q);
+};
+$("giphyTrendingBtn").onclick=giphyTrending;
+$("giphySearch").addEventListener("keydown",e=>{if(e.key==="Enter")$("giphySearchBtn").click()});
 
 /* ---------- TEXT ---------- */
 $("addTextBtn").onclick=()=>{
@@ -1321,7 +1404,7 @@ document.addEventListener("drop",e=>{
   const dt=new DataTransfer();vids.forEach(f=>dt.items.add(f));$("videoFiles").files=dt.files;$("videoFiles").dispatchEvent(new Event("change"));
 });
 
-/* ---------- KEYBOARD SHORTCUTS ---------- */
+/* ---------- KEYBOARD ---------- */
 document.addEventListener("keydown",e=>{
   if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
   const k=e.key.toLowerCase();
@@ -1338,7 +1421,7 @@ document.addEventListener("keydown",e=>{
   else if(k==="arrowright"){preview.currentTime=preview.currentTime+(e.shiftKey?1:0.1)}
 });
 
-/* ---------- EXPORT (all new effects supported) ---------- */
+/* ---------- EXPORT ---------- */
 $("goExport").onclick=()=>$("exportPanelFloat").classList.toggle("hidden");
 $("aspectRatio").addEventListener("change",updateFrame);
 $("startExportBtn").onclick=async()=>{
@@ -1403,7 +1486,6 @@ $("startExportBtn").onclick=async()=>{
           }
         }
         const es=effectState(c,local,durationOf(c));
-        /* Draw the current frame with all new effects into workCtx first */
         workCtx.fillStyle="#000";workCtx.fillRect(0,0,w,h);
         workCtx.save();
         workCtx.translate(w/2+es.dx*(w/720),h/2+es.dy*(h/720));
@@ -1413,7 +1495,6 @@ $("startExportBtn").onclick=async()=>{
         if(es.blur>0)filterStr+=" blur("+es.blur+"px)";
         drawVideo(workCtx,v,w,h,$("fitMode").value,filterStr,alpha,trans,progress);
         workCtx.restore();
-        /* RGB split: draw 3 tinted copies offset */
         if(es.rgb>0){
           const off=es.rgb*(w/720)*3;
           workCtx.save();workCtx.globalCompositeOperation="screen";workCtx.globalAlpha=.5;
@@ -1421,9 +1502,7 @@ $("startExportBtn").onclick=async()=>{
           workCtx.drawImage(workCanvas,-off,0);workCtx.drawImage(workCanvas,off,0);
           workCtx.restore();
         }
-        /* Copy to main canvas */
         ctx.drawImage(workCanvas,0,0);
-        /* VHS scanlines */
         if(es.vhs){
           ctx.save();ctx.globalAlpha=.18;ctx.fillStyle="#000";
           for(let y=0;y<h;y+=3)ctx.fillRect(0,y,w,1);
