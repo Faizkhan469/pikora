@@ -533,9 +533,26 @@ const musicStartVal=()=>parseFloat($("musicStart").value)||0;
 let clips=[],selectedClip=-1,texts=[],selectedText=-1,captions=[],selectedCaption=-1,stickers=[],selectedSticker=-1;
 let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
 let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),defaultFont="Arial",playingAll=false;
+let audioUnlocked=false;
+let forceMusicPlay=false;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
-let audioUnlocked=false;
+
+/* ---------- AUDIO UNLOCK (critical fix) ---------- */
+function unlockAudio(){
+  if(audioUnlocked)return;
+  audioUnlocked=true;
+  try{
+    if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.volume=0.35;}
+    const silent=new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+    silent.volume=0;
+    const p=silent.play();
+    if(p&&p.then)p.then(()=>{silent.pause()}).catch(()=>{});
+  }catch(e){}
+}
+document.addEventListener("click",unlockAudio,{once:true});
+document.addEventListener("touchstart",unlockAudio,{once:true});
+document.addEventListener("keydown",unlockAudio,{once:true});
 
 /* ---------- HISTORY ---------- */
 let history=[],redoStack=[];
@@ -567,21 +584,6 @@ document.querySelectorAll(".icon-btn").forEach(btn=>{
   };
 });
 $("panelClose").onclick=()=>sidebarPanel.classList.remove("open");
-
-/* ---------- AUDIO UNLOCK (browsers require a user gesture) ---------- */
-function unlockAudio(){
-  if(audioUnlocked)return;
-  audioUnlocked=true;
-  try{
-    if(!musicPreviewEl)musicPreviewEl=new Audio();
-    musicPreviewEl.muted=false;
-    musicPreviewEl.volume=0.35;
-    /* play a silent 0.1s to satisfy autoplay policy */
-    musicPreviewEl.play().then(()=>{musicPreviewEl.pause();musicPreviewEl.currentTime=0}).catch(()=>{});
-  }catch(e){}
-}
-document.addEventListener("click",unlockAudio,{once:true});
-document.addEventListener("touchstart",unlockAudio,{once:true});
 
 /* ---------- MEDIA UPLOAD ---------- */
 $("videoFiles").addEventListener("change",async e=>{
@@ -761,8 +763,11 @@ function syncMusicPreview(){
   if(!c){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
   const gt=globalTime(),mt=gt-musicStartVal(),total=totalDuration();
   if(mt<0){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
-  /* Music plays whenever there is a clip, regardless of preview paused state,
-     so "Test music" and normal playback both work. */
+  /* FIX: only pause music when user paused AND force flag is off */
+  if(preview.paused&&!forceMusicPlay){
+    if(!musicPreviewEl.paused)musicPreviewEl.pause();
+    return;
+  }
   musicPreviewEl.volume=musicFade(mt,gt,total);
   if(musicPreviewEl.paused){
     musicPreviewEl.play().catch(()=>{});
@@ -772,37 +777,34 @@ function syncMusicPreview(){
   if(d&&isFinite(d)&&mt>d)target=mt%d;
   if(Math.abs(musicPreviewEl.currentTime-target)>0.4)musicPreviewEl.currentTime=target;
 }
-$("previewMusicBtn").onclick=()=>{
+$("previewMusicBtn").onclick=async()=>{
   if(!musicURL){showToast("No music","Upload music first.");return}
   if(selectedClip<0){showToast("No clip","Upload a video first.");return}
-  /* Unmute video and start playing so music sync engine runs */
-  preview.muted=false;
-  preview.volume=+$("videoVolume").value;
-  if(preview.paused){
-    const c=clips[selectedClip];
-    if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
-    playingAll=true;
-    preview.play().catch(()=>{});
+  unlockAudio();
+  forceMusicPlay=true;
+  const mt=Math.max(0,globalTime()-musicStartVal());
+  if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.loop=true;}
+  musicPreviewEl.volume=+$("musicVolume").value;
+  try{
+    if(musicPreviewEl.duration&&isFinite(musicPreviewEl.duration))musicPreviewEl.currentTime=mt%musicPreviewEl.duration;
+    else musicPreviewEl.currentTime=0;
+    await musicPreviewEl.play();
+    $("audioStatus").classList.add("show");
+    setTimeout(()=>$("audioStatus").classList.remove("show"),2000);
+    showToast("Music playing","You should hear it now.");
+  }catch(err){
+    showToast("Browser blocked audio","Click once on the page, then try again.");
   }
-  /* Force music to start from current playhead */
-  if(musicPreviewEl){
-    const mt=Math.max(0,globalTime()-musicStartVal());
-    musicPreviewEl.currentTime=mt%(musicPreviewEl.duration||1);
-    musicPreviewEl.volume=+$("musicVolume").value;
-    musicPreviewEl.play().catch(()=>{});
-  }
-  $("audioStatus").classList.add("show");
-  setTimeout(()=>$("audioStatus").classList.remove("show"),2000);
-  showToast("Music test","Playing music in sync from playhead.");
+  setTimeout(()=>{forceMusicPlay=false;},300);
 };
 
 /* ---------- PLAYBACK ---------- */
 $("playBtn").onclick=()=>{
+  unlockAudio();
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
   playingAll=true;preview.muted=false;preview.volume=+$("videoVolume").value;
   preview.play();
-  /* force music start */
   if(musicURL&&musicPreviewEl){
     const mt=Math.max(0,globalTime()-musicStartVal());
     if(musicPreviewEl.paused){
@@ -1205,10 +1207,11 @@ function setMusicSource(url,name,isBlob){
   if(musicURL&&musicBlob)URL.revokeObjectURL(musicURL);
   musicURL=url;musicBlob=!!isBlob;musicDuration=0;
   const v=document.createElement("video");v.src=musicURL;v.onloadedmetadata=()=>{musicDuration=v.duration;v.removeAttribute("src");renderTimeline()};
-  if(!musicPreviewEl)musicPreviewEl=new Audio();
-  musicPreviewEl.src=musicURL;musicPreviewEl.loop=true;musicPreviewEl.volume=+$("musicVolume").value;
+  if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.loop=true;}
+  musicPreviewEl.src=musicURL;musicPreviewEl.volume=+$("musicVolume").value;
   $("audioInfo").textContent="🎵 "+name;$("audioControls").classList.remove("hidden");
   renderTimeline();
+  unlockAudio();
 }
 $("musicFile").addEventListener("change",e=>{
   const f=e.target.files[0];if(!f)return;
@@ -1216,9 +1219,10 @@ $("musicFile").addEventListener("change",e=>{
   showToast("Music loaded","Press ▶ to hear it in sync.");
 });
 
-/* ---------- MUSIC LIBRARY (FIXED resolveUrl) ---------- */
+/* ---------- MUSIC LIBRARY ---------- */
 let libResults=[],libAudio=new Audio();
-libAudio.volume=0.8;
+libAudio.volume=0.85;
+libAudio.crossOrigin="anonymous";
 async function getArchive(q){
   const u="https://archive.org/advancedsearch.php?q="+encodeURIComponent("("+q+") AND mediatype:audio")+"&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=creator&fl%5B%5D=licenseurl&rows=15&sort%5B%5D=downloads+desc&output=json";
   const r=await fetch(u);if(!r.ok)throw new Error("error "+r.status);
@@ -1239,7 +1243,7 @@ async function searchMusic(){
   const box=$("musicResults");box.innerHTML='<div class="note">Searching...</div>';stopLib();
   const res=await Promise.allSettled([getArchive(q),getOpenverse(q)]);
   const ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value);
-  if(!ok.length){box.innerHTML='<div class="note">Could not load music ('+esc(res[0].reason&&res[0].reason.message||"error")+'). Check your internet and try again in a minute.</div>';return}
+  if(!ok.length){box.innerHTML='<div class="note">Could not load music.</div>';return}
   libResults=[];const mx=Math.max(...ok.map(a=>a.length));
   for(let i=0;i<mx;i++)ok.forEach(a=>{if(a[i])libResults.push(a[i])});
   renderLibResults();
@@ -1249,8 +1253,8 @@ async function searchTrending(){
   try{
     const arr=await getArchiveTrending();
     libResults=arr;renderLibResults();
-    if(!arr.length)box.innerHTML='<div class="note">No trending results right now. Try a search word.</div>';
-  }catch(err){box.innerHTML='<div class="note">Could not load trending ('+esc(err.message)+'). Check your internet.</div>'}
+    if(!arr.length)box.innerHTML='<div class="note">No trending results right now.</div>';
+  }catch(err){box.innerHTML='<div class="note">Could not load trending.</div>'}
 }
 function renderLibResults(){
   const box=$("musicResults");
@@ -1264,54 +1268,55 @@ let libNow=-1;
 function paintLib(){$("stopLibBtn").classList.toggle("hidden",libAudio.paused);document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹ Stop":"▶ Preview")}
 function stopLib(){libAudio.pause();libNow=-1;paintLib()}
 libAudio.addEventListener("ended",stopLib);libAudio.addEventListener("pause",paintLib);
-/* FIXED: accept mp3, ogg, m4a, flac, wav */
 async function resolveUrl(t){
   if(t.url)return t.url;
   try{
     const m=await (await fetch("https://archive.org/metadata/"+encodeURIComponent(t.id))).json();
     const files=m.files||[];
-    const pick=files.find(x=>/\.mp3$/i.test(x.name))
-            || files.find(x=>/\.ogg$/i.test(x.name))
-            || files.find(x=>/\.m4a$/i.test(x.name))
-            || files.find(x=>/\.flac$/i.test(x.name))
-            || files.find(x=>/\.wav$/i.test(x.name))
-            || files.find(x=>x.format&&/audio/i.test(x.format));
-    if(pick){
-      t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+pick.name.split("/").map(encodeURIComponent).join("/");
-      return t.url;
-    }
+    const f=files.find(x=>/\.mp3$/i.test(x.name))
+          ||files.find(x=>/\.ogg$/i.test(x.name))
+          ||files.find(x=>/\.m4a$/i.test(x.name))
+          ||files.find(x=>/\.flac$/i.test(x.name))
+          ||files.find(x=>/\.wav$/i.test(x.name))
+          ||files.find(x=>x.format&&/audio/i.test(x.format));
+    if(f){t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+f.name.split("/").map(encodeURIComponent).join("/");return t.url}
   }catch(e){}
-  /* Fallback: try the standard download pattern */
-  t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+encodeURIComponent(t.id)+".mp3";
-  return t.url;
+  throw new Error("no audio file");
 }
 window.libPlay=async i=>{
   const t=libResults[i];if(!t)return;
   if(libNow===i&&!libAudio.paused){stopLib();return}
-  libAudio.pause();libNow=i;preview.pause();
+  unlockAudio();
+  libAudio.pause();libNow=i;
   try{
-    libAudio.src=await resolveUrl(t);
+    const url=await resolveUrl(t);
+    libAudio.src=url;
     libAudio.load();
+    await new Promise((res,rej)=>{
+      const to=setTimeout(()=>rej(new Error("timeout")),8000);
+      libAudio.addEventListener("canplay",()=>{clearTimeout(to);res();},{once:true});
+      libAudio.addEventListener("error",()=>{clearTimeout(to);rej(new Error("load error"));},{once:true});
+    });
     await libAudio.play();
     paintLib();
-    showToast("Playing","Track preview started.");
+    showToast("Playing","Preview started.");
   }catch(e){
     libNow=-1;paintLib();
-    showToast("Cannot preview","Try another track — this one may be missing audio.");
+    showToast("Cannot preview","Try another track — this one may have no audio file.");
   }
 };
 window.libAdd=async i=>{
   const t=libResults[i];if(!t)return;stopLib();
   showToast("Adding music","Downloading the track...");
   const credit=(t.title||"Untitled")+" – "+(t.creator||"Unknown")+" ("+t.license+")";
-  let url;try{url=await resolveUrl(t)}catch(e){showToast("Cannot add","This item has no playable file. Try another.");return}
+  let url;try{url=await resolveUrl(t)}catch(e){showToast("Cannot add","No playable file. Try another.");return}
   try{
     const r=await fetch(url);if(!r.ok)throw new Error("blocked");
     setMusicSource(URL.createObjectURL(await r.blob()),credit,true);
-    showToast("Music added ✅","Press ▶ to hear it. "+credit);
+    showToast("Music added ✅","Press ▶ to hear it.");
   }catch(err){
     setMusicSource(url,credit,false);
-    showToast("Music added","Plays in preview, but this site blocks copying, so export may have no music. Try another track.");
+    showToast("Music added","Preview only — this site blocks downloading.");
   }
 };
 $("musicTags").addEventListener("wheel",e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.preventDefault();$("musicTags").scrollLeft+=e.deltaY}},{passive:false});
