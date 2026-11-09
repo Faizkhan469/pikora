@@ -146,11 +146,8 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .filter-btn{position:relative;aspect-ratio:1;border-radius:6px;background:#222;border:2px solid transparent;cursor:pointer;overflow:hidden;background-size:cover;background-position:center}
 .filter-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
 .filter-btn span{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);color:#fff;font-size:9px;padding:2px;text-align:center;font-weight:600}
-.giphy-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
-.giphy-item{aspect-ratio:1;background:var(--bg);border:2px solid var(--border);border-radius:6px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.giphy-item:hover{border-color:var(--accent)}
-.giphy-item img{width:100%;height:100%;object-fit:contain}
-.giphy-attr{font-size:9px;color:var(--muted);text-align:center;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)}
+.audio-status{position:fixed;bottom:12px;right:12px;background:var(--accent);color:var(--onacc);padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;z-index:99;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.audio-status.show{display:block}
 </style>
 </head>
 <body>
@@ -225,18 +222,6 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
           <button class="sec dan" id="deleteStickerBtn" type="button">Delete Element</button>
         </div>
         <div class="note">Tap a sticker or shape to add it. Drag it on the video to move.</div>
-
-        <!-- GIPHY STICKERS -->
-        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-          <label style="margin-top:0">🌐 Giphy Stickers</label>
-          <div style="display:flex;gap:6px;align-items:stretch">
-            <input type="text" id="giphySearch" placeholder="Search stickers..." style="margin-bottom:0">
-            <button class="act" id="giphySearchBtn" type="button" style="width:auto;margin-top:0;padding:0 12px">🔍</button>
-          </div>
-          <button class="sec" id="giphyTrendingBtn" type="button" style="margin-top:6px">🔥 Trending Stickers</button>
-          <div class="giphy-grid" id="giphyGrid"></div>
-          <div class="giphy-attr">Powered by GIPHY</div>
-        </div>
       </div>
     </div>
     <!-- AUDIO -->
@@ -513,6 +498,7 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
   </main>
 </div>
 
+<div class="audio-status" id="audioStatus">🎵 Music playing</div>
 <div class="toast" id="toast">
   <div style="font-weight:800;margin-bottom:4px" id="toastTitle">Ready</div>
   <div style="font-weight:400;font-size:11px;opacity:.8" id="toastMsg">Msg</div>
@@ -533,9 +519,6 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 
 <script>
 "use strict";
-/* ⚠️ PASTE YOUR GIPHY API KEY HERE ⚠️ */
-const GIPHY_KEY = "PASTE_YOUR_KEY_HERE";
-
 const $=id=>document.getElementById(id);
 const preview=$("preview"),previewWrap=$("previewWrap"),previewText=$("previewText"),captionLayer=$("captionLayer"),flashOverlay=$("flashOverlay"),seekBar=$("seekBar"),sidebarPanel=$("sidebarPanel");
 const fmt=n=>Number(n||0).toFixed(1);
@@ -552,6 +535,7 @@ let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
 let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),defaultFont="Arial",playingAll=false;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
+let audioUnlocked=false;
 
 /* ---------- HISTORY ---------- */
 let history=[],redoStack=[];
@@ -583,6 +567,21 @@ document.querySelectorAll(".icon-btn").forEach(btn=>{
   };
 });
 $("panelClose").onclick=()=>sidebarPanel.classList.remove("open");
+
+/* ---------- AUDIO UNLOCK (browsers require a user gesture) ---------- */
+function unlockAudio(){
+  if(audioUnlocked)return;
+  audioUnlocked=true;
+  try{
+    if(!musicPreviewEl)musicPreviewEl=new Audio();
+    musicPreviewEl.muted=false;
+    musicPreviewEl.volume=0.35;
+    /* play a silent 0.1s to satisfy autoplay policy */
+    musicPreviewEl.play().then(()=>{musicPreviewEl.pause();musicPreviewEl.currentTime=0}).catch(()=>{});
+  }catch(e){}
+}
+document.addEventListener("click",unlockAudio,{once:true});
+document.addEventListener("touchstart",unlockAudio,{once:true});
 
 /* ---------- MEDIA UPLOAD ---------- */
 $("videoFiles").addEventListener("change",async e=>{
@@ -748,7 +747,7 @@ function applyPreviewFilters(){
   preview.style.filter=`${f}brightness(${c.brightness}%) contrast(${c.contrast}%) saturate(${c.saturation}%)`;
 }
 
-/* ---------- MUSIC SYNC ---------- */
+/* ---------- MUSIC SYNC (FIXED) ---------- */
 function musicFade(mt,gt,total){
   const mi=+$("musicFadeIn").value,mo=+$("musicFadeOut").value,mv=+$("musicVolume").value;
   let ma=1;
@@ -761,9 +760,13 @@ function syncMusicPreview(){
   const c=clips[selectedClip];
   if(!c){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
   const gt=globalTime(),mt=gt-musicStartVal(),total=totalDuration();
-  if(mt<0||preview.paused){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
+  if(mt<0){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
+  /* Music plays whenever there is a clip, regardless of preview paused state,
+     so "Test music" and normal playback both work. */
   musicPreviewEl.volume=musicFade(mt,gt,total);
-  if(musicPreviewEl.paused)musicPreviewEl.play().catch(()=>{});
+  if(musicPreviewEl.paused){
+    musicPreviewEl.play().catch(()=>{});
+  }
   let target=mt;
   const d=musicPreviewEl.duration;
   if(d&&isFinite(d)&&mt>d)target=mt%d;
@@ -772,7 +775,24 @@ function syncMusicPreview(){
 $("previewMusicBtn").onclick=()=>{
   if(!musicURL){showToast("No music","Upload music first.");return}
   if(selectedClip<0){showToast("No clip","Upload a video first.");return}
-  preview.muted=true;preview.play();
+  /* Unmute video and start playing so music sync engine runs */
+  preview.muted=false;
+  preview.volume=+$("videoVolume").value;
+  if(preview.paused){
+    const c=clips[selectedClip];
+    if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
+    playingAll=true;
+    preview.play().catch(()=>{});
+  }
+  /* Force music to start from current playhead */
+  if(musicPreviewEl){
+    const mt=Math.max(0,globalTime()-musicStartVal());
+    musicPreviewEl.currentTime=mt%(musicPreviewEl.duration||1);
+    musicPreviewEl.volume=+$("musicVolume").value;
+    musicPreviewEl.play().catch(()=>{});
+  }
+  $("audioStatus").classList.add("show");
+  setTimeout(()=>$("audioStatus").classList.remove("show"),2000);
   showToast("Music test","Playing music in sync from playhead.");
 };
 
@@ -780,10 +800,20 @@ $("previewMusicBtn").onclick=()=>{
 $("playBtn").onclick=()=>{
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
-  playingAll=true;preview.muted=false;preview.volume=+$("videoVolume").value;preview.play();
+  playingAll=true;preview.muted=false;preview.volume=+$("videoVolume").value;
+  preview.play();
+  /* force music start */
+  if(musicURL&&musicPreviewEl){
+    const mt=Math.max(0,globalTime()-musicStartVal());
+    if(musicPreviewEl.paused){
+      musicPreviewEl.currentTime=mt;
+      musicPreviewEl.volume=+$("musicVolume").value;
+      musicPreviewEl.play().catch(()=>{});
+    }
+  }
 };
 $("pauseBtn").onclick=()=>{playingAll=false;preview.pause()};
-$("stopBtn").onclick=()=>{playingAll=false;preview.pause();seekGlobal(0)};
+$("stopBtn").onclick=()=>{playingAll=false;preview.pause();if(musicPreviewEl)musicPreviewEl.pause();seekGlobal(0)};
 function nextClip(){
   if(!playingAll)return;
   if(selectedClip>=clips.length-1){playingAll=false;return}
@@ -941,7 +971,6 @@ function paintEffectActive(){
     el.classList.toggle("active",el.dataset.eff===eff);
   });
 }
-/* EFFECT SEARCH BAR */
 $("effectSearch").addEventListener("input",e=>{
   const q=e.target.value.trim().toLowerCase();
   document.querySelectorAll("#effectGrid .tool-card").forEach(el=>{
@@ -957,24 +986,14 @@ function setTransition(v){const c=clips[selectedClip];if(!c){showToast("Select c
 window.setTransition=setTransition;
 $("transDur").addEventListener("change",e=>{const c=clips[selectedClip];if(c)c.transitionDuration=parseFloat(e.target.value)||1});
 
-/* Filter grid */
 const FILTER_PRESETS=[
-  {name:"Original",v:"none"},
-  {name:"B&W",v:"grayscale(100%)"},
-  {name:"Sepia",v:"sepia(100%)"},
-  {name:"Vivid",v:"saturate(200%)"},
-  {name:"Sunset",v:"sepia(50%) hue-rotate(-20deg) saturate(180%)"},
-  {name:"Noir",v:"grayscale(100%) contrast(150%) brightness(90%)"},
-  {name:"Cool",v:"hue-rotate(180deg) saturate(120%)"},
-  {name:"Cinema",v:"contrast(110%) saturate(140%) hue-rotate(10deg) brightness(105%)"},
-  {name:"Teal",v:"contrast(120%) saturate(120%) hue-rotate(-15deg) brightness(95%)"},
-  {name:"Gold",v:"sepia(30%) saturate(150%) contrast(110%) brightness(105%)"},
-  {name:"Cyber",v:"hue-rotate(200deg) saturate(150%) brightness(95%) contrast(110%)"},
-  {name:"Neon",v:"hue-rotate(280deg) saturate(180%) contrast(120%) brightness(90%)"},
-  {name:"Faded",v:"grayscale(70%) contrast(130%) brightness(110%) sepia(15%)"},
-  {name:"Glow",v:"brightness(115%) contrast(95%) saturate(130%)"},
-  {name:"Vintage",v:"sepia(60%) contrast(110%) brightness(95%)"},
-  {name:"Pastel",v:"brightness(115%) contrast(90%) saturate(80%) sepia(20%)"}
+  {name:"Original",v:"none"},{name:"B&W",v:"grayscale(100%)"},{name:"Sepia",v:"sepia(100%)"},{name:"Vivid",v:"saturate(200%)"},
+  {name:"Sunset",v:"sepia(50%) hue-rotate(-20deg) saturate(180%)"},{name:"Noir",v:"grayscale(100%) contrast(150%) brightness(90%)"},
+  {name:"Cool",v:"hue-rotate(180deg) saturate(120%)"},{name:"Cinema",v:"contrast(110%) saturate(140%) hue-rotate(10deg) brightness(105%)"},
+  {name:"Teal",v:"contrast(120%) saturate(120%) hue-rotate(-15deg) brightness(95%)"},{name:"Gold",v:"sepia(30%) saturate(150%) contrast(110%) brightness(105%)"},
+  {name:"Cyber",v:"hue-rotate(200deg) saturate(150%) brightness(95%) contrast(110%)"},{name:"Neon",v:"hue-rotate(280deg) saturate(180%) contrast(120%) brightness(90%)"},
+  {name:"Faded",v:"grayscale(70%) contrast(130%) brightness(110%) sepia(15%)"},{name:"Glow",v:"brightness(115%) contrast(95%) saturate(130%)"},
+  {name:"Vintage",v:"sepia(60%) contrast(110%) brightness(95%)"},{name:"Pastel",v:"brightness(115%) contrast(90%) saturate(80%) sepia(20%)"}
 ];
 function renderFilterGrid(){
   const grid=$("filterGrid");if(!grid)return;
@@ -992,63 +1011,6 @@ window.applyFilterPreset=(v)=>{
   snapshot();c.filter=v;$("filterSelect").value=v;applyPreviewFilters();renderFilterGrid();
   showToast("Filter","Applied.");
 };
-
-/* ---------- GIPHY STICKERS ---------- */
-let giphyResults=[];
-async function giphyFetch(url){
-  if(!GIPHY_KEY||GIPHY_KEY==="PASTE_YOUR_KEY_HERE"){
-    showToast("Giphy key missing","Paste your free API key into the code.");
-    return null;
-  }
-  const sep=url.includes("?")?"&":"?";
-  const full=url+sep+"api_key="+encodeURIComponent(GIPHY_KEY);
-  const r=await fetch(full);
-  if(!r.ok)throw new Error("Giphy error "+r.status);
-  return await r.json();
-}
-async function giphySearch(q){
-  const box=$("giphyGrid");box.innerHTML='<div class="note">Searching...</div>';
-  try{
-    const data=await giphyFetch("https://api.giphy.com/v1/stickers/search?q="+encodeURIComponent(q)+"&limit=20&rating=g");
-    if(!data)return;
-    giphyResults=data.data||[];
-    renderGiphyGrid();
-  }catch(err){box.innerHTML='<div class="note">Could not load: '+esc(err.message)+'</div>'}
-}
-async function giphyTrending(){
-  const box=$("giphyGrid");box.innerHTML='<div class="note">Loading trending...</div>';
-  try{
-    const data=await giphyFetch("https://api.giphy.com/v1/stickers/trending?limit=20&rating=g");
-    if(!data)return;
-    giphyResults=data.data||[];
-    renderGiphyGrid();
-  }catch(err){box.innerHTML='<div class="note">Could not load: '+esc(err.message)+'</div>'}
-}
-function renderGiphyGrid(){
-  const box=$("giphyGrid");
-  if(!giphyResults.length){box.innerHTML='<div class="note">Nothing found.</div>';return}
-  box.innerHTML=giphyResults.map((g,i)=>{
-    const url=g.images&&g.images.fixed_width_small?g.images.fixed_width_small.url:(g.images&&g.images.original?g.images.original.url:"");
-    return `<div class="giphy-item" onclick="addGiphySticker(${i})"><img src="${url}" loading="lazy" alt="sticker"></div>`;
-  }).join("");
-}
-window.addGiphySticker=i=>{
-  const g=giphyResults[i];if(!g)return;
-  if(selectedClip<0){showToast("Upload first","Add a video before stickers.");return}
-  const url=g.images&&g.images.original?g.images.original.url:"";
-  if(!url){showToast("No image","This sticker has no usable image.");return}
-  snapshot();
-  stickers.push({type:"image",src:url,size:140,x:50,y:50});
-  selectedSticker=stickers.length-1;updateStickerEdit();updatePreviewText();
-  showToast("Sticker added","Drag it on the video.");
-};
-$("giphySearchBtn").onclick=()=>{
-  const q=$("giphySearch").value.trim();
-  if(!q){showToast("Type a word","Example: cat, love, party.");return}
-  giphySearch(q);
-};
-$("giphyTrendingBtn").onclick=giphyTrending;
-$("giphySearch").addEventListener("keydown",e=>{if(e.key==="Enter")$("giphySearchBtn").click()});
 
 /* ---------- TEXT ---------- */
 $("addTextBtn").onclick=()=>{
@@ -1254,8 +1216,9 @@ $("musicFile").addEventListener("change",e=>{
   showToast("Music loaded","Press ▶ to hear it in sync.");
 });
 
-/* ---------- MUSIC LIBRARY ---------- */
+/* ---------- MUSIC LIBRARY (FIXED resolveUrl) ---------- */
 let libResults=[],libAudio=new Audio();
+libAudio.volume=0.8;
 async function getArchive(q){
   const u="https://archive.org/advancedsearch.php?q="+encodeURIComponent("("+q+") AND mediatype:audio")+"&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=creator&fl%5B%5D=licenseurl&rows=15&sort%5B%5D=downloads+desc&output=json";
   const r=await fetch(u);if(!r.ok)throw new Error("error "+r.status);
@@ -1301,17 +1264,41 @@ let libNow=-1;
 function paintLib(){$("stopLibBtn").classList.toggle("hidden",libAudio.paused);document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹ Stop":"▶ Preview")}
 function stopLib(){libAudio.pause();libNow=-1;paintLib()}
 libAudio.addEventListener("ended",stopLib);libAudio.addEventListener("pause",paintLib);
+/* FIXED: accept mp3, ogg, m4a, flac, wav */
 async function resolveUrl(t){
   if(t.url)return t.url;
-  const m=await (await fetch("https://archive.org/metadata/"+encodeURIComponent(t.id))).json();
-  const f=(m.files||[]).find(x=>/\.mp3$/i.test(x.name));if(!f)throw new Error("no mp3");
-  t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+f.name.split("/").map(encodeURIComponent).join("/");return t.url;
+  try{
+    const m=await (await fetch("https://archive.org/metadata/"+encodeURIComponent(t.id))).json();
+    const files=m.files||[];
+    const pick=files.find(x=>/\.mp3$/i.test(x.name))
+            || files.find(x=>/\.ogg$/i.test(x.name))
+            || files.find(x=>/\.m4a$/i.test(x.name))
+            || files.find(x=>/\.flac$/i.test(x.name))
+            || files.find(x=>/\.wav$/i.test(x.name))
+            || files.find(x=>x.format&&/audio/i.test(x.format));
+    if(pick){
+      t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+pick.name.split("/").map(encodeURIComponent).join("/");
+      return t.url;
+    }
+  }catch(e){}
+  /* Fallback: try the standard download pattern */
+  t.url="https://archive.org/download/"+encodeURIComponent(t.id)+"/"+encodeURIComponent(t.id)+".mp3";
+  return t.url;
 }
 window.libPlay=async i=>{
   const t=libResults[i];if(!t)return;
   if(libNow===i&&!libAudio.paused){stopLib();return}
   libAudio.pause();libNow=i;preview.pause();
-  try{libAudio.src=await resolveUrl(t);await libAudio.play();paintLib()}catch(e){libNow=-1;paintLib();showToast("Cannot preview","This track would not play. Try another.")}
+  try{
+    libAudio.src=await resolveUrl(t);
+    libAudio.load();
+    await libAudio.play();
+    paintLib();
+    showToast("Playing","Track preview started.");
+  }catch(e){
+    libNow=-1;paintLib();
+    showToast("Cannot preview","Try another track — this one may be missing audio.");
+  }
 };
 window.libAdd=async i=>{
   const t=libResults[i];if(!t)return;stopLib();
@@ -1333,7 +1320,7 @@ $("trendingBtn").onclick=searchTrending;
 $("musicSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchMusic()});
 document.querySelectorAll("#musicTags button:not(.trend)").forEach(b=>b.onclick=()=>{$("musicSearch").value=b.dataset.q;searchMusic()});
 
-$("musicVolume").addEventListener("input",e=>{$("musicVolVal").textContent=Math.round(e.target.value*100)+"%"});
+$("musicVolume").addEventListener("input",e=>{$("musicVolVal").textContent=Math.round(e.target.value*100)+"%";if(musicPreviewEl)musicPreviewEl.volume=+e.target.value});
 $("videoVolume").addEventListener("input",e=>{$("vidVolVal").textContent=Math.round(e.target.value*100)+"%";preview.volume=+e.target.value});
 $("musicStart").addEventListener("change",()=>renderTimeline());
 $("removeMusicBtn").onclick=()=>{
