@@ -311,6 +311,7 @@ let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
 let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),playingAll=false;
 let audioUnlocked=false,forceMusicPlay=false,musicBuffer=null,musicName="",musicBlob=false;
 let voiceoverURL=null,voiceoverName="",voiceoverDuration=0,voiceoverEl=null,voiceoverBlob=false;
+let voiceBuffer=null;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
 let currentPanel=null;
@@ -385,6 +386,13 @@ function buildPanelHTML(panelId){
         <button class="sec dan" id="deleteStickerBtn" type="button">Delete Element</button>
       </div>`;
     case "audio":return `
+      <div style="padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700">🎬 Original video sound</span>
+          <button class="sec" id="toggleVideoSoundBtn" type="button" style="width:auto;min-width:130px;margin:0;padding:8px 12px">🔊 Sound ON</button>
+        </div>
+        <div class="note">Click to mute the original voice of the video while your music / voiceover plays. Click again to bring it back. Applies to ALL clips.</div>
+      </div>
       <label>🔎 Search any song, artist, or genre</label>
       <div style="display:flex;gap:6px;align-items:stretch"><input type="text" id="musicSearch" placeholder="Any song, artist, language..." style="margin-bottom:0"><button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button></div>
       <div class="chips" id="musicTags">
@@ -418,7 +426,7 @@ function buildPanelHTML(panelId){
         <button class="sec dan" id="removeMusicBtn" type="button">Remove Music</button>
       </div>`;
     case "voice":return `
-      <div class="note" style="margin-bottom:8px">Upload a voiceover to replace original video audio. Uploading a voiceover automatically mutes all clips. Use the toggles below to keep sound on specific clips.</div>
+      <div class="note" style="margin-bottom:8px">Upload a voiceover to replace original video audio. Then use the toggle at the bottom to mute the video's own sound.</div>
       <label class="upload-zone" for="voiceoverFile" style="padding:14px"><span>🎙️</span><strong>Upload voiceover</strong><br><small>MP3 / WAV / M4A</small></label>
       <div id="voiceoverInfo" class="note">No voiceover loaded.</div>
       <div id="voiceoverControls" class="hidden">
@@ -585,6 +593,23 @@ function wirePanel(panelId){
     $("previewMusicBtn").onclick=previewMusic;
     $("removeMusicBtn").onclick=removeMusic;
     if(musicURL){$("audioControls").classList.remove("hidden");$("audioInfo").textContent="🎵 "+musicName}
+    const muteBtn=$("toggleVideoSoundBtn");
+    const refreshMuteBtn=()=>{
+      const allMuted=clips.length>0&&clips.every(c=>c.muted);
+      if(allMuted){muteBtn.textContent="🔇 Sound OFF";muteBtn.style.background="#dc2626";muteBtn.style.color="#fff"}
+      else{muteBtn.textContent="🔊 Sound ON";muteBtn.style.background="";muteBtn.style.color=""}
+    };
+    muteBtn.onclick=()=>{
+      if(!clips.length){showToast("No clips","Upload a video first.");return}
+      snapshot();
+      const allMuted=clips.every(c=>c.muted);
+      clips.forEach(c=>c.muted=!allMuted);
+      preview.muted=!allMuted;
+      updateAllClipMuteVisuals();
+      refreshMuteBtn();
+      showToast(allMuted?"Original sound ON":"Original sound MUTED",allMuted?"Video voice is back.":"Music / voiceover only.");
+    };
+    refreshMuteBtn();
   }
   if(panelId==="voice"){
     $("voiceoverFile").addEventListener("change", async e=>{
@@ -607,8 +632,8 @@ function wirePanel(panelId){
       voiceoverEl.play().catch(()=>showToast("Blocked","Tap once first."));
     };
     $("removeVoiceoverBtn").onclick=removeVoiceover;
-    $("muteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=true);renderVoicePanel();updateAllClipMuteVisuals();showToast("Muted","All clips silent.")};
-    $("unmuteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=false);renderVoicePanel();updateAllClipMuteVisuals();showToast("Unmuted","All clips sound on.")};
+    $("muteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=true);preview.muted=true;renderVoicePanel();renderTimeline();showToast("Muted","All clips silent.")};
+    $("unmuteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=false);preview.muted=false;renderVoicePanel();renderTimeline();showToast("Unmuted","All clips sound on.")};
     if(voiceoverURL){$("voiceoverControls").classList.remove("hidden");$("voiceoverInfo").textContent="🎙️ "+voiceoverName;$("voiceLenVal").textContent=voiceoverDuration.toFixed(1)}
     renderVoicePanel();
   }
@@ -1269,7 +1294,6 @@ async function autoTranscribe(){
 window.autoTranscribe=autoTranscribe;
 
 /* ==== VOICEOVER ==== */
-let voiceBuffer=null;
 async function setVoiceover(url,name,isBlob){
   if(voiceoverURL&&voiceoverBlob)URL.revokeObjectURL(voiceoverURL);
   voiceoverURL=url;voiceoverName=name||"Voiceover";voiceoverBlob=!!isBlob;
@@ -1284,10 +1308,8 @@ async function setVoiceover(url,name,isBlob){
   if($("voiceoverInfo"))$("voiceoverInfo").textContent="🎙️ "+voiceoverName;
   if($("voiceoverControls"))$("voiceoverControls").classList.remove("hidden");
   if($("voiceLenVal"))$("voiceLenVal").textContent=voiceoverDuration.toFixed(1);
-  renderVoicePanel();
-  showToast("Voiceover loaded","Original sound muted automatically.");
-  if(!clips.some(c=>c.muted)){snapshot();clips.forEach(c=>c.muted=true);updateAllClipMuteVisuals()}
-  renderTimeline();
+  renderVoicePanel();renderTimeline();
+  showToast("Voiceover loaded","Use the toggle to mute the original voice.");
 }
 function removeVoiceover(){
   if(voiceoverURL&&voiceoverBlob)URL.revokeObjectURL(voiceoverURL);
@@ -1411,7 +1433,7 @@ window.libAdd=async i=>{
     const r=await fetch(t.preview);
     if(!r.ok)throw new Error("blocked");
     await setMusicSource(URL.createObjectURL(await r.blob()),credit,true);
-    showToast("Music added ✅","30s preview on audio track.");
+    showToast("Music added ✅","You can mute the original voice in Audio panel.");
   }catch(err){
     await setMusicSource(t.preview,credit,false);
     showToast("Music added","Preview only — cannot download.");
@@ -1856,7 +1878,7 @@ function finishExport(blob,ext){
       catch(e){console.warn(e)}
     };
   }
-  showToast("Export complete ✅","Download ready. Music + video in sync.");
+  showToast("Export complete ✅","Download ready.");
 }
 
 function getExportSize(){const a=$("aspectRatio").value;
