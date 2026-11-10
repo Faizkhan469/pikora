@@ -202,7 +202,7 @@ input[type=file]{display:none}
     <div class="canvas-container" id="canvasContainer">
       <div class="ratio-chip"><select id="quickRatio" title="Canvas ratio"><option value="9:16">9:16</option><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:5">4:5</option><option value="original">Original</option></select></div>
       <div id="previewWrap" style="width:360px;height:640px">
-        <video id="preview" playsinline muted></video>
+        <video id="preview" playsinline></video>
         <div id="previewText"></div>
         <div id="captionLayer"></div>
         <div id="flashOverlay"></div>
@@ -365,8 +365,9 @@ Object.defineProperty(preview, "volume", {
 });
 function forceMuteOriginal(on){
   _forcedMute = !!on;
-  preview.muted = _forcedMute ? true : preview.muted;
-  if(_forcedMute) preview.volume = 0;
+  preview.muted = _forcedMute;
+  const vv = $("videoVolume");
+  preview.volume = _forcedMute ? 0 : (vv ? +vv.value : 1);
   document.querySelectorAll("video").forEach(v => {
     if(v !== preview && v.id !== "preview"){ v.muted = true; v.volume = 0; }
   });
