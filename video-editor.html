@@ -143,6 +143,10 @@ input[type=file]{display:none}
 #exportPanelFloat{position:fixed;right:12px;top:56px;width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px;z-index:300;box-shadow:0 20px 50px rgba(0,0,0,.6);padding:14px;overflow-y:auto;max-height:80vh}
 .audio-status{position:fixed;bottom:70px;right:12px;background:var(--accent);color:var(--onacc);padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;z-index:99;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .audio-status.show{display:block}
+#teleprompterOverlay{position:fixed;inset:0;background:#000;color:#fff;z-index:9999;overflow:hidden;display:none}
+#teleprompterOverlay.show{display:block}
+#tpInner{position:absolute;top:100%;left:0;right:0;padding:0 6vw;font-weight:700;line-height:1.4;white-space:pre-wrap;transition:transform linear}
+#tpClose{position:fixed;top:16px;right:16px;background:#ff3860;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;z-index:10000;font-size:14px}
 @media(max-width:700px){
   .topbar{height:44px;padding:0 8px}
   .logo{font-size:15px}
@@ -248,6 +252,7 @@ input[type=file]{display:none}
   <button class="btool" data-panel="text"><span>T</span>Text</button>
   <button class="btool" data-panel="captions"><span>💬</span>Captions</button>
   <button class="btool" data-panel="transcript"><span>📜</span>Transcript</button>
+  <button class="btool" data-panel="teleprompter"><span>📖</span>Teleprompter</button>
   <button class="btool" data-panel="effects"><span>⭐</span>Effects</button>
   <button class="btool" data-panel="transitions"><span>🔀</span>Transitions</button>
   <button class="btool" data-panel="filters"><span>✨</span>Filters</button>
@@ -276,8 +281,11 @@ input[type=file]{display:none}
   <select id="exportQuality" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-size:14px"><option value="2">Standard</option><option value="5" selected>High</option><option value="8">Ultra</option></select>
   <button class="act" id="startExportBtn" type="button" style="width:100%;background:var(--accent);color:var(--onacc);border:none;padding:14px;border-radius:6px;font-weight:700;font-size:14px;cursor:pointer;margin-top:10px;min-height:48px">🚀 Start Export</button>
   <a id="downloadLink" style="display:none;margin-top:8px;padding:12px;background:#10b981;color:#000;text-align:center;border-radius:6px;font-weight:700;text-decoration:none">⬇ Download Video</a>
+  <button class="sec" id="shareExportBtn" type="button" style="display:none;width:100%;background:#8b5cf6;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:700;margin-top:8px;min-height:42px;cursor:pointer">📤 Share</button>
   <button class="sec" onclick="document.getElementById('exportPanelFloat').classList.add('hidden')" style="width:100%;background:var(--hover);color:var(--text);border:none;padding:10px;border-radius:6px;margin-top:8px;min-height:40px;cursor:pointer">Close</button>
 </div>
+
+<div id="teleprompterOverlay"><div id="tpInner"></div><button id="tpClose">✕ Close</button></div>
 
 <script>
 "use strict";
@@ -286,7 +294,7 @@ const preview=$("preview"),previewWrap=$("previewWrap"),previewText=$("previewTe
 const fmt=n=>Number(n||0).toFixed(1);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const fmtT=t=>String(Math.floor(t/60)).padStart(2,"0")+":"+String(Math.floor(t%60)).padStart(2,"0");
-const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const durationOf=c=>Math.max(.1,(c.end-c.start)/c.speed);
 const totalDuration=()=>clips.reduce((s,c)=>s+durationOf(c),0);
 const musicStartVal=()=>parseFloat($("musicStart")?.value||0)||0;
@@ -294,10 +302,11 @@ const musicStartVal=()=>parseFloat($("musicStart")?.value||0)||0;
 let clips=[],selectedClip=-1,texts=[],selectedText=-1,captions=[],selectedCaption=-1,stickers=[],selectedSticker=-1;
 let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
 let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),playingAll=false;
-let audioUnlocked=false,forceMusicPlay=false,musicBuffer=null,musicName="";
+let audioUnlocked=false,forceMusicPlay=false,musicBuffer=null,musicName="",musicBlob=false;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
 let currentPanel=null;
+let lastExportBlob=null;
 
 function unlockAudio(){
   if(audioUnlocked)return;
@@ -314,13 +323,18 @@ document.addEventListener("click",unlockAudio,{once:true});
 document.addEventListener("touchstart",unlockAudio,{once:true});
 
 let history=[],redoStack=[];
-function stateJSON(){return JSON.stringify({clips,texts,captions,captionStyle,stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),selectedClip})}
+function stateJSON(){return JSON.stringify({clips,texts,captions,captionStyle,selectedClip,
+  stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),
+  music:musicURL?{url:musicURL,name:musicName,isBlob:musicBlob,duration:musicDuration}:null})}
 function snapshot(){history.push(stateJSON());if(history.length>60)history.shift();redoStack=[]}
 function restore(json){
   const o=JSON.parse(json);
   clips=o.clips;texts=o.texts;captions=o.captions;captionStyle=o.captionStyle;
   stickers=o.stickers.map(st=>{if(st.type==="image"&&imgCache[st.src])st.img=imgCache[st.src];return st});
   selectedClip=Math.min(o.selectedClip,clips.length-1);selectedText=-1;selectedCaption=-1;selectedSticker=-1;
+  if(o.music&&o.music.url){musicURL=o.music.url;musicName=o.music.name;musicBlob=!!o.music.isBlob;musicDuration=o.music.duration||0;
+    if(musicPreviewEl){musicPreviewEl.src=musicURL}}
+  else{musicURL=null;musicName="";musicBuffer=null;musicDuration=0}
   if(selectedClip>=0)loadSelected();renderAll();
 }
 $("undoBtn").onclick=()=>{if(!history.length){showToast("Nothing to undo","");return}redoStack.push(stateJSON());playingAll=false;restore(history.pop());showToast("Undo","Reverted.")};
@@ -403,6 +417,8 @@ function buildPanelHTML(panelId){
       <div id="textList" style="margin-top:8px"></div>`;
     case "captions":return `
       <div class="g2"><button class="sec" id="importSrtBtn" type="button">📥 Import .srt</button><button class="sec" id="exportSrtBtn" type="button">📤 Export .srt</button></div>
+      <button class="act" id="autoTranscribeBtn" type="button" style="background:#8b5cf6">🎙️ AI Auto-Transcribe</button>
+      <div class="note" id="transcribeStatus">Uses in-browser Whisper. First run downloads ~40MB model.</div>
       <label>Caption text</label><input type="text" id="capText" placeholder="Caption...">
       <div class="g2"><div><label>Start (s)</label><input type="number" id="capStart" value="0" min="0" step="0.5"></div><div><label>End (s)</label><input type="number" id="capEnd" value="3" min="0" step="0.5"></div></div>
       <button class="act" id="addCapBtn" type="button">+ Add Caption</button>
@@ -414,6 +430,12 @@ function buildPanelHTML(panelId){
       <textarea id="scriptBox" placeholder="Hello everyone&#10;Today we show..."></textarea>
       <button class="act" id="autoSplitBtn" type="button">⚡ Auto-time</button>
       <div id="transcriptList"></div>`;
+    case "teleprompter":return `
+      <label>Script</label>
+      <textarea id="tpScript" placeholder="Paste your script here..."></textarea>
+      <div class="g2"><div><label>Speed</label><input type="number" id="tpSpeed" value="3" min="1" max="10"></div><div><label>Font size</label><input type="number" id="tpFont" value="48" min="20" max="120"></div></div>
+      <button class="act" id="tpStart" type="button">▶ Start Teleprompter</button>
+      <div class="note">Tap the screen anywhere to exit.</div>`;
     case "effects":return `
       <label>Effect for selected clip</label>
       <select id="effectSelect">
@@ -458,6 +480,7 @@ function buildPanelHTML(panelId){
       <div class="g2"><div><label>Primary colour</label><input type="color" id="brandPrimary" value="#00e5ff"></div><div><label>Secondary colour</label><input type="color" id="brandSecondary" value="#ffffff"></div></div>
       <label>Brand font</label><select id="brandFont"><option>Arial</option><option>Georgia</option><option>Verdana</option><option>Impact</option></select>
       <label class="upload-zone" for="logoFile" style="padding:14px"><span>🏷️</span><strong>Upload Logo</strong></label>
+      <button class="sec" id="removeLogoBgBtn" type="button">✨ Remove Logo Background (AI)</button>
       <button class="act" id="addLogoBtn" type="button">+ Add Logo</button>
       <button class="sec" id="applyBrandTextBtn" type="button">Apply Brand to Text</button>`;
   }
@@ -554,6 +577,7 @@ function wirePanel(panelId){
       r.readAsText(f);e.target.value="";
     });
     $("exportSrtBtn").onclick=exportSRT;
+    $("autoTranscribeBtn").onclick=autoTranscribe;
     $("addCapBtn").onclick=()=>{const t=$("capText").value.trim();if(!t)return;snapshot();captions.push({text:t,start:parseFloat($("capStart").value),end:parseFloat($("capEnd").value)});captions.sort((a,b)=>a.start-b.start);$("capText").value="";renderCaptionList();renderTranscript();updateCaptionLayer();renderTimeline()};
     $("capSize").addEventListener("input",e=>{captionStyle.size=+e.target.value;$("capSizeVal").textContent=e.target.value;updateCaptionLayer()});
     $("deleteCapBtn").onclick=()=>{if(selectedCaption<0)return;snapshot();captions.splice(selectedCaption,1);selectedCaption=-1;renderCaptionList();renderTranscript();updateCaptionLayer();renderTimeline()};
@@ -568,6 +592,24 @@ function wirePanel(panelId){
       renderCaptionList();renderTranscript();renderTimeline();showToast("Auto-timed",lines.length+" captions.");
     };
     renderTranscript();
+  }
+  if(panelId==="teleprompter"){
+    $("tpStart").onclick=()=>{
+      const txt=$("tpScript").value.trim();
+      if(!txt){showToast("Empty","Paste a script first.");return}
+      const spd=+$("tpSpeed").value||3,fsz=+$("tpFont").value||48;
+      const ov=$("teleprompterOverlay"),inner=$("tpInner");
+      ov.style.display="block";inner.style.fontSize=fsz+"px";inner.textContent=txt;
+      inner.style.transition="none";inner.style.transform="translateY(0)";
+      const dist=inner.scrollHeight+window.innerHeight+100;
+      const dur=Math.max(3000,txt.length/(spd*5)*1000);
+      requestAnimationFrame(()=>{
+        inner.style.transition=`transform ${dur}ms linear`;
+        inner.style.transform=`translateY(-${dist}px)`;
+      });
+      ov.onclick=()=>{ov.style.display="none";inner.style.transition="none"};
+    };
+    $("tpClose").onclick=e=>{e.stopPropagation();$("teleprompterOverlay").style.display="none";$("tpInner").style.transition="none"};
   }
   if(panelId==="effects"){
     $("effectSelect").addEventListener("change",e=>setEffect(e.target.value));
@@ -590,6 +632,16 @@ function wirePanel(panelId){
       r.onload=()=>{const img=new Image();img.onload=()=>{imgCache[r.result]=img;window._logoSrc=r.result;showToast("Logo ready","Tap Add Logo.")};img.src=r.result};
       r.readAsDataURL(f);e.target.value="";
     });
+    $("removeLogoBgBtn").onclick=async()=>{
+      if(!window._logoSrc){showToast("No logo","Upload first.");return}
+      showToast("Removing BG…","AI running in browser.");
+      try{
+        const mod=await import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5/+esm");
+        const blob=await mod.removeBackground(window._logoSrc);
+        const url=URL.createObjectURL(blob);
+        const img=new Image();img.onload=()=>{imgCache[url]=img;window._logoSrc=url;showToast("Done ✅","Transparent logo ready.")};img.src=url;
+      }catch(err){showToast("Failed",err.message||"Could not remove BG")}
+    };
     $("addLogoBtn").onclick=()=>{
       if(!window._logoSrc){showToast("No logo","Upload first.");return}
       if(selectedClip<0){showToast("No video","Upload video first.");return}
@@ -636,6 +688,7 @@ function renderAll(){
   updatePreviewText();updateCaptionLayer();syncSeekBar();updateTimeInfo();
   $("dropZone").style.display=clips.length?"none":"flex";
   previewWrap.classList.toggle("empty",!clips.length);
+  maybeStartLoop();
 }
 function renderMediaGrid(){
   const g=$("mediaGrid");if(!g)return;
@@ -873,6 +926,7 @@ $("playBtn").onclick=()=>{
     const mt=Math.max(0,globalTime()-musicStartVal());
     if(musicPreviewEl.paused){musicPreviewEl.currentTime=mt;musicPreviewEl.volume=parseFloat($("musicVolume")?.value)||0.35;musicPreviewEl.play().catch(()=>{})}
   }
+  maybeStartLoop();
 };
 $("pauseBtn").onclick=()=>{playingAll=false;preview.pause()};
 $("stopBtn").onclick=()=>{playingAll=false;preview.pause();if(musicPreviewEl)musicPreviewEl.pause();seekGlobal(0)};
@@ -910,7 +964,9 @@ function effectState(c,t,clipDuration){
   else{try{if(c.speed&&Math.abs(preview.playbackRate-c.speed)>0.05)preview.playbackRate=c.speed}catch(err){}}
   return{dx,dy,scale,flash,glitch,rgb,blur,vhs,rot};
 }
-(function loop(){
+
+let rafId=null;
+function loop(){
   const c=clips[selectedClip];
   if(c){
     const local=(preview.currentTime-c.start)/c.speed;
@@ -927,8 +983,10 @@ function effectState(c,t,clipDuration){
     else{flashOverlay.style.background="#fff"}
   }
   syncMusicPreview();updatePlayhead();
-  requestAnimationFrame(loop);
-})();
+  if(!preview.paused||clips.length)rafId=requestAnimationFrame(loop);
+  else rafId=null;
+}
+function maybeStartLoop(){if(!rafId)rafId=requestAnimationFrame(loop)}
 
 function doSplit(){
   const c=clips[selectedClip];if(!c){showToast("No clip","Select a clip.");return}
@@ -1059,9 +1117,54 @@ function exportSRT(){
 }
 function renderTranscript(){
   const el=$("transcriptList");if(!el)return;
-  el.innerHTML=captions.map((c,i)=>`<div class="list-item"><input type="text" value="${c.text.replace(/"/g,'&quot;')}" oninput="editCaption(${i},this.value)" style="margin:0;background:transparent;border:none;color:var(--text);font-size:12px;width:100%;min-height:28px"><div class="m">${fmt(c.start)}s – ${fmt(c.end)}s</div></div>`).join("")||'<div class="note">No captions yet.</div>';
+  el.innerHTML=captions.map((c,i)=>`<div class="list-item"><input type="text" value="${esc(c.text)}" data-i="${i}" class="tp-edit" style="margin:0;background:transparent;border:none;color:var(--text);font-size:12px;width:100%;min-height:28px"><div class="m">${fmt(c.start)}s – ${fmt(c.end)}s</div></div>`).join("")||'<div class="note">No captions yet.</div>';
+  el.querySelectorAll(".tp-edit").forEach(inp=>{
+    inp.addEventListener("input",e=>editCaption(+e.target.dataset.i,e.target.value));
+  });
 }
 window.editCaption=(i,v)=>{captions[i].text=v;renderCaptionList();updateCaptionLayer();renderTimeline()};
+
+/* ==== AI AUTO-TRANSCRIBE ==== */
+let asrPipeline=null;
+async function autoTranscribe(){
+  const c=clips[selectedClip];
+  if(!c){showToast("No clip","Select a clip first.");return}
+  const btn=$("autoTranscribeBtn"),st=$("transcribeStatus");
+  btn.disabled=true;btn.textContent="Loading model…";if(st)st.textContent="Downloading Whisper (~40MB), first run only…";
+  try{
+    if(!asrPipeline){
+      const {pipeline}=await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2");
+      asrPipeline=await pipeline("automatic-speech-recognition","Xenova/whisper-tiny.en");
+    }
+    btn.textContent="Transcribing…";if(st)st.textContent="Analysing audio…";
+    const buf=await (await fetch(c.url)).arrayBuffer();
+    const AC=window.AudioContext||window.webkitAudioContext;
+    const ac=new AC({sampleRate:16000});
+    const decoded=await ac.decodeAudioData(buf);
+    const data=decoded.getChannelData(0);
+    await ac.close();
+    const out=await asrPipeline(data,{return_timestamps:true,chunk_length_s:30,stride_length_s:5});
+    const chunks=out.chunks||[];
+    if(!chunks.length){showToast("No speech","Could not detect.");return}
+    snapshot();
+    captions=chunks.map(ch=>({
+      text:(ch.text||"").trim(),
+      start:ch.timestamp?.[0]||0,
+      end:ch.timestamp?.[1]||((ch.timestamp?.[0]||0)+2)
+    })).filter(x=>x.text);
+    selectedCaption=-1;
+    renderCaptionList();renderTranscript();updateCaptionLayer();renderTimeline();
+    showToast("Transcribed ✅",captions.length+" captions created.");
+    if(st)st.textContent="Done. Edit captions below.";
+  }catch(err){
+    console.error(err);
+    showToast("Transcribe failed",err.message||"Try again.");
+    if(st)st.textContent="Failed: "+(err.message||"unknown");
+  }finally{
+    btn.disabled=false;btn.textContent="🎙️ AI Auto-Transcribe";
+  }
+}
+window.autoTranscribe=autoTranscribe;
 
 /* ==== REAL MUSIC SEARCH: DEEZER + iTUNES ==== */
 let libResults=[],libAudio=new Audio(),libNow=-1;
@@ -1169,7 +1272,6 @@ async function setMusicSource(url,name,isBlob){
   musicBuffer=await decodeMusic(musicURL);
   renderTimeline();unlockAudio();
 }
-let musicBlob=false;
 function removeMusic(){
   if(musicURL&&musicBlob)URL.revokeObjectURL(musicURL);
   musicURL=null;musicDuration=0;musicBuffer=null;musicName="";
@@ -1235,13 +1337,238 @@ document.addEventListener("keydown",e=>{
 
 $("goExport").onclick=()=>$("exportPanelFloat").classList.toggle("hidden");
 $("aspectRatio").addEventListener("change",updateFrame);
+
+/* ============================================================
+   EXPORT — WebCodecs + mp4-muxer (fast MP4)
+   Falls back to MediaRecorder (WebM) if unsupported.
+   ============================================================ */
 $("startExportBtn").onclick=async()=>{
   if(exporting)return;
   if(!clips.length){showToast("No clips","Upload videos first.");return}
   for(const c of clips)if(c.end<=c.start){showToast("Bad trim","Fix clip trim.");return}
-  if(!window.MediaRecorder){showToast("Unsupported","Use Chrome/Firefox.");return}
   playingAll=false;preview.pause();
-  exporting=true;$("startExportBtn").disabled=true;$("startExportBtn").textContent="Exporting 0%";$("downloadLink").style.display="none";
+  exporting=true;$("startExportBtn").disabled=true;$("startExportBtn").textContent="Preparing…";$("downloadLink").style.display="none";$("shareExportBtn").style.display="none";
+  try{
+    if(typeof VideoEncoder!=="undefined"&&typeof AudioEncoder!=="undefined"){
+      await exportMP4();
+    }else{
+      await exportWebM();
+    }
+  }catch(err){
+    console.error(err);
+    showToast("Export failed",err.message||"Try again.");
+    $("startExportBtn").textContent="🚀 Start Export";
+  }finally{
+    exporting=false;$("startExportBtn").disabled=false;
+  }
+};
+
+async function exportMP4(){
+  const muxerMod=await import("https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/+esm");
+  const {Muxer,ArrayBufferTarget}=muxerMod;
+  const[w,h]=getExportSize();
+  const FPS=30;
+  const total=totalDuration();
+  const totalFrames=Math.ceil(total*FPS);
+
+  const target=new ArrayBufferTarget();
+  const muxer=new Muxer({
+    target,
+    video:{codec:"avc",width:w,height:h,frameRate:FPS},
+    audio:{codec:"aac",numberOfChannels:2,sampleRate:48000},
+    fastStart:"in-memory"
+  });
+
+  // --- Video encoder setup
+  const bitrate=Math.round((+$("exportQuality").value||5)*1e6);
+  let videoEncoder;
+  try{
+    const support=await VideoEncoder.isConfigSupported({codec:"avc1.42001f",width:w,height:h,bitrate,framerate:FPS});
+    videoEncoder=new VideoEncoder({
+      output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),
+      error:e=>console.error("video enc",e)
+    });
+    videoEncoder.configure({codec:"avc1.42001f",width:w,height:h,bitrate,framerate:FPS,latencyMode:"quality"});
+  }catch(e){throw new Error("VideoEncoder unavailable: "+e.message)}
+
+  // --- Audio setup: mix all video clips + music into a single AudioBuffer
+  const audioMix=await buildMixedAudio(total);
+
+  // --- Encoder for audio
+  let audioEncoder=null;
+  if(audioMix){
+    try{
+      const aSupport=await AudioEncoder.isConfigSupported({codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:2,bitrate:128000});
+      if(aSupport.supported){
+        audioEncoder=new AudioEncoder({
+          output:(chunk,meta)=>muxer.addAudioChunk(chunk,meta),
+          error:e=>console.error("audio enc",e)
+        });
+        audioEncoder.configure({codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:2,bitrate:128000});
+      }
+    }catch(e){console.warn("AudioEncoder failed",e)}
+  }
+
+  // --- Render each frame
+  const canvas=new OffscreenCanvas(w,h);
+  const ctx=canvas.getContext("2d",{alpha:false});
+  const fit=$("fitMode").value;
+  const timeline=[];
+  let acc=0;
+  for(const c of clips){const d=durationOf(c);timeline.push({clip:c,start:acc,end:acc+d});acc+=d}
+  const clipsOffset=timeline.map(t=>t.start);
+
+  const videoEls=await Promise.all(clips.map(c=>new Promise(res=>{
+    const v=document.createElement("video");
+    v.src=c.url;v.muted=true;v.playsInline=true;v.preload="auto";
+    v.onloadedmetadata=()=>res(v);
+    v.onerror=()=>res(v);
+    v.load();
+  })));
+
+  const btn=$("startExportBtn");
+  for(let f=0;f<totalFrames;f++){
+    const gt=f/FPS;
+    // find clip
+    let ci=timeline.findIndex(t=>gt>=t.start&&gt<t.end);
+    if(ci<0)ci=timeline.length-1;
+    const tinfo=timeline[ci];
+    const c=tinfo.clip;
+    const local=gt-tinfo.start; // timeline seconds
+    const videoT=c.start+local*c.speed;
+    const v=videoEls[ci];
+    // seek
+    if(Math.abs(v.currentTime-videoT)>0.1){
+      await new Promise(res=>{v.onseeked=()=>{v.onseeked=null;res()};v.currentTime=Math.min(videoT,v.duration-0.05)});
+    }
+    const es=effectState(c,local,durationOf(c));
+    ctx.fillStyle="#000";ctx.fillRect(0,0,w,h);
+    ctx.save();
+    ctx.translate(w/2+es.dx*(w/720),h/2+es.dy*(h/720));
+    ctx.rotate((es.rot||0)*Math.PI/180);
+    ctx.scale(es.scale,es.scale);ctx.translate(-w/2,-h/2);
+    let filterStr=(c.filter==="none"?"":c.filter+" ")+"brightness("+c.brightness+"%) contrast("+c.contrast+"%) saturate("+c.saturation+"%)";
+    if(es.blur>0)filterStr+=" blur("+es.blur+"px)";
+    drawVideo(ctx,v,w,h,fit,filterStr,1,c.transition,local/Math.max(0.001,c.transitionDuration||1));
+    ctx.restore();
+    if(es.vhs){ctx.save();ctx.globalAlpha=.18;ctx.fillStyle="#000";for(let y=0;y<h;y+=3)ctx.fillRect(0,y,w,1);ctx.restore()}
+    if(es.flash>0){ctx.fillStyle=`rgba(255,255,255,${es.flash})`;ctx.fillRect(0,0,w,h)}
+    stickers.forEach(s=>drawSticker(ctx,s,w,h));
+    texts.forEach(t=>drawText(ctx,t,gt,w,h));
+    drawCaption(ctx,gt,w,h);
+
+    const bitmap=canvas.transferToImageBitmap();
+    const frame=new VideoFrame(bitmap,{timestamp:Math.round(gt*1e6),duration:Math.round((1/FPS)*1e6)});
+    videoEncoder.encode(frame,{keyFrame:f%60===0});
+    frame.close();
+    bitmap.close();
+
+    if(f%5===0)btn.textContent=`Rendering ${Math.round(f/totalFrames*100)}%`;
+    // yield occasionally so UI doesn't hang
+    if(f%30===0)await new Promise(r=>setTimeout(r,0));
+  }
+  await videoEncoder.flush();
+  videoEncoder.close();
+
+  // --- Audio: slice the mixed buffer into PCM frames and encode
+  if(audioEncoder&&audioMix){
+    const sampleRate=48000;
+    const ch=2;
+    const left=audioMix.left,right=audioMix.right;
+    const FRAME_SAMPLES=1024;
+    const len=Math.min(left.length,right.length,Math.floor(total*sampleRate));
+    for(let i=0;i<len;i+=FRAME_SAMPLES){
+      const n=Math.min(FRAME_SAMPLES,len-i);
+      const interleaved=new Float32Array(n*ch);
+      for(let j=0;j<n;j++){interleaved[j*2]=left[i+j];interleaved[j*2+1]=right[i+j]}
+      const audioData=new AudioData({
+        format:"f32",
+        sampleRate,
+        numberOfFrames:n,
+        numberOfChannels:ch,
+        timestamp:Math.round(i/sampleRate*1e6),
+        data:interleaved
+      });
+      audioEncoder.encode(audioData);
+      audioData.close();
+      if(i% (FRAME_SAMPLES*50)===0)await new Promise(r=>setTimeout(r,0));
+    }
+    await audioEncoder.flush();
+    audioEncoder.close();
+  }
+
+  muxer.finalize();
+  const blob=new Blob([target.buffer],{type:"video/mp4"});
+  finishExport(blob,"mp4");
+}
+
+async function buildMixedAudio(total){
+  try{
+    const sampleRate=48000;
+    const totalSamples=Math.ceil(total*sampleRate);
+    if(totalSamples<=0)return null;
+    const left=new Float32Array(totalSamples),right=new Float32Array(totalSamples);
+    const AC=window.AudioContext||window.webkitAudioContext;
+    const ac=new AC({sampleRate});
+    // video clips
+    let acc=0;
+    const vVol=parseFloat($("videoVolume")?.value)||1;
+    for(const c of clips){
+      const dur=durationOf(c);
+      const buf=await fetch(c.url).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
+      if(buf){
+        const startSample=Math.floor(acc*sampleRate);
+        const len=Math.floor(dur*sampleRate);
+        const L=buf.getChannelData(0);
+        const R=buf.numberOfChannels>1?buf.getChannelData(1):L;
+        // need to map from trim start to trim end at speed
+        const srcOffsetStart=Math.floor(c.start*buf.sampleRate);
+        const step=buf.sampleRate/sampleRate*c.speed;
+        for(let i=0;i<len;i++){
+          const srcI=srcOffsetStart+Math.floor(i*step);
+          if(srcI>=0&&srcI<L.length){
+            left[startSample+i]+=L[srcI]*vVol;
+            right[startSample+i]+=R[srcI]*vVol;
+          }
+        }
+      }
+      acc+=dur;
+    }
+    // music
+    if(musicURL){
+      const buf=await fetch(musicURL).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
+      if(buf){
+        const mStart=musicStartVal();
+        const startSample=Math.floor(mStart*sampleRate);
+        const srcL=buf.getChannelData(0);
+        const srcR=buf.numberOfChannels>1?buf.getChannelData(1):srcL;
+        const step=buf.sampleRate/sampleRate;
+        const mv=parseFloat($("musicVolume")?.value)||0.35;
+        const fi=parseFloat($("musicFadeIn")?.value)||1,fo=parseFloat($("musicFadeOut")?.value)||2;
+        for(let i=0;i<totalSamples-startSample;i++){
+          const srcI=Math.floor(i*step);
+          if(srcI>=srcL.length)break;
+          const mt=(startSample+i)/sampleRate;
+          let fade=1;
+          if(fi>0)fade=Math.min(fade,Math.min(1,mt/fi));
+          if(fo>0)fade=Math.min(fade,Math.max(0,(total-mt)/fo));
+          const g=mv*fade;
+          const idx=startSample+i;
+          left[idx]+=srcL[srcI]*g;
+          right[idx]+=srcR[srcI]*g;
+        }
+      }
+    }
+    await ac.close();
+    // clamp
+    for(let i=0;i<totalSamples;i++){left[i]=clamp(left[i],-1,1);right[i]=clamp(right[i],-1,1)}
+    return {left,right};
+  }catch(e){console.warn("mix audio failed",e);return null}
+}
+
+async function exportWebM(){
+  // Fallback: original MediaRecorder path
+  if(!window.MediaRecorder){showToast("Unsupported","Use Chrome/Firefox.");return}
   const[w,h]=getExportSize();
   const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
   const ctx=canvas.getContext("2d",{alpha:false});const stream=canvas.captureStream(30);
@@ -1266,6 +1593,7 @@ $("startExportBtn").onclick=async()=>{
   const done=new Promise(r=>rec.onstop=r);
   const total=totalDuration();let elapsed=0;
   const mStart=musicStartVal();
+  const btn=$("startExportBtn");
   try{
     if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();
     rec.start(250);
@@ -1314,22 +1642,41 @@ $("startExportBtn").onclick=async()=>{
         texts.forEach(t=>drawText(ctx,t,gt,w,h));
         drawCaption(ctx,gt,w,h);
         await new Promise(r=>setTimeout(r,30));elapsed=clipStart+local;
-        $("startExportBtn").textContent=`Exporting ${Math.round(elapsed/total*100)}%`;
+        btn.textContent=`Exporting ${Math.round(elapsed/total*100)}%`;
       }
       v.pause();if(audioEls[i])audioEls[i].gain.gain.value=0;elapsed=clipStart+clipDur;
     }
     rec.stop();await done;
-    const url=URL.createObjectURL(new Blob(chunks,{type:"video/webm"}));
-    $("downloadLink").href=url;$("downloadLink").style.display="block";
-    $("downloadLink").textContent="⬇ Download ("+(chunks.reduce((s,c)=>s+c.size,0)/1048576).toFixed(1)+" MB)";
-    $("startExportBtn").textContent="✅ Done – Export Again";
-    showToast("Export complete!","Music + video in sync.");
-  }catch(err){if(rec.state!=="inactive")rec.stop();await done;$("startExportBtn").textContent="🚀 Start Export";showToast("Export failed",err.message)}
+    const blob=new Blob(chunks,{type:"video/webm"});
+    finishExport(blob,"webm");
+  }catch(err){if(rec.state!=="inactive")rec.stop();await done;throw err}
   finally{cleanup()}
-  function cleanup(){exporting=false;$("startExportBtn").disabled=false;
+  function cleanup(){
     if(musicEl)musicEl.pause();audioEls.forEach(x=>{x.el.pause();x.el.remove()});
-    if(audioCtx)audioCtx.close().catch(()=>{});stream.getTracks().forEach(t=>t.stop());}
-};
+    if(audioCtx)audioCtx.close().catch(()=>{});stream.getTracks().forEach(t=>t.stop());
+  }
+}
+
+function finishExport(blob,ext){
+  lastExportBlob=blob;
+  const url=URL.createObjectURL(blob);
+  $("downloadLink").href=url;
+  $("downloadLink").download="pikora-export."+ext;
+  $("downloadLink").style.display="block";
+  $("downloadLink").textContent=`⬇ Download .${ext} (${(blob.size/1048576).toFixed(1)} MB)`;
+  $("startExportBtn").textContent="✅ Done – Export Again";
+  // Share button
+  const shareBtn=$("shareExportBtn");
+  if(navigator.canShare&&navigator.canShare({files:[new File([blob],"video."+ext,{type:blob.type})]})){
+    shareBtn.style.display="block";
+    shareBtn.onclick=async()=>{
+      try{await navigator.share({files:[new File([blob],"video."+ext,{type:blob.type})],title:"My edit"})}
+      catch(e){console.warn(e)}
+    };
+  }
+  showToast("Export complete ✅","Download ready. Music + video in sync.");
+}
+
 function getExportSize(){const a=$("aspectRatio").value;
   if(a==="9:16")return[720,1280];if(a==="16:9")return[1280,720];if(a==="1:1")return[1080,1080];if(a==="4:5")return[864,1080];
   if(a==="original"&&preview.videoWidth)return[preview.videoWidth,preview.videoHeight];return[720,1280]}
