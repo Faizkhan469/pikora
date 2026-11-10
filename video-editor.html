@@ -6,9 +6,7 @@
 <title>Pikora Pro - Video Editor</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-/* CHANGED DEFAULT TO DARK / BLACK THEME */
-:root{--bg:#0a0a0c;--panel:#151518;--sidebar:#0f0f12;--border:#27272a;--hover:#27272a;--accent:#00e5ff;--accent2:#3b82f6;--text:#f4f4f5;--muted:#a1a1aa;--onacc:#000;--track:#0f0f12;--dots:#1a1a1f;--toolbar:#151518}
-body.light{--bg:#eef1f5;--panel:#ffffff;--sidebar:#ffffff;--border:#e2e6ed;--hover:#eceff4;--accent:#0099c0;--text:#1b1f27;--muted:#6b7280;--onacc:#ffffff;--track:#f6f8fb;--dots:#d8dee7;--toolbar:#ffffff}
+:root{--bg:#000000;--panel:#0b0b0b;--sidebar:#000000;--border:#262626;--hover:#1f1f1f;--accent:#00e5ff;--accent2:#3b82f6;--text:#f4f4f5;--muted:#a1a1aa;--onacc:#000;--track:#050505;--dots:#1a1a1a;--toolbar:#0b0b0b}
 html,body{height:100%}
 body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
 .topbar{height:48px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 10px;z-index:50;gap:6px}
@@ -24,14 +22,14 @@ body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg)
 .workspace{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0}
 .stage-area{flex:1;min-height:0;background:var(--bg);display:flex;flex-direction:column;position:relative}
 .canvas-container{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden;background-image:radial-gradient(var(--dots) 1px,transparent 1px);background-size:20px 20px;position:relative}
-#previewWrap{position:relative;background:#000;box-shadow:0 12px 40px rgba(0,0,0,.28);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#previewWrap{position:relative;background:#000;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.6);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 #preview{max-width:100%;max-height:100%;display:block}
 #previewText{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .preview-overlay{pointer-events:auto;cursor:move;position:absolute;font-weight:700;text-align:center;text-shadow:2px 2px 4px rgba(0,0,0,.8);padding:4px;border:2px solid transparent;border-radius:4px;white-space:pre-wrap;max-width:90%;line-height:1.2;touch-action:none}
 .preview-overlay.selected{border-color:var(--accent)}
 #flashOverlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 #captionLayer{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);pointer-events:none;text-align:center;max-width:90%;padding:6px 12px;border-radius:6px;font-weight:700;display:none}
-.ratio-chip{position:absolute;left:8px;top:8px;z-index:3;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:2px 4px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.ratio-chip{position:absolute;left:8px;top:8px;z-index:3;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:2px 4px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .ratio-chip select{background:transparent;border:none;color:var(--text);font-size:12px;font-weight:600;padding:4px;cursor:pointer}
 #previewWrap.empty{background:var(--panel);box-shadow:none;border:2px dashed var(--border);border-radius:6px}
 #previewWrap.empty #preview{display:none}
@@ -69,7 +67,7 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 
 .tracks-scroll{flex:1;min-width:0;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
 .tracks-content{position:relative;min-width:100%;min-height:100%}
-.ruler{height:26px;border-bottom:1px solid var(--border);position:relative;background:var(--panel);cursor:pointer;touch-action:none;position:sticky;top:0;z-index:5}
+.ruler{height:26px;border-bottom:1px solid var(--border);background:var(--panel);cursor:pointer;touch-action:none;position:sticky;top:0;z-index:5}
 .ruler .mark{position:absolute;bottom:0;height:12px;border-left:1px solid var(--muted);padding-left:4px;font-size:9px;color:var(--muted);line-height:10px;pointer-events:none;font-weight:600}
 .track-row{height:48px;border-bottom:1px solid var(--border);position:relative;background:var(--track)}
 .track-row.text-track{background:color-mix(in srgb,#8b5cf6 3%,var(--track))}
@@ -100,7 +98,7 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 #playhead .head{position:absolute;left:-7px;top:0;width:14px;height:14px;background:#ff3860;border-radius:0 0 7px 7px;box-shadow:0 2px 6px rgba(0,0,0,.4);pointer-events:auto;cursor:ew-resize;touch-action:none}
 #playhead .head::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:5px;height:5px;background:#fff;border-radius:50%}
 
-.panel-drawer{position:fixed;left:0;right:0;bottom:56px;background:var(--panel);border-top:1px solid var(--border);border-radius:16px 16px 0 0;z-index:200;height:min(60vh,420px);display:flex;flex-direction:column;transform:translateY(calc(100% + 56px));transition:transform .28s cubic-bezier(.22,1,.36,1);box-shadow:0 -10px 40px rgba(0,0,0,.25);overflow:hidden;pointer-events:auto}
+.panel-drawer{position:fixed;left:0;right:0;bottom:56px;background:var(--panel);border-top:1px solid var(--border);border-radius:16px 16px 0 0;z-index:200;height:min(60vh,420px);display:flex;flex-direction:column;transform:translateY(calc(100% + 56px));transition:transform .28s cubic-bezier(.22,1,.36,1);box-shadow:0 -10px 40px rgba(0,0,0,.6);overflow:hidden;pointer-events:auto}
 .panel-drawer.open{transform:translateY(0)}
 .panel-drawer-handle{padding:8px;display:flex;justify-content:center;cursor:pointer;flex-shrink:0}
 .panel-drawer-handle::after{content:"";width:40px;height:4px;background:var(--border);border-radius:2px}
@@ -134,7 +132,7 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .panel-content button.act{width:100%;background:var(--accent);color:var(--onacc);border:none;padding:11px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;margin-top:4px;min-height:42px}
 .panel-content button.act:hover{filter:brightness(.92)}
 .panel-content button.sec{width:100%;background:var(--hover);color:var(--text);border:none;padding:11px;border-radius:6px;font-size:12px;cursor:pointer;margin-top:4px;min-height:42px}
-.panel-content button.sec:hover{filter:brightness(.93)}
+.panel-content button.sec:hover{filter:brightness(1.15)}
 .panel-content button.dan{background:#dc2626;color:#fff}.panel-content button.dan:hover{background:#b91c1c}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .note{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.4}
@@ -195,7 +193,6 @@ input[type=file]{display:none}
     <button class="tool-btn" id="redoBtn">↷ Redo</button>
   </div>
   <div class="topbar-right">
-    <button class="tool-btn" id="themeBtn" type="button">☀️</button>
     <button class="btn-export" id="goExport">Export</button>
   </div>
 </header>
@@ -894,7 +891,7 @@ function renderTimeline(){
     
     // Music row
     const musicRow = document.createElement("div");
-    musicRow.style.cssText = "flex:1;position:relative;height:50%;border-bottom:1px dashed rgba(0,0,0,0.1)";
+    musicRow.style.cssText = "flex:1;position:relative;height:50%;border-bottom:1px dashed rgba(255,255,255,0.1)";
     if(musicURL){
       const start=musicStartVal();
       const width2=Math.max(40,(musicDuration||10)*sc);
@@ -1086,7 +1083,6 @@ $("tlDelVoiceBtn").onclick=()=>{
   removeVoiceover();
   showToast("Deleted", "Voiceover removed from timeline.");
 };
-
 
 const timelineArea=$("timelineArea"),resizeHandle=$("resizeHandle");
 let resizing=false,startY=0,startH=0;
@@ -1655,9 +1651,6 @@ function setTransition(v){const c=clips[selectedClip];if(!c){showToast("No clip"
 window.setTransition=setTransition;
 
 $("quickRatio").addEventListener("change",e=>{$("aspectRatio").value=e.target.value;updateFrame()});
-function applyTheme(d){document.body.classList.toggle("light",d);$("themeBtn").textContent=d?"🌙":"☀️";try{localStorage.setItem("pikoraTheme",d?"light":"dark")}catch(e){}}
-let startLight=false;try{startLight=localStorage.getItem("pikoraTheme")==="light"}catch(e){}
-applyTheme(startLight);$("themeBtn").onclick=()=>applyTheme(!document.body.classList.contains("light"));
 
 ["dragenter","dragover"].forEach(ev=>document.addEventListener(ev,e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes("Files")){e.preventDefault();document.body.classList.add("dragging")}}));
 document.addEventListener("dragleave",e=>{if(!e.relatedTarget)document.body.classList.remove("dragging")});
