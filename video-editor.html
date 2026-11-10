@@ -219,6 +219,10 @@ input[type=file]{display:none}
         </div>
         <button class="tool-btn" id="splitBtn2" type="button">✂</button>
         <button class="tool-btn" id="delBtn2" type="button">🗑</button>
+        
+        <!-- NEW MUTE BUTTON IN TIMELINE -->
+        <button class="tool-btn" id="quickMuteBtn" type="button" style="background:#dc2626;color:#fff;font-weight:700;border-radius:6px;padding:6px 12px;margin-left:4px;border:none;font-size:12px;cursor:pointer;white-space:nowrap">🔇 Mute Video</button>
+        
       </div>
       <div class="timeline-tracks">
         <div class="track-labels">
@@ -317,6 +321,29 @@ let tlScale=80,pendingSeek=null;
 let currentPanel=null;
 let lastExportBlob=null;
 
+// HARD LOCK FOR PREVIEW MUTING
+const _origMutedDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "muted");
+let _forcedMute = false;
+Object.defineProperty(preview, "muted", {
+  configurable: true,
+  get(){ return _forcedMute || _origMutedDesc.get.call(this); },
+  set(v){ _origMutedDesc.set.call(this, _forcedMute ? true : v); }
+});
+const _origVolDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "volume");
+Object.defineProperty(preview, "volume", {
+  configurable: true,
+  get(){ return _origVolDesc.get.call(this); },
+  set(v){ _origVolDesc.set.call(this, _forcedMute ? 0 : v); }
+});
+function forceMuteOriginal(on){
+  _forcedMute = !!on;
+  preview.muted = _forcedMute ? true : preview.muted;
+  if(_forcedMute) preview.volume = 0;
+  document.querySelectorAll("video").forEach(v => {
+    if(v !== preview && v.id !== "preview"){ v.muted = true; v.volume = 0; }
+  });
+}
+
 function unlockAudio(){
   if(audioUnlocked)return;
   audioUnlocked=true;
@@ -389,9 +416,9 @@ function buildPanelHTML(panelId){
       <div style="padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
           <span style="font-size:12px;font-weight:700">🎬 Original video sound</span>
-          <button class="sec" id="toggleVideoSoundBtn" type="button" style="width:auto;min-width:130px;margin:0;padding:8px 12px">🔊 Sound ON</button>
+          <button class="sec" id="panelMuteBtn" type="button" style="width:auto;min-width:130px;margin:0;padding:8px 12px">🔊 Sound ON</button>
         </div>
-        <div class="note">Click to mute the original voice of the video while your music / voiceover plays. Click again to bring it back. Applies to ALL clips.</div>
+        <div class="note">Click to mute the original voice of the video while your music / voiceover plays.</div>
       </div>
       <label>🔎 Search any song, artist, or genre</label>
       <div style="display:flex;gap:6px;align-items:stretch"><input type="text" id="musicSearch" placeholder="Any song, artist, language..." style="margin-bottom:0"><button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button></div>
@@ -593,7 +620,9 @@ function wirePanel(panelId){
     $("previewMusicBtn").onclick=previewMusic;
     $("removeMusicBtn").onclick=removeMusic;
     if(musicURL){$("audioControls").classList.remove("hidden");$("audioInfo").textContent="🎵 "+musicName}
-    const muteBtn=$("toggleVideoSoundBtn");
+    
+    // Wire up the panel mute button
+    const muteBtn=$("panelMuteBtn");
     const refreshMuteBtn=()=>{
       const allMuted=clips.length>0&&clips.every(c=>c.muted);
       if(allMuted){muteBtn.textContent="🔇 Sound OFF";muteBtn.style.background="#dc2626";muteBtn.style.color="#fff"}
@@ -604,7 +633,7 @@ function wirePanel(panelId){
       snapshot();
       const allMuted=clips.every(c=>c.muted);
       clips.forEach(c=>c.muted=!allMuted);
-      preview.muted=!allMuted;
+      forceMuteOriginal(!allMuted);
       updateAllClipMuteVisuals();
       refreshMuteBtn();
       showToast(allMuted?"Original sound ON":"Original sound MUTED",allMuted?"Video voice is back.":"Music / voiceover only.");
@@ -632,8 +661,8 @@ function wirePanel(panelId){
       voiceoverEl.play().catch(()=>showToast("Blocked","Tap once first."));
     };
     $("removeVoiceoverBtn").onclick=removeVoiceover;
-    $("muteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=true);preview.muted=true;renderVoicePanel();renderTimeline();showToast("Muted","All clips silent.")};
-    $("unmuteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=false);preview.muted=false;renderVoicePanel();renderTimeline();showToast("Unmuted","All clips sound on.")};
+    $("muteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=true);forceMuteOriginal(true);renderVoicePanel();renderTimeline();showToast("Muted","All clips silent.")};
+    $("unmuteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=false);forceMuteOriginal(false);renderVoicePanel();renderTimeline();showToast("Unmuted","All clips sound on.")};
     if(voiceoverURL){$("voiceoverControls").classList.remove("hidden");$("voiceoverInfo").textContent="🎙️ "+voiceoverName;$("voiceLenVal").textContent=voiceoverDuration.toFixed(1)}
     renderVoicePanel();
   }
@@ -771,6 +800,22 @@ function renderAll(){
   $("dropZone").style.display=clips.length?"none":"flex";
   previewWrap.classList.toggle("empty",!clips.length);
   if(currentPanel==="voice")renderVoicePanel();
+  
+  // Ensure hard mute is applied after render
+  const allMuted = clips.length>0 && clips.every(c=>c.muted);
+  forceMuteOriginal(allMuted);
+
+  // Update the timeline toolbar mute button visual state
+  if($("quickMuteBtn")){
+    $("quickMuteBtn").textContent = allMuted ? "🔊 Unmute Video" : "🔇 Mute Video";
+    $("quickMuteBtn").style.background = allMuted ? "var(--accent)" : "#dc2626";
+  }
+  if($("panelMuteBtn")){
+    $("panelMuteBtn").textContent = allMuted ? "🔊 Sound ON" : "🔇 Sound OFF";
+    $("panelMuteBtn").style.background = allMuted ? "" : "#dc2626";
+    $("panelMuteBtn").style.color = allMuted ? "" : "#fff";
+  }
+
   maybeStartLoop();
 }
 function renderMediaGrid(){
@@ -942,6 +987,17 @@ $("zoomOut").onclick=()=>{tlScale=clamp(tlScale-15,30,240);$("tlZoom").value=tlS
 $("tlZoom").addEventListener("input",e=>{tlScale=+e.target.value;renderTimeline()});
 $("delBtn2").onclick=()=>{if(selectedClip<0)return;snapshot();clips.splice(selectedClip,1);selectedClip=Math.min(selectedClip,clips.length-1);if(selectedClip>=0)loadSelected();renderAll()};
 
+// WIRE UP THE NEW TIMELINE MUTE BUTTON
+$("quickMuteBtn").onclick=()=>{
+  if(!clips.length){showToast("No clips","Upload a video first.");return}
+  snapshot();
+  const allMuted = clips.every(c=>c.muted);
+  clips.forEach(c=>c.muted = !allMuted);
+  forceMuteOriginal(!allMuted);
+  updateAllClipMuteVisuals();
+  showToast(allMuted ? "Original sound ON" : "Original sound MUTED", allMuted ? "Video voice is back." : "Music / voiceover only.");
+};
+
 const timelineArea=$("timelineArea"),resizeHandle=$("resizeHandle");
 let resizing=false,startY=0,startH=0;
 resizeHandle.addEventListener("pointerdown",e=>{e.preventDefault();resizing=true;startY=e.clientY;startH=timelineArea.offsetHeight;resizeHandle.setPointerCapture(e.pointerId)});
@@ -964,7 +1020,11 @@ function loadSelected(){
   preview.onloadedmetadata=()=>{
     preview.currentTime=pendingSeek!=null?pendingSeek:clamp(c.start,0,Math.max(0,preview.duration-.05));pendingSeek=null;
     preview.playbackRate=c.speed;
-    preview.muted=!!c.muted;
+    
+    // Don't let loadSelected() turn sound back on if global mute is active
+    const allMuted = clips.length>0 && clips.every(x=>x.muted);
+    forceMuteOriginal(allMuted || c.muted);
+
     if($("filterSelect"))$("filterSelect").value=c.filter;
     if($("brightness"))$("brightness").value=c.brightness;
     if($("contrast"))$("contrast").value=c.contrast;
@@ -1041,7 +1101,11 @@ $("playBtn").onclick=()=>{
   unlockAudio();
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
-  playingAll=true;preview.muted=!!(c&&c.muted);preview.volume=parseFloat($("videoVolume")?.value)||1;
+  playingAll=true;
+  
+  const _allMuted = clips.length>0 && clips.every(x=>x.muted);
+  forceMuteOriginal(_allMuted || (c&&c.muted));
+
   preview.play();
   if(musicURL&&musicPreviewEl){
     const mt=Math.max(0,globalTime()-musicStartVal());
@@ -1060,7 +1124,13 @@ $("stopBtn").onclick=()=>{playingAll=false;preview.pause();if(musicPreviewEl)mus
 function nextClip(){
   if(!playingAll)return;
   if(selectedClip>=clips.length-1){playingAll=false;return}
-  preview.addEventListener("loadedmetadata",()=>setTimeout(()=>{if(!playingAll)return;const c=clips[selectedClip];preview.muted=!!(c&&c.muted);preview.volume=parseFloat($("videoVolume")?.value)||1;preview.play().catch(()=>{})},60),{once:true});
+  preview.addEventListener("loadedmetadata",()=>setTimeout(()=>{
+    if(!playingAll)return;
+    const c=clips[selectedClip];
+    const allMuted = clips.length>0 && clips.every(x=>x.muted);
+    forceMuteOriginal(allMuted || (c&&c.muted));
+    preview.play().catch(()=>{});
+  },60),{once:true});
   selectedClip++;loadSelected();renderAll();
 }
 preview.addEventListener("timeupdate",()=>{
@@ -1340,9 +1410,10 @@ window.toggleClipMute=i=>{
   showToast(clips[i].muted?"Clip muted":"Clip unmuted",clips[i].name);
 };
 function updateAllClipMuteVisuals(){
-  const c=clips[selectedClip];
-  if(selectedClip>=0)preview.muted=!!(c&&c.muted);
-  renderTimeline();renderVoicePanel();
+  const allMuted = clips.length>0 && clips.every(c=>c.muted);
+  forceMuteOriginal(allMuted);
+  renderTimeline();
+  if(currentPanel==="voice")renderVoicePanel();
 }
 
 /* ==== REAL MUSIC SEARCH: DEEZER + iTUNES ==== */
