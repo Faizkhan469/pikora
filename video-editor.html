@@ -69,6 +69,8 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .clip-block{position:absolute;top:5px;bottom:5px;background:linear-gradient(180deg,#3b82f6,#2563eb);border-radius:5px;border:1.5px solid #60a5fa;cursor:grab;display:flex;align-items:center;padding:0 12px;font-size:10px;color:#fff;overflow:hidden;touch-action:none;box-shadow:0 2px 5px rgba(37,99,235,.3)}
 .clip-block .cn{position:relative;z-index:1;text-shadow:0 1px 3px #000;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .clip-block.selected{border-color:#fff;box-shadow:0 0 0 2.5px color-mix(in srgb,var(--accent) 50%,transparent),0 2px 5px rgba(37,99,235,.3);z-index:4}
+.clip-block.muted{opacity:.55;filter:saturate(.4)}
+.clip-block .mute-badge{position:absolute;right:16px;top:2px;font-size:10px;z-index:2;pointer-events:none;text-shadow:0 1px 2px #000}
 .th{position:absolute;top:0;bottom:0;width:12px;cursor:ew-resize;background:rgba(255,255,255,.15);opacity:0;z-index:3;touch-action:none;display:flex;align-items:center;justify-content:center}
 .th::after{content:"";width:2px;height:20px;border-radius:2px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
 .clip-block.selected .th,.clip-block:hover .th{opacity:1;background:rgba(0,0,0,.3)}
@@ -81,6 +83,9 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .wave-block{position:absolute;top:5px;bottom:5px;background:linear-gradient(180deg,rgba(124,58,237,.85),rgba(109,40,217,.85));border-radius:5px;border:1.5px solid #a78bfa;overflow:hidden;cursor:grab;touch-action:none;box-shadow:0 2px 5px rgba(124,58,237,.35)}
 .wave-block .wlabel{position:absolute;left:6px;top:2px;font-size:9px;color:#fff;font-weight:700;text-shadow:0 1px 2px #000;z-index:2;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 20px)}
 .wave-block canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.voice-block{position:absolute;top:5px;bottom:5px;background:linear-gradient(180deg,rgba(234,88,12,.85),rgba(194,65,12,.85));border-radius:5px;border:1.5px solid #fb923c;overflow:hidden;cursor:grab;touch-action:none;box-shadow:0 2px 5px rgba(234,88,12,.35)}
+.voice-block .wlabel{position:absolute;left:6px;top:2px;font-size:9px;color:#fff;font-weight:700;text-shadow:0 1px 2px #000;z-index:2;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 20px)}
+.voice-block canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #playhead{position:absolute;top:0;bottom:0;width:0;z-index:10;pointer-events:none}
 #playhead::after{content:"";position:absolute;left:-1px;top:0;bottom:0;width:2px;background:#ff3860;box-shadow:0 0 6px rgba(255,56,96,.7)}
 #playhead .head{position:absolute;left:-7px;top:0;width:14px;height:14px;background:#ff3860;border-radius:0 0 7px 7px;box-shadow:0 2px 6px rgba(0,0,0,.4);pointer-events:auto;cursor:ew-resize;touch-action:none}
@@ -249,6 +254,7 @@ input[type=file]{display:none}
   <button class="btool" data-panel="templates"><span>📋</span>Templates</button>
   <button class="btool" data-panel="elements"><span>🧩</span>Elements</button>
   <button class="btool" data-panel="audio"><span>🎵</span>Audio</button>
+  <button class="btool" data-panel="voice"><span>🎙️</span>Voice</button>
   <button class="btool" data-panel="text"><span>T</span>Text</button>
   <button class="btool" data-panel="captions"><span>💬</span>Captions</button>
   <button class="btool" data-panel="transcript"><span>📜</span>Transcript</button>
@@ -263,6 +269,7 @@ input[type=file]{display:none}
 <input type="file" id="srtFile" accept=".srt">
 <input type="file" id="musicFile" accept="audio/*">
 <input type="file" id="logoFile" accept="image/*">
+<input type="file" id="voiceoverFile" accept="audio/*">
 
 <div class="audio-status" id="audioStatus">🎵 Music playing</div>
 <div class="toast" id="toast">
@@ -303,6 +310,7 @@ let clips=[],selectedClip=-1,texts=[],selectedText=-1,captions=[],selectedCaptio
 let captionStyle={size:28,color:"#ffffff",bg:"rgba(0,0,0,0.65)"};
 let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=new Set(),playingAll=false;
 let audioUnlocked=false,forceMusicPlay=false,musicBuffer=null,musicName="",musicBlob=false;
+let voiceoverURL=null,voiceoverName="",voiceoverDuration=0,voiceoverEl=null,voiceoverBlob=false;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
 let currentPanel=null;
@@ -325,7 +333,8 @@ document.addEventListener("touchstart",unlockAudio,{once:true});
 let history=[],redoStack=[];
 function stateJSON(){return JSON.stringify({clips,texts,captions,captionStyle,selectedClip,
   stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),
-  music:musicURL?{url:musicURL,name:musicName,isBlob:musicBlob,duration:musicDuration}:null})}
+  music:musicURL?{url:musicURL,name:musicName,isBlob:musicBlob,duration:musicDuration}:null,
+  voiceover:voiceoverURL?{url:voiceoverURL,name:voiceoverName,isBlob:voiceoverBlob}:null})}
 function snapshot(){history.push(stateJSON());if(history.length>60)history.shift();redoStack=[]}
 function restore(json){
   const o=JSON.parse(json);
@@ -335,6 +344,11 @@ function restore(json){
   if(o.music&&o.music.url){musicURL=o.music.url;musicName=o.music.name;musicBlob=!!o.music.isBlob;musicDuration=o.music.duration||0;
     if(musicPreviewEl){musicPreviewEl.src=musicURL}}
   else{musicURL=null;musicName="";musicBuffer=null;musicDuration=0}
+  if(o.voiceover&&o.voiceover.url){
+    voiceoverURL=o.voiceover.url;voiceoverName=o.voiceover.name;voiceoverBlob=!!o.voiceover.isBlob;
+    if(!voiceoverEl)voiceoverEl=new Audio();
+    voiceoverEl.src=voiceoverURL;
+  }else{voiceoverURL=null;voiceoverName="";if(voiceoverEl)voiceoverEl.removeAttribute("src")}
   if(selectedClip>=0)loadSelected();renderAll();
 }
 $("undoBtn").onclick=()=>{if(!history.length){showToast("Nothing to undo","");return}redoStack.push(stateJSON());playingAll=false;restore(history.pop());showToast("Undo","Reverted.")};
@@ -402,6 +416,22 @@ function buildPanelHTML(panelId){
         <input type="range" id="videoVolume" min="0" max="1" step="0.05" value="1">
         <button class="sec" id="previewMusicBtn" type="button">▶ Test music</button>
         <button class="sec dan" id="removeMusicBtn" type="button">Remove Music</button>
+      </div>`;
+    case "voice":return `
+      <div class="note" style="margin-bottom:8px">Upload a voiceover to replace original video audio. Uploading a voiceover automatically mutes all clips. Use the toggles below to keep sound on specific clips.</div>
+      <label class="upload-zone" for="voiceoverFile" style="padding:14px"><span>🎙️</span><strong>Upload voiceover</strong><br><small>MP3 / WAV / M4A</small></label>
+      <div id="voiceoverInfo" class="note">No voiceover loaded.</div>
+      <div id="voiceoverControls" class="hidden">
+        <div class="g2"><div><label>Start at (s)</label><input type="number" id="voiceStart" value="0" min="0" step="0.1"></div><div><label>Volume <span id="voiceVolVal" style="float:right">100%</span></label><input type="range" id="voiceVolume" min="0" max="1" step="0.05" value="1"></div></div>
+        <label>Voiceover length: <span id="voiceLenVal">0.0</span>s</label>
+        <button class="sec" id="voicePreviewBtn" type="button">▶ Test voiceover</button>
+        <button class="sec dan" id="removeVoiceoverBtn" type="button">Remove voiceover</button>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <label>Clip audio</label>
+        <button class="sec" id="muteAllBtn" type="button">🔇 Mute all clips</button>
+        <button class="sec" id="unmuteAllBtn" type="button">🔊 Unmute all clips</button>
+        <div id="clipMuteList" style="margin-top:8px"></div>
       </div>`;
     case "text":return `
       <label>Text content</label><input type="text" id="textInput" placeholder="Type your text...">
@@ -556,6 +586,32 @@ function wirePanel(panelId){
     $("removeMusicBtn").onclick=removeMusic;
     if(musicURL){$("audioControls").classList.remove("hidden");$("audioInfo").textContent="🎵 "+musicName}
   }
+  if(panelId==="voice"){
+    $("voiceoverFile").addEventListener("change", async e=>{
+      const f=e.target.files[0];if(!f)return;
+      const url=URL.createObjectURL(f);
+      await setVoiceover(url,f.name,true);
+      e.target.value="";
+    });
+    $("voiceStart").addEventListener("change",()=>{ if(voiceoverEl){voiceoverEl.currentTime=+$("voiceStart").value||0;} });
+    $("voiceVolume").addEventListener("input",e=>{
+      $("voiceVolVal").textContent=Math.round(e.target.value*100)+"%";
+      if(voiceoverEl)voiceoverEl.volume=+e.target.value;
+    });
+    $("voicePreviewBtn").onclick=()=>{
+      if(!voiceoverURL){showToast("No voiceover","Upload one first.");return}
+      unlockAudio();
+      if(!voiceoverEl){voiceoverEl=new Audio(voiceoverURL);}
+      voiceoverEl.currentTime=+$("voiceStart").value||0;
+      voiceoverEl.volume=+$("voiceVolume").value||1;
+      voiceoverEl.play().catch(()=>showToast("Blocked","Tap once first."));
+    };
+    $("removeVoiceoverBtn").onclick=removeVoiceover;
+    $("muteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=true);renderVoicePanel();updateAllClipMuteVisuals();showToast("Muted","All clips silent.")};
+    $("unmuteAllBtn").onclick=()=>{snapshot();clips.forEach(c=>c.muted=false);renderVoicePanel();updateAllClipMuteVisuals();showToast("Unmuted","All clips sound on.")};
+    if(voiceoverURL){$("voiceoverControls").classList.remove("hidden");$("voiceoverInfo").textContent="🎙️ "+voiceoverName;$("voiceLenVal").textContent=voiceoverDuration.toFixed(1)}
+    renderVoicePanel();
+  }
   if(panelId==="text"){
     $("textInput").addEventListener("input",liveText);
     $("textColor").addEventListener("input",liveText);$("textSize").addEventListener("input",liveText);
@@ -658,7 +714,7 @@ async function handleVideoUpload(e){
   const files=[...e.target.files];e.target.value="";if(!files.length)return;
   snapshot();
   for(const f of files){
-    const c={name:f.name,url:URL.createObjectURL(f),start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none"};
+    const c={name:f.name,url:URL.createObjectURL(f),start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none",muted:false};
     clips.push(c);
     await new Promise(res=>{const v=document.createElement("video");v.preload="metadata";v.muted=true;v.src=c.url;
       v.onloadedmetadata=()=>{c.duration=Number.isFinite(v.duration)?v.duration:0;c.end=c.duration;v.removeAttribute("src");res()};
@@ -668,6 +724,7 @@ async function handleVideoUpload(e){
   selectedClip=clips.length-1;loadSelected();renderAll();
   showToast("Uploaded",files.length+" clip(s) added.");
   if(currentPanel==="media"){renderMediaGrid();if(selectedClip>=0&&$("clipControls")){$("clipControls").classList.remove("hidden");loadSelectedIntoPanel()}}
+  if(currentPanel==="voice")renderVoicePanel();
 }
 $("videoFiles").addEventListener("change",handleVideoUpload);
 
@@ -688,6 +745,7 @@ function renderAll(){
   updatePreviewText();updateCaptionLayer();syncSeekBar();updateTimeInfo();
   $("dropZone").style.display=clips.length?"none":"flex";
   previewWrap.classList.toggle("empty",!clips.length);
+  if(currentPanel==="voice")renderVoicePanel();
   maybeStartLoop();
 }
 function renderMediaGrid(){
@@ -706,10 +764,11 @@ function renderTimeline(){
   for(let t=0;10+t*sc<width;t+=step){const m=document.createElement("div");m.className="mark";m.style.left=(10+t*sc)+"px";m.textContent=fmtT(t);ruler.appendChild(m)}
   const track=$("videoTrack");track.innerHTML="";const blocks=[];let acc=0;
   clips.forEach((c,i)=>{
-    const d=durationOf(c),b=document.createElement("div");b.className="clip-block"+(i===selectedClip?" selected":"");
+    const d=durationOf(c),b=document.createElement("div");b.className="clip-block"+(i===selectedClip?" selected":"")+(c.muted?" muted":"");
     b.style.left=(10+acc*sc)+"px";b.style.width=Math.max(20,d*sc)+"px";
     if(c.thumb)b.style.background='linear-gradient(180deg,rgba(59,130,246,.5),rgba(37,99,235,.5)),url("'+c.thumb+'") repeat-x left center / auto 100%';
     const sp=document.createElement("span");sp.className="cn";sp.textContent=c.name.substring(0,26)+(c.speed!==1?" · "+c.speed+"x":"");b.appendChild(sp);
+    if(c.muted){const mb=document.createElement("span");mb.className="mute-badge";mb.textContent="🔇";b.appendChild(mb)}
     ["l","r"].forEach(side=>{const h=document.createElement("div");h.className="th "+side;b.appendChild(h);bindTrim(h,b,c,i,side)});
     track.appendChild(b);blocks.push(b);bindClip(b,i,blocks);acc+=d;
   });
@@ -732,9 +791,23 @@ function renderTimeline(){
     cv.width=Math.max(1,width2);cv.height=38;
     cv.style.width="100%";cv.style.height="100%";
     w.appendChild(cv);arow.appendChild(w);
-    drawWaveform(cv);bindWaveBlock(w,start);
-  } else {
-    arow.innerHTML='<div class="tl-hint" style="font-size:11px">🎵 No music — open Audio tab</div>';
+    drawWaveform(cv);bindWaveBlock(w,start,"musicStart");
+  }
+  if(voiceoverURL){
+    const voStart=parseFloat($("voiceStart")?.value||0)||0;
+    const voLen=voiceoverDuration||10;
+    const width2=Math.max(40,voLen*sc);
+    const w=document.createElement("div");w.className="voice-block";
+    w.style.left=(10+voStart*sc)+"px";w.style.width=width2+"px";
+    w.innerHTML='<div class="wlabel">🎙️ '+(voiceoverName||"Voiceover")+'</div>';
+    const cv=document.createElement("canvas");
+    cv.width=Math.max(1,Math.floor(width2));cv.height=38;
+    cv.style.width="100%";cv.style.height="100%";
+    w.appendChild(cv);arow.appendChild(w);
+    drawVoiceWave(cv);bindWaveBlock(w,voStart,"voiceStart");
+  }
+  if(!musicURL&&!voiceoverURL){
+    arow.innerHTML='<div class="tl-hint" style="font-size:11px">🎵 No audio — open Audio or Voice tab</div>';
   }
   updatePlayhead();
 }
@@ -756,15 +829,27 @@ function drawWaveform(cv){
     const y1=(1-max)*amp,y2=(1-min)*amp;c2.fillRect(i,y1,1,Math.max(1,y2-y1));}
   c2.strokeStyle="rgba(255,255,255,.25)";c2.lineWidth=1;c2.beginPath();c2.moveTo(0,H/2);c2.lineTo(W,H/2);c2.stroke();
 }
-function bindWaveBlock(w,startVal){
+function drawVoiceWave(cv){
+  const c2=cv.getContext("2d");const W=cv.width,H=cv.height;
+  c2.fillStyle="rgba(234,88,12,.3)";c2.fillRect(0,0,W,H);
+  if(!voiceBuffer){c2.strokeStyle="rgba(251,146,60,.6)";c2.lineWidth=1;c2.beginPath();c2.moveTo(0,H/2);c2.lineTo(W,H/2);c2.stroke();return}
+  const data=voiceBuffer.getChannelData(0);const step=Math.max(1,Math.floor(data.length/W));const amp=H/2;
+  c2.fillStyle="rgba(254,215,170,.95)";
+  for(let i=0;i<W;i++){let min=1,max=-1;const start=i*step;const end=Math.min(start+step,data.length);
+    for(let j=start;j<end;j++){const v=data[j];if(v<min)min=v;if(v>max)max=v}
+    const y1=(1-max)*amp,y2=(1-min)*amp;c2.fillRect(i,y1,1,Math.max(1,y2-y1));}
+  c2.strokeStyle="rgba(255,255,255,.25)";c2.lineWidth=1;c2.beginPath();c2.moveTo(0,H/2);c2.lineTo(W,H/2);c2.stroke();
+}
+function bindWaveBlock(w,startVal,inputId){
   let x0=0,s0=startVal,dragging=false,moved=false;
   w.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();w.setPointerCapture(e.pointerId);x0=e.clientX;s0=startVal;dragging=true;moved=false});
   w.addEventListener("pointermove",e=>{
     if(!dragging)return;const dx=(e.clientX-x0)/tlScale;
     if(Math.abs(dx)>0.05)moved=true;
     const ns=Math.max(0,Math.round((s0+dx)*10)/10);
-    if($("musicStart"))$("musicStart").value=ns;
+    if($(inputId))$(inputId).value=ns;
     w.style.left=(10+ns*tlScale)+"px";
+    if(inputId==="voiceStart"&&voiceoverEl)voiceoverEl.currentTime=ns;
   });
   w.addEventListener("pointerup",()=>{if(dragging&&moved)snapshot();dragging=false});
   w.addEventListener("pointercancel",()=>{dragging=false});
@@ -815,7 +900,7 @@ function bindTrim(h,b,c,i,side){
 }
 function bindScrub(el){
   el.addEventListener("pointerdown",e=>{
-    if(e.target.closest(".clip-block,.wave-block,.tl-item,#playhead"))return;
+    if(e.target.closest(".clip-block,.wave-block,.voice-block,.tl-item,#playhead"))return;
     e.preventDefault();playingAll=false;preview.pause();seekGlobal(xToTime(e.clientX));
     dragHelper(el,e,ev=>seekGlobal(xToTime(ev.clientX)),()=>{});
   });
@@ -854,6 +939,7 @@ function loadSelected(){
   preview.onloadedmetadata=()=>{
     preview.currentTime=pendingSeek!=null?pendingSeek:clamp(c.start,0,Math.max(0,preview.duration-.05));pendingSeek=null;
     preview.playbackRate=c.speed;
+    preview.muted=!!c.muted;
     if($("filterSelect"))$("filterSelect").value=c.filter;
     if($("brightness"))$("brightness").value=c.brightness;
     if($("contrast"))$("contrast").value=c.contrast;
@@ -900,6 +986,16 @@ function syncMusicPreview(){
   if(d&&isFinite(d)&&mt>d)target=mt%d;
   if(Math.abs(musicPreviewEl.currentTime-target)>0.4)musicPreviewEl.currentTime=target;
 }
+function syncVoiceoverPreview(){
+  if(!voiceoverURL||!voiceoverEl)return;
+  if(preview.paused){if(!voiceoverEl.paused)voiceoverEl.pause();return}
+  const voStart=parseFloat($("voiceStart")?.value||0)||0;
+  const gt=globalTime();
+  const target=voStart+gt;
+  if(Math.abs(voiceoverEl.currentTime-target)>0.5)voiceoverEl.currentTime=target;
+  voiceoverEl.volume=parseFloat($("voiceVolume")?.value)||1;
+  if(voiceoverEl.paused)voiceoverEl.play().catch(()=>{});
+}
 function previewMusic(){
   if(!musicURL){showToast("No music","Upload music first.");return}
   if(selectedClip<0){showToast("No clip","Upload a video first.");return}
@@ -920,20 +1016,26 @@ $("playBtn").onclick=()=>{
   unlockAudio();
   const c=clips[selectedClip];
   if(c&&(preview.currentTime<c.start||preview.currentTime>=c.end-0.05))preview.currentTime=c.start;
-  playingAll=true;preview.muted=false;preview.volume=parseFloat($("videoVolume")?.value)||1;
+  playingAll=true;preview.muted=!!(c&&c.muted);preview.volume=parseFloat($("videoVolume")?.value)||1;
   preview.play();
   if(musicURL&&musicPreviewEl){
     const mt=Math.max(0,globalTime()-musicStartVal());
     if(musicPreviewEl.paused){musicPreviewEl.currentTime=mt;musicPreviewEl.volume=parseFloat($("musicVolume")?.value)||0.35;musicPreviewEl.play().catch(()=>{})}
   }
+  if(voiceoverURL&&voiceoverEl){
+    const voStart=parseFloat($("voiceStart")?.value||0)||0;
+    voiceoverEl.currentTime=voStart+globalTime();
+    voiceoverEl.volume=parseFloat($("voiceVolume")?.value)||1;
+    voiceoverEl.play().catch(()=>{});
+  }
   maybeStartLoop();
 };
-$("pauseBtn").onclick=()=>{playingAll=false;preview.pause()};
-$("stopBtn").onclick=()=>{playingAll=false;preview.pause();if(musicPreviewEl)musicPreviewEl.pause();seekGlobal(0)};
+$("pauseBtn").onclick=()=>{playingAll=false;preview.pause();if(voiceoverEl)voiceoverEl.pause()};
+$("stopBtn").onclick=()=>{playingAll=false;preview.pause();if(musicPreviewEl)musicPreviewEl.pause();if(voiceoverEl){voiceoverEl.pause();voiceoverEl.currentTime=parseFloat($("voiceStart")?.value||0)||0;}seekGlobal(0)};
 function nextClip(){
   if(!playingAll)return;
   if(selectedClip>=clips.length-1){playingAll=false;return}
-  preview.addEventListener("loadedmetadata",()=>setTimeout(()=>{if(!playingAll)return;preview.muted=false;preview.volume=parseFloat($("videoVolume")?.value)||1;preview.play().catch(()=>{})},60),{once:true});
+  preview.addEventListener("loadedmetadata",()=>setTimeout(()=>{if(!playingAll)return;const c=clips[selectedClip];preview.muted=!!(c&&c.muted);preview.volume=parseFloat($("videoVolume")?.value)||1;preview.play().catch(()=>{})},60),{once:true});
   selectedClip++;loadSelected();renderAll();
 }
 preview.addEventListener("timeupdate",()=>{
@@ -982,7 +1084,7 @@ function loop(){
     if(es.vhs){flashOverlay.style.background="repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0px, rgba(0,0,0,.15) 1px, transparent 1px, transparent 3px)";flashOverlay.style.opacity=.7+Math.random()*.15}
     else{flashOverlay.style.background="#fff"}
   }
-  syncMusicPreview();updatePlayhead();
+  syncMusicPreview();syncVoiceoverPreview();updatePlayhead();
   if(!preview.paused||clips.length)rafId=requestAnimationFrame(loop);
   else rafId=null;
 }
@@ -1166,6 +1268,61 @@ async function autoTranscribe(){
 }
 window.autoTranscribe=autoTranscribe;
 
+/* ==== VOICEOVER ==== */
+let voiceBuffer=null;
+async function setVoiceover(url,name,isBlob){
+  if(voiceoverURL&&voiceoverBlob)URL.revokeObjectURL(voiceoverURL);
+  voiceoverURL=url;voiceoverName=name||"Voiceover";voiceoverBlob=!!isBlob;
+  if(!voiceoverEl){voiceoverEl=new Audio();voiceoverEl.loop=false;}
+  voiceoverEl.src=voiceoverURL;
+  await new Promise(res=>{
+    voiceoverEl.onloadedmetadata=()=>{voiceoverDuration=voiceoverEl.duration||0;res();};
+    voiceoverEl.onerror=()=>{voiceoverDuration=0;res();};
+    voiceoverEl.load();
+  });
+  voiceBuffer=await decodeMusic(voiceoverURL);
+  if($("voiceoverInfo"))$("voiceoverInfo").textContent="🎙️ "+voiceoverName;
+  if($("voiceoverControls"))$("voiceoverControls").classList.remove("hidden");
+  if($("voiceLenVal"))$("voiceLenVal").textContent=voiceoverDuration.toFixed(1);
+  renderVoicePanel();
+  showToast("Voiceover loaded","Original sound muted automatically.");
+  if(!clips.some(c=>c.muted)){snapshot();clips.forEach(c=>c.muted=true);updateAllClipMuteVisuals()}
+  renderTimeline();
+}
+function removeVoiceover(){
+  if(voiceoverURL&&voiceoverBlob)URL.revokeObjectURL(voiceoverURL);
+  voiceoverURL=null;voiceoverName="";voiceoverDuration=0;voiceBuffer=null;
+  if(voiceoverEl){voiceoverEl.pause();voiceoverEl.removeAttribute("src")}
+  if($("voiceoverInfo"))$("voiceoverInfo").textContent="No voiceover loaded.";
+  if($("voiceoverControls"))$("voiceoverControls").classList.add("hidden");
+  if($("voiceoverFile"))$("voiceoverFile").value="";
+  renderVoicePanel();renderTimeline();
+}
+function renderVoicePanel(){
+  const el=$("clipMuteList");if(!el)return;
+  el.innerHTML=clips.map((c,i)=>`
+    <div class="list-item" style="display:flex;align-items:center;gap:8px">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span>
+      <button class="sec" type="button" style="width:auto;min-width:90px;margin:0;padding:6px 10px;${c.muted?'background:#dc2626;color:#fff':''}" onclick="toggleClipMute(${i})">
+        ${c.muted?"🔇 Muted":"🔊 Sound on"}
+      </button>
+    </div>`).join("")||'<div class="note">No clips yet.</div>';
+}
+window.toggleClipMute=i=>{
+  if(!clips[i])return;
+  snapshot();
+  clips[i].muted=!clips[i].muted;
+  const c=clips[selectedClip];
+  if(selectedClip>=0)preview.muted=!!(c&&c.muted);
+  renderVoicePanel();renderTimeline();
+  showToast(clips[i].muted?"Clip muted":"Clip unmuted",clips[i].name);
+};
+function updateAllClipMuteVisuals(){
+  const c=clips[selectedClip];
+  if(selectedClip>=0)preview.muted=!!(c&&c.muted);
+  renderTimeline();renderVoicePanel();
+}
+
 /* ==== REAL MUSIC SEARCH: DEEZER + iTUNES ==== */
 let libResults=[],libAudio=new Audio(),libNow=-1;
 
@@ -1340,7 +1497,6 @@ $("aspectRatio").addEventListener("change",updateFrame);
 
 /* ============================================================
    EXPORT — WebCodecs + mp4-muxer (fast MP4)
-   Falls back to MediaRecorder (WebM) if unsupported.
    ============================================================ */
 $("startExportBtn").onclick=async()=>{
   if(exporting)return;
@@ -1379,7 +1535,6 @@ async function exportMP4(){
     fastStart:"in-memory"
   });
 
-  // --- Video encoder setup
   const bitrate=Math.round((+$("exportQuality").value||5)*1e6);
   let videoEncoder;
   try{
@@ -1391,10 +1546,8 @@ async function exportMP4(){
     videoEncoder.configure({codec:"avc1.42001f",width:w,height:h,bitrate,framerate:FPS,latencyMode:"quality"});
   }catch(e){throw new Error("VideoEncoder unavailable: "+e.message)}
 
-  // --- Audio setup: mix all video clips + music into a single AudioBuffer
   const audioMix=await buildMixedAudio(total);
 
-  // --- Encoder for audio
   let audioEncoder=null;
   if(audioMix){
     try{
@@ -1409,14 +1562,12 @@ async function exportMP4(){
     }catch(e){console.warn("AudioEncoder failed",e)}
   }
 
-  // --- Render each frame
   const canvas=new OffscreenCanvas(w,h);
   const ctx=canvas.getContext("2d",{alpha:false});
   const fit=$("fitMode").value;
   const timeline=[];
   let acc=0;
   for(const c of clips){const d=durationOf(c);timeline.push({clip:c,start:acc,end:acc+d});acc+=d}
-  const clipsOffset=timeline.map(t=>t.start);
 
   const videoEls=await Promise.all(clips.map(c=>new Promise(res=>{
     const v=document.createElement("video");
@@ -1429,15 +1580,13 @@ async function exportMP4(){
   const btn=$("startExportBtn");
   for(let f=0;f<totalFrames;f++){
     const gt=f/FPS;
-    // find clip
     let ci=timeline.findIndex(t=>gt>=t.start&&gt<t.end);
     if(ci<0)ci=timeline.length-1;
     const tinfo=timeline[ci];
     const c=tinfo.clip;
-    const local=gt-tinfo.start; // timeline seconds
+    const local=gt-tinfo.start;
     const videoT=c.start+local*c.speed;
     const v=videoEls[ci];
-    // seek
     if(Math.abs(v.currentTime-videoT)>0.1){
       await new Promise(res=>{v.onseeked=()=>{v.onseeked=null;res()};v.currentTime=Math.min(videoT,v.duration-0.05)});
     }
@@ -1464,13 +1613,11 @@ async function exportMP4(){
     bitmap.close();
 
     if(f%5===0)btn.textContent=`Rendering ${Math.round(f/totalFrames*100)}%`;
-    // yield occasionally so UI doesn't hang
     if(f%30===0)await new Promise(r=>setTimeout(r,0));
   }
   await videoEncoder.flush();
   videoEncoder.close();
 
-  // --- Audio: slice the mixed buffer into PCM frames and encode
   if(audioEncoder&&audioMix){
     const sampleRate=48000;
     const ch=2;
@@ -1510,18 +1657,17 @@ async function buildMixedAudio(total){
     const left=new Float32Array(totalSamples),right=new Float32Array(totalSamples);
     const AC=window.AudioContext||window.webkitAudioContext;
     const ac=new AC({sampleRate});
-    // video clips
     let acc=0;
     const vVol=parseFloat($("videoVolume")?.value)||1;
     for(const c of clips){
       const dur=durationOf(c);
+      if(c.muted){ acc+=dur; continue; }
       const buf=await fetch(c.url).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
       if(buf){
         const startSample=Math.floor(acc*sampleRate);
         const len=Math.floor(dur*sampleRate);
         const L=buf.getChannelData(0);
         const R=buf.numberOfChannels>1?buf.getChannelData(1):L;
-        // need to map from trim start to trim end at speed
         const srcOffsetStart=Math.floor(c.start*buf.sampleRate);
         const step=buf.sampleRate/sampleRate*c.speed;
         for(let i=0;i<len;i++){
@@ -1534,7 +1680,6 @@ async function buildMixedAudio(total){
       }
       acc+=dur;
     }
-    // music
     if(musicURL){
       const buf=await fetch(musicURL).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
       if(buf){
@@ -1545,8 +1690,10 @@ async function buildMixedAudio(total){
         const step=buf.sampleRate/sampleRate;
         const mv=parseFloat($("musicVolume")?.value)||0.35;
         const fi=parseFloat($("musicFadeIn")?.value)||1,fo=parseFloat($("musicFadeOut")?.value)||2;
+        const loopLen=buf.length;
         for(let i=0;i<totalSamples-startSample;i++){
-          const srcI=Math.floor(i*step);
+          let srcI=Math.floor(i*step);
+          if(srcI>=loopLen)srcI=srcI%loopLen;
           if(srcI>=srcL.length)break;
           const mt=(startSample+i)/sampleRate;
           let fade=1;
@@ -1559,31 +1706,51 @@ async function buildMixedAudio(total){
         }
       }
     }
+    if(voiceoverURL){
+      const buf=await fetch(voiceoverURL).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
+      if(buf){
+        const voStart=parseFloat($("voiceStart")?.value||0)||0;
+        const voVol=parseFloat($("voiceVolume")?.value)||1;
+        const startSample=Math.floor(voStart*sampleRate);
+        const srcL=buf.getChannelData(0);
+        const srcR=buf.numberOfChannels>1?buf.getChannelData(1):srcL;
+        const step=buf.sampleRate/sampleRate;
+        const len=Math.min(Math.floor(srcL.length/step), totalSamples-startSample);
+        for(let i=0;i<len;i++){
+          const srcI=Math.floor(i*step);
+          if(srcI>=srcL.length)break;
+          const idx=startSample+i;
+          left[idx]+=srcL[srcI]*voVol;
+          right[idx]+=srcR[srcI]*voVol;
+        }
+      }
+    }
     await ac.close();
-    // clamp
     for(let i=0;i<totalSamples;i++){left[i]=clamp(left[i],-1,1);right[i]=clamp(right[i],-1,1)}
     return {left,right};
   }catch(e){console.warn("mix audio failed",e);return null}
 }
 
 async function exportWebM(){
-  // Fallback: original MediaRecorder path
   if(!window.MediaRecorder){showToast("Unsupported","Use Chrome/Firefox.");return}
   const[w,h]=getExportSize();
   const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
   const ctx=canvas.getContext("2d",{alpha:false});const stream=canvas.captureStream(30);
   const workCanvas=document.createElement("canvas");workCanvas.width=w;workCanvas.height=h;
   const workCtx=workCanvas.getContext("2d",{alpha:false});
-  let audioCtx=null,dest=null,musicEl=null;const audioEls=[];
+  let audioCtx=null,dest=null,musicEl=null,voiceEl=null;const audioEls=[];
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
     if(AC){audioCtx=new AC();dest=audioCtx.createMediaStreamDestination();
       for(const c of clips){const el=document.createElement("video");el.src=c.url;el.playsInline=true;
         await new Promise((res,rej)=>{el.onloadedmetadata=res;el.onerror=rej;el.load()});
-        const src=audioCtx.createMediaElementSource(el),g=audioCtx.createGain();g.gain.value=parseFloat($("videoVolume")?.value)||1;src.connect(g);g.connect(dest);audioEls.push({el,gain:g});}
+        const src=audioCtx.createMediaElementSource(el),g=audioCtx.createGain();g.gain.value=c.muted?0:(parseFloat($("videoVolume")?.value)||1);src.connect(g);g.connect(dest);audioEls.push({el,gain:g});}
       if(musicURL){musicEl=new Audio(musicURL);musicEl.loop=true;
         await new Promise(res=>{musicEl.onloadedmetadata=res;musicEl.onerror=res;musicEl.load()});
         const ms=audioCtx.createMediaElementSource(musicEl),mg=audioCtx.createGain();mg.gain.value=0;ms.connect(mg);mg.connect(dest);musicEl._gain=mg;}
+      if(voiceoverURL){voiceEl=new Audio(voiceoverURL);
+        await new Promise(res=>{voiceEl.onloadedmetadata=res;voiceEl.onerror=res;voiceEl.load()});
+        const vs=audioCtx.createMediaElementSource(voiceEl),vg=audioCtx.createGain();vg.gain.value=parseFloat($("voiceVolume")?.value)||1;vs.connect(vg);vg.connect(dest);voiceEl._gain=vg;}
       dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));}
   }catch(err){console.warn("audio",err)}
   const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
@@ -1593,15 +1760,20 @@ async function exportWebM(){
   const done=new Promise(r=>rec.onstop=r);
   const total=totalDuration();let elapsed=0;
   const mStart=musicStartVal();
+  const voStart=parseFloat($("voiceStart")?.value||0)||0;
   const btn=$("startExportBtn");
   try{
     if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();
     rec.start(250);
+    if(voiceEl){
+      if(elapsed>=voStart){voiceEl.currentTime=elapsed-voStart;voiceEl.play().catch(()=>{})}
+      else{voiceEl.currentTime=0;}
+    }
     for(let i=0;i<clips.length;i++){
       const c=clips[i];
       const v=audioEls[i]?.el||document.createElement("video");
       if(!audioEls[i]){v.src=c.url;v.muted=true;await new Promise(res=>{v.onloadedmetadata=res;v.load()})}
-      v.muted=!audioEls[i];v.volume=1;v.playbackRate=c.speed;v.currentTime=c.start;
+      v.muted=!audioEls[i]||c.muted;v.volume=1;v.playbackRate=c.speed;v.currentTime=c.start;
       await new Promise(res=>{if(v.readyState>=2)res();else{v.onseeked=res;v.onerror=res}});
       await v.play().catch(()=>{});
       const clipDur=durationOf(c),trans=c.transition,transDur=trans==="cut"?0:Math.min(c.transitionDuration,clipDur/2);
@@ -1612,7 +1784,7 @@ async function exportWebM(){
         else if(performance.now()-lastMove>4000)break;
         const local=(v.currentTime-c.start)/c.speed,progress=transDur?Math.min(1,local/transDur):1;
         let alpha=1;if(transDur&&local<transDur&&trans==="fade")alpha=progress;
-        if(audioEls[i])audioEls[i].gain.gain.value=parseFloat($("videoVolume")?.value)||1;
+        if(audioEls[i])audioEls[i].gain.gain.value=c.muted?0:(parseFloat($("videoVolume")?.value)||1);
         if(musicEl&&musicEl._gain){
           const mt=elapsed-mStart;
           if(mt<0){if(!musicEl.paused)musicEl.pause();musicEl._gain.gain.value=0;}
@@ -1622,6 +1794,15 @@ async function exportWebM(){
             if(d&&isFinite(d)&&mt>d)target=mt%d;
             if(Math.abs(musicEl.currentTime-target)>0.25)musicEl.currentTime=target;
             musicEl._gain.gain.value=musicFade(mt,elapsed,total);
+          }
+        }
+        if(voiceEl&&voiceEl._gain){
+          const vt=elapsed-voStart;
+          if(vt<0){if(!voiceEl.paused)voiceEl.pause();voiceEl._gain.gain.value=0;}
+          else{
+            if(voiceEl.paused)await voiceEl.play().catch(()=>{});
+            if(Math.abs(voiceEl.currentTime-vt)>0.25)voiceEl.currentTime=vt;
+            voiceEl._gain.gain.value=parseFloat($("voiceVolume")?.value)||1;
           }
         }
         const es=effectState(c,local,durationOf(c));
@@ -1652,7 +1833,9 @@ async function exportWebM(){
   }catch(err){if(rec.state!=="inactive")rec.stop();await done;throw err}
   finally{cleanup()}
   function cleanup(){
-    if(musicEl)musicEl.pause();audioEls.forEach(x=>{x.el.pause();x.el.remove()});
+    if(musicEl)musicEl.pause();
+    if(voiceEl)voiceEl.pause();
+    audioEls.forEach(x=>{x.el.pause();x.el.remove()});
     if(audioCtx)audioCtx.close().catch(()=>{});stream.getTracks().forEach(t=>t.stop());
   }
 }
@@ -1665,7 +1848,6 @@ function finishExport(blob,ext){
   $("downloadLink").style.display="block";
   $("downloadLink").textContent=`⬇ Download .${ext} (${(blob.size/1048576).toFixed(1)} MB)`;
   $("startExportBtn").textContent="✅ Done – Export Again";
-  // Share button
   const shareBtn=$("shareExportBtn");
   if(navigator.canShare&&navigator.canShare({files:[new File([blob],"video."+ext,{type:blob.type})]})){
     shareBtn.style.display="block";
