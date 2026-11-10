@@ -6,8 +6,9 @@
 <title>Pikora Pro - Video Editor</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{--bg:#eef1f5;--panel:#ffffff;--sidebar:#ffffff;--border:#e2e6ed;--hover:#eceff4;--accent:#0099c0;--accent2:#3b82f6;--text:#1b1f27;--muted:#6b7280;--onacc:#ffffff;--track:#f6f8fb;--dots:#d8dee7;--toolbar:#ffffff}
-body.dark{--bg:#0a0a0c;--panel:#151518;--sidebar:#0f0f12;--border:#27272a;--hover:#27272a;--accent:#00e5ff;--text:#f4f4f5;--muted:#a1a1aa;--onacc:#000;--track:#0f0f12;--dots:#1a1a1f;--toolbar:#151518}
+/* CHANGED DEFAULT TO DARK / BLACK THEME */
+:root{--bg:#0a0a0c;--panel:#151518;--sidebar:#0f0f12;--border:#27272a;--hover:#27272a;--accent:#00e5ff;--accent2:#3b82f6;--text:#f4f4f5;--muted:#a1a1aa;--onacc:#000;--track:#0f0f12;--dots:#1a1a1f;--toolbar:#151518}
+body.light{--bg:#eef1f5;--panel:#ffffff;--sidebar:#ffffff;--border:#e2e6ed;--hover:#eceff4;--accent:#0099c0;--text:#1b1f27;--muted:#6b7280;--onacc:#ffffff;--track:#f6f8fb;--dots:#d8dee7;--toolbar:#ffffff}
 html,body{height:100%}
 body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
 .topbar{height:48px;flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 10px;z-index:50;gap:6px}
@@ -38,7 +39,7 @@ body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg)
 #dropZone .plus{width:56px;height:56px;border-radius:14px;background:var(--accent);color:var(--onacc);font-size:30px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 40%,transparent)}
 #dropZone b{font-size:15px}#dropZone small{color:var(--muted);font-size:12px}
 body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
-.timeline-area{height:280px;flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);display:flex;flex-direction:column;position:relative;z-index:10}
+.timeline-area{height:320px;flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);display:flex;flex-direction:column;position:relative;z-index:10}
 .resize-handle{position:absolute;top:-4px;left:0;right:0;height:8px;cursor:ns-resize;z-index:20;touch-action:none;background:transparent}
 .resize-handle::after{content:"";position:absolute;top:3px;left:50%;transform:translateX(-50%);width:40px;height:3px;background:var(--border);border-radius:2px}
 .resize-handle:hover::after{background:var(--accent)}
@@ -52,12 +53,20 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .zoom-btn{background:var(--hover);border:none;color:var(--text);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .zoom-btn:hover{background:var(--accent);color:var(--onacc)}
 #tlZoom{width:60px;accent-color:var(--accent);flex-shrink:0}
+
+/* TIMELINE TRACK LABELS & CONTROLS */
 .timeline-tracks{flex:1;min-height:0;display:flex;background:var(--track);overflow:hidden}
-.track-labels{flex:0 0 62px;background:var(--panel);border-right:1px solid var(--border);padding-top:26px;z-index:3;display:flex;flex-direction:column}
-.track-label{flex:1;min-height:48px;display:flex;align-items:center;padding:0 8px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:700}
+.track-labels{flex:0 0 90px;background:var(--panel);border-right:1px solid var(--border);padding-top:26px;z-index:3;display:flex;flex-direction:column}
+.track-label{flex:1;min-height:48px;display:flex;align-items:center;padding:0 6px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:700;position:relative}
 .track-label.video{background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 8%,transparent),transparent)}
 .track-label.audio{background:linear-gradient(90deg,color-mix(in srgb,#7c3aed 8%,transparent),transparent)}
 .track-label.text{background:linear-gradient(90deg,color-mix(in srgb,#8b5cf6 8%,transparent),transparent)}
+.tl-actions{position:absolute;right:4px;display:flex;gap:2px;top:50%;transform:translateY(-50%)}
+.tl-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;padding:0}
+.tl-btn:hover{background:var(--hover)}
+.tl-btn.muted{background:#dc2626;color:#fff;border-color:#dc2626}
+.tl-btn.del:hover{background:#dc2626;color:#fff;border-color:#dc2626}
+
 .tracks-scroll{flex:1;min-width:0;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
 .tracks-content{position:relative;min-width:100%;min-height:100%}
 .ruler{height:26px;border-bottom:1px solid var(--border);position:relative;background:var(--panel);cursor:pointer;touch-action:none;position:sticky;top:0;z-index:5}
@@ -90,6 +99,7 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 #playhead::after{content:"";position:absolute;left:-1px;top:0;bottom:0;width:2px;background:#ff3860;box-shadow:0 0 6px rgba(255,56,96,.7)}
 #playhead .head{position:absolute;left:-7px;top:0;width:14px;height:14px;background:#ff3860;border-radius:0 0 7px 7px;box-shadow:0 2px 6px rgba(0,0,0,.4);pointer-events:auto;cursor:ew-resize;touch-action:none}
 #playhead .head::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:5px;height:5px;background:#fff;border-radius:50%}
+
 .panel-drawer{position:fixed;left:0;right:0;bottom:56px;background:var(--panel);border-top:1px solid var(--border);border-radius:16px 16px 0 0;z-index:200;height:min(60vh,420px);display:flex;flex-direction:column;transform:translateY(calc(100% + 56px));transition:transform .28s cubic-bezier(.22,1,.36,1);box-shadow:0 -10px 40px rgba(0,0,0,.25);overflow:hidden;pointer-events:auto}
 .panel-drawer.open{transform:translateY(0)}
 .panel-drawer-handle{padding:8px;display:flex;justify-content:center;cursor:pointer;flex-shrink:0}
@@ -157,9 +167,9 @@ input[type=file]{display:none}
   .logo{font-size:15px}
   .btn-export{padding:6px 12px;font-size:11px}
   .tool-btn{padding:5px 6px;font-size:11px}
-  .timeline-area{height:220px}
+  .timeline-area{height:250px}
   .track-row{height:44px}
-  .track-labels{flex:0 0 52px;padding-top:22px}
+  .track-labels{flex:0 0 80px;padding-top:22px}
   .track-label{font-size:9px;padding:0 4px;min-height:44px}
   .ruler{height:22px}
   .ruler .mark{font-size:8px}
@@ -185,7 +195,7 @@ input[type=file]{display:none}
     <button class="tool-btn" id="redoBtn">↷ Redo</button>
   </div>
   <div class="topbar-right">
-    <button class="tool-btn" id="themeBtn" type="button">🌙</button>
+    <button class="tool-btn" id="themeBtn" type="button">☀️</button>
     <button class="btn-export" id="goExport">Export</button>
   </div>
 </header>
@@ -219,17 +229,36 @@ input[type=file]{display:none}
         </div>
         <button class="tool-btn" id="splitBtn2" type="button">✂</button>
         <button class="tool-btn" id="delBtn2" type="button">🗑</button>
-        
-        <!-- NEW MUTE BUTTON IN TIMELINE -->
-        <button class="tool-btn" id="quickMuteBtn" type="button" style="background:#dc2626;color:#fff;font-weight:700;border-radius:6px;padding:6px 12px;margin-left:4px;border:none;font-size:12px;cursor:pointer;white-space:nowrap">🔇 Mute Video</button>
-        
       </div>
       <div class="timeline-tracks">
+        
+        <!-- TRACK LABELS WITH INLINE CONTROLS -->
         <div class="track-labels">
-          <div class="track-label text">TEXT</div>
-          <div class="track-label video">VIDEO</div>
-          <div class="track-label audio">AUDIO</div>
+          <div class="track-label text" style="justify-content:center">TEXT</div>
+          <div class="track-label video">
+            VIDEO
+            <div class="tl-actions">
+              <button class="tl-btn" id="tlMuteVideoBtn" title="Mute/Unmute Original Video Voice">🔊</button>
+            </div>
+          </div>
+          <div class="track-label audio" style="flex-direction:column;justify-content:center;gap:4px;align-items:flex-start;padding-left:8px">
+            <div style="display:flex;align-items:center;width:100%;justify-content:space-between">
+              <span>MUSIC</span>
+              <div class="tl-actions" style="position:static;transform:none">
+                <button class="tl-btn" id="tlMuteMusicBtn" title="Mute/Unmute Music">🔊</button>
+                <button class="tl-btn del" id="tlDelMusicBtn" title="Delete Music">🗑</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;width:100%;justify-content:space-between">
+              <span>VOICE</span>
+              <div class="tl-actions" style="position:static;transform:none">
+                <button class="tl-btn" id="tlMuteVoiceBtn" title="Mute/Unmute Voiceover">🔊</button>
+                <button class="tl-btn del" id="tlDelVoiceBtn" title="Delete Voiceover">🗑</button>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div class="tracks-scroll" id="tracksScroll">
           <div class="tracks-content" id="tracksContent">
             <div class="ruler" id="ruler"></div>
@@ -316,6 +345,8 @@ let musicURL=null,musicDuration=0,musicPreviewEl=null,exporting=false,thumbJobs=
 let audioUnlocked=false,forceMusicPlay=false,musicBuffer=null,musicName="",musicBlob=false;
 let voiceoverURL=null,voiceoverName="",voiceoverDuration=0,voiceoverEl=null,voiceoverBlob=false;
 let voiceBuffer=null;
+let musicMuted = false;
+let voiceMuted = false;
 const imgCache={};
 let tlScale=80,pendingSeek=null;
 let currentPanel=null;
@@ -361,22 +392,22 @@ document.addEventListener("touchstart",unlockAudio,{once:true});
 let history=[],redoStack=[];
 function stateJSON(){return JSON.stringify({clips,texts,captions,captionStyle,selectedClip,
   stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),
-  music:musicURL?{url:musicURL,name:musicName,isBlob:musicBlob,duration:musicDuration}:null,
-  voiceover:voiceoverURL?{url:voiceoverURL,name:voiceoverName,isBlob:voiceoverBlob}:null})}
+  music:musicURL?{url:musicURL,name:musicName,isBlob:musicBlob,duration:musicDuration,muted:musicMuted}:null,
+  voiceover:voiceoverURL?{url:voiceoverURL,name:voiceoverName,isBlob:voiceoverBlob,muted:voiceMuted}:null})}
 function snapshot(){history.push(stateJSON());if(history.length>60)history.shift();redoStack=[]}
 function restore(json){
   const o=JSON.parse(json);
   clips=o.clips;texts=o.texts;captions=o.captions;captionStyle=o.captionStyle;
   stickers=o.stickers.map(st=>{if(st.type==="image"&&imgCache[st.src])st.img=imgCache[st.src];return st});
   selectedClip=Math.min(o.selectedClip,clips.length-1);selectedText=-1;selectedCaption=-1;selectedSticker=-1;
-  if(o.music&&o.music.url){musicURL=o.music.url;musicName=o.music.name;musicBlob=!!o.music.isBlob;musicDuration=o.music.duration||0;
+  if(o.music&&o.music.url){musicURL=o.music.url;musicName=o.music.name;musicBlob=!!o.music.isBlob;musicDuration=o.music.duration||0;musicMuted=!!o.music.muted;
     if(musicPreviewEl){musicPreviewEl.src=musicURL}}
-  else{musicURL=null;musicName="";musicBuffer=null;musicDuration=0}
+  else{musicURL=null;musicName="";musicBuffer=null;musicDuration=0;musicMuted=false}
   if(o.voiceover&&o.voiceover.url){
-    voiceoverURL=o.voiceover.url;voiceoverName=o.voiceover.name;voiceoverBlob=!!o.voiceover.isBlob;
+    voiceoverURL=o.voiceover.url;voiceoverName=o.voiceover.name;voiceoverBlob=!!o.voiceover.isBlob;voiceMuted=!!o.voiceover.muted;
     if(!voiceoverEl)voiceoverEl=new Audio();
     voiceoverEl.src=voiceoverURL;
-  }else{voiceoverURL=null;voiceoverName="";if(voiceoverEl)voiceoverEl.removeAttribute("src")}
+  }else{voiceoverURL=null;voiceoverName="";voiceMuted=false;if(voiceoverEl)voiceoverEl.removeAttribute("src")}
   if(selectedClip>=0)loadSelected();renderAll();
 }
 $("undoBtn").onclick=()=>{if(!history.length){showToast("Nothing to undo","");return}redoStack.push(stateJSON());playingAll=false;restore(history.pop());showToast("Undo","Reverted.")};
@@ -413,13 +444,6 @@ function buildPanelHTML(panelId){
         <button class="sec dan" id="deleteStickerBtn" type="button">Delete Element</button>
       </div>`;
     case "audio":return `
-      <div style="padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-          <span style="font-size:12px;font-weight:700">🎬 Original video sound</span>
-          <button class="sec" id="panelMuteBtn" type="button" style="width:auto;min-width:130px;margin:0;padding:8px 12px">🔊 Sound ON</button>
-        </div>
-        <div class="note">Click to mute the original voice of the video while your music / voiceover plays.</div>
-      </div>
       <label>🔎 Search any song, artist, or genre</label>
       <div style="display:flex;gap:6px;align-items:stretch"><input type="text" id="musicSearch" placeholder="Any song, artist, language..." style="margin-bottom:0"><button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button></div>
       <div class="chips" id="musicTags">
@@ -620,25 +644,6 @@ function wirePanel(panelId){
     $("previewMusicBtn").onclick=previewMusic;
     $("removeMusicBtn").onclick=removeMusic;
     if(musicURL){$("audioControls").classList.remove("hidden");$("audioInfo").textContent="🎵 "+musicName}
-    
-    // Wire up the panel mute button
-    const muteBtn=$("panelMuteBtn");
-    const refreshMuteBtn=()=>{
-      const allMuted=clips.length>0&&clips.every(c=>c.muted);
-      if(allMuted){muteBtn.textContent="🔇 Sound OFF";muteBtn.style.background="#dc2626";muteBtn.style.color="#fff"}
-      else{muteBtn.textContent="🔊 Sound ON";muteBtn.style.background="";muteBtn.style.color=""}
-    };
-    muteBtn.onclick=()=>{
-      if(!clips.length){showToast("No clips","Upload a video first.");return}
-      snapshot();
-      const allMuted=clips.every(c=>c.muted);
-      clips.forEach(c=>c.muted=!allMuted);
-      forceMuteOriginal(!allMuted);
-      updateAllClipMuteVisuals();
-      refreshMuteBtn();
-      showToast(allMuted?"Original sound ON":"Original sound MUTED",allMuted?"Video voice is back.":"Music / voiceover only.");
-    };
-    refreshMuteBtn();
   }
   if(panelId==="voice"){
     $("voiceoverFile").addEventListener("change", async e=>{
@@ -805,19 +810,50 @@ function renderAll(){
   const allMuted = clips.length>0 && clips.every(c=>c.muted);
   forceMuteOriginal(allMuted);
 
-  // Update the timeline toolbar mute button visual state
-  if($("quickMuteBtn")){
-    $("quickMuteBtn").textContent = allMuted ? "🔊 Unmute Video" : "🔇 Mute Video";
-    $("quickMuteBtn").style.background = allMuted ? "var(--accent)" : "#dc2626";
-  }
-  if($("panelMuteBtn")){
-    $("panelMuteBtn").textContent = allMuted ? "🔊 Sound ON" : "🔇 Sound OFF";
-    $("panelMuteBtn").style.background = allMuted ? "" : "#dc2626";
-    $("panelMuteBtn").style.color = allMuted ? "" : "#fff";
-  }
-
+  updateTimelineTrackButtons();
   maybeStartLoop();
 }
+
+function updateTimelineTrackButtons(){
+  // Video Track Mute Btn
+  const allMuted = clips.length>0 && clips.every(c=>c.muted);
+  const videoMuteBtn = $("tlMuteVideoBtn");
+  if(videoMuteBtn){
+    videoMuteBtn.textContent = allMuted ? "🔇" : "🔊";
+    videoMuteBtn.classList.toggle("muted", allMuted);
+  }
+  
+  // Music Track Controls
+  const musicMuteBtn = $("tlMuteMusicBtn");
+  const musicDelBtn = $("tlDelMusicBtn");
+  if(musicMuteBtn && musicDelBtn){
+    if(musicURL){
+      musicMuteBtn.style.display = "flex";
+      musicDelBtn.style.display = "flex";
+      musicMuteBtn.textContent = musicMuted ? "🔇" : "🔊";
+      musicMuteBtn.classList.toggle("muted", musicMuted);
+    } else {
+      musicMuteBtn.style.display = "none";
+      musicDelBtn.style.display = "none";
+    }
+  }
+
+  // Voice Track Controls
+  const voiceMuteBtn = $("tlMuteVoiceBtn");
+  const voiceDelBtn = $("tlDelVoiceBtn");
+  if(voiceMuteBtn && voiceDelBtn){
+    if(voiceoverURL){
+      voiceMuteBtn.style.display = "flex";
+      voiceDelBtn.style.display = "flex";
+      voiceMuteBtn.textContent = voiceMuted ? "🔇" : "🔊";
+      voiceMuteBtn.classList.toggle("muted", voiceMuted);
+    } else {
+      voiceMuteBtn.style.display = "none";
+      voiceDelBtn.style.display = "none";
+    }
+  }
+}
+
 function renderMediaGrid(){
   const g=$("mediaGrid");if(!g)return;
   g.innerHTML=clips.map((c,i)=>`<div class="media-item ${i===selectedClip?'selected':''}" onclick="selectClip(${i})">
@@ -850,33 +886,52 @@ function renderTimeline(){
   captions.forEach((c,i)=>{const d=document.createElement("div");
     d.className="tl-item cp"+(i===selectedCaption?" sel":"");d.style.cssText=`left:${10+c.start*sc}px;width:${Math.max(30,(c.end-c.start)*sc)}px;top:28px`;d.textContent=c.text;
     d.onclick=()=>{selectCaption(i);renderTimeline();seekGlobal(c.start)};trow.appendChild(d)});
+  
   const arow=$("audioTrackRow");arow.innerHTML="";
-  if(musicURL){
-    const start=musicStartVal();
-    const width2=Math.max(40,(musicDuration||10)*sc);
-    const w=document.createElement("div");w.className="wave-block";
-    w.style.left=(10+start*sc)+"px";w.style.width=width2+"px";
-    w.innerHTML='<div class="wlabel">🎵 '+(musicName||"Music")+'</div>';
-    const cv=document.createElement("canvas");
-    cv.width=Math.max(1,width2);cv.height=38;
-    cv.style.width="100%";cv.style.height="100%";
-    w.appendChild(cv);arow.appendChild(w);
-    drawWaveform(cv);bindWaveBlock(w,start,"musicStart");
-  }
-  if(voiceoverURL){
-    const voStart=parseFloat($("voiceStart")?.value||0)||0;
-    const voLen=voiceoverDuration||10;
-    const width2=Math.max(40,voLen*sc);
-    const w=document.createElement("div");w.className="voice-block";
-    w.style.left=(10+voStart*sc)+"px";w.style.width=width2+"px";
-    w.innerHTML='<div class="wlabel">🎙️ '+(voiceoverName||"Voiceover")+'</div>';
-    const cv=document.createElement("canvas");
-    cv.width=Math.max(1,Math.floor(width2));cv.height=38;
-    cv.style.width="100%";cv.style.height="100%";
-    w.appendChild(cv);arow.appendChild(w);
-    drawVoiceWave(cv);bindWaveBlock(w,voStart,"voiceStart");
-  }
-  if(!musicURL&&!voiceoverURL){
+  if(musicURL || voiceoverURL){
+    const bg = document.createElement("div");
+    bg.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;pointer-events:none";
+    
+    // Music row
+    const musicRow = document.createElement("div");
+    musicRow.style.cssText = "flex:1;position:relative;height:50%;border-bottom:1px dashed rgba(0,0,0,0.1)";
+    if(musicURL){
+      const start=musicStartVal();
+      const width2=Math.max(40,(musicDuration||10)*sc);
+      const w=document.createElement("div");w.className="wave-block";
+      w.style.left=(10+start*sc)+"px";w.style.width=width2+"px";
+      w.style.top="2px";w.style.bottom="2px";
+      w.style.opacity = musicMuted ? ".3" : "1";
+      w.innerHTML='<div class="wlabel">🎵 '+(musicName||"Music")+'</div>';
+      const cv=document.createElement("canvas");
+      cv.width=Math.max(1,width2);cv.height=38;
+      cv.style.width="100%";cv.style.height="100%";
+      w.appendChild(cv);musicRow.appendChild(w);
+      drawWaveform(cv);bindWaveBlock(w,start,"musicStart");
+    }
+    bg.appendChild(musicRow);
+
+    // Voice row
+    const voiceRow = document.createElement("div");
+    voiceRow.style.cssText = "flex:1;position:relative;height:50%";
+    if(voiceoverURL){
+      const voStart=parseFloat($("voiceStart")?.value||0)||0;
+      const voLen=voiceoverDuration||10;
+      const width2=Math.max(40,voLen*sc);
+      const w=document.createElement("div");w.className="voice-block";
+      w.style.left=(10+voStart*sc)+"px";w.style.width=width2+"px";
+      w.style.top="2px";w.style.bottom="2px";
+      w.style.opacity = voiceMuted ? ".3" : "1";
+      w.innerHTML='<div class="wlabel">🎙️ '+(voiceoverName||"Voiceover")+'</div>';
+      const cv=document.createElement("canvas");
+      cv.width=Math.max(1,Math.floor(width2));cv.height=38;
+      cv.style.width="100%";cv.style.height="100%";
+      w.appendChild(cv);voiceRow.appendChild(w);
+      drawVoiceWave(cv);bindWaveBlock(w,voStart,"voiceStart");
+    }
+    bg.appendChild(voiceRow);
+    arow.appendChild(bg);
+  } else {
     arow.innerHTML='<div class="tl-hint" style="font-size:11px">🎵 No audio — open Audio or Voice tab</div>';
   }
   updatePlayhead();
@@ -987,9 +1042,9 @@ $("zoomOut").onclick=()=>{tlScale=clamp(tlScale-15,30,240);$("tlZoom").value=tlS
 $("tlZoom").addEventListener("input",e=>{tlScale=+e.target.value;renderTimeline()});
 $("delBtn2").onclick=()=>{if(selectedClip<0)return;snapshot();clips.splice(selectedClip,1);selectedClip=Math.min(selectedClip,clips.length-1);if(selectedClip>=0)loadSelected();renderAll()};
 
-// WIRE UP THE NEW TIMELINE MUTE BUTTON
-$("quickMuteBtn").onclick=()=>{
-  if(!clips.length){showToast("No clips","Upload a video first.");return}
+// WIRE UP THE NEW TIMELINE LABEL BUTTONS
+$("tlMuteVideoBtn").onclick=()=>{
+  if(!clips.length)return;
   snapshot();
   const allMuted = clips.every(c=>c.muted);
   clips.forEach(c=>c.muted = !allMuted);
@@ -997,6 +1052,41 @@ $("quickMuteBtn").onclick=()=>{
   updateAllClipMuteVisuals();
   showToast(allMuted ? "Original sound ON" : "Original sound MUTED", allMuted ? "Video voice is back." : "Music / voiceover only.");
 };
+
+$("tlMuteMusicBtn").onclick=()=>{
+  if(!musicURL)return;
+  snapshot();
+  musicMuted = !musicMuted;
+  if(musicMuted && musicPreviewEl) musicPreviewEl.pause();
+  if(!musicMuted && !preview.paused && musicPreviewEl) musicPreviewEl.play().catch(()=>{});
+  updateTimelineTrackButtons();
+  renderTimeline();
+};
+
+$("tlDelMusicBtn").onclick=()=>{
+  if(!musicURL)return;
+  snapshot();
+  removeMusic();
+  showToast("Deleted", "Music removed from timeline.");
+};
+
+$("tlMuteVoiceBtn").onclick=()=>{
+  if(!voiceoverURL)return;
+  snapshot();
+  voiceMuted = !voiceMuted;
+  if(voiceMuted && voiceoverEl) voiceoverEl.pause();
+  if(!voiceMuted && !preview.paused && voiceoverEl) voiceoverEl.play().catch(()=>{});
+  updateTimelineTrackButtons();
+  renderTimeline();
+};
+
+$("tlDelVoiceBtn").onclick=()=>{
+  if(!voiceoverURL)return;
+  snapshot();
+  removeVoiceover();
+  showToast("Deleted", "Voiceover removed from timeline.");
+};
+
 
 const timelineArea=$("timelineArea"),resizeHandle=$("resizeHandle");
 let resizing=false,startY=0,startH=0;
@@ -1021,7 +1111,6 @@ function loadSelected(){
     preview.currentTime=pendingSeek!=null?pendingSeek:clamp(c.start,0,Math.max(0,preview.duration-.05));pendingSeek=null;
     preview.playbackRate=c.speed;
     
-    // Don't let loadSelected() turn sound back on if global mute is active
     const allMuted = clips.length>0 && clips.every(x=>x.muted);
     forceMuteOriginal(allMuted || c.muted);
 
@@ -1060,6 +1149,7 @@ function musicFade(mt,gt,total){
 }
 function syncMusicPreview(){
   if(!musicURL||!musicPreviewEl)return;
+  if(musicMuted){if(!musicPreviewEl.paused)musicPreviewEl.pause();return;}
   const c=clips[selectedClip];
   if(!c){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
   const gt=globalTime(),mt=gt-musicStartVal(),total=totalDuration();
@@ -1073,6 +1163,7 @@ function syncMusicPreview(){
 }
 function syncVoiceoverPreview(){
   if(!voiceoverURL||!voiceoverEl)return;
+  if(voiceMuted){if(!voiceoverEl.paused)voiceoverEl.pause();return;}
   if(preview.paused){if(!voiceoverEl.paused)voiceoverEl.pause();return}
   const voStart=parseFloat($("voiceStart")?.value||0)||0;
   const gt=globalTime();
@@ -1107,11 +1198,11 @@ $("playBtn").onclick=()=>{
   forceMuteOriginal(_allMuted || (c&&c.muted));
 
   preview.play();
-  if(musicURL&&musicPreviewEl){
+  if(musicURL&&musicPreviewEl&&!musicMuted){
     const mt=Math.max(0,globalTime()-musicStartVal());
     if(musicPreviewEl.paused){musicPreviewEl.currentTime=mt;musicPreviewEl.volume=parseFloat($("musicVolume")?.value)||0.35;musicPreviewEl.play().catch(()=>{})}
   }
-  if(voiceoverURL&&voiceoverEl){
+  if(voiceoverURL&&voiceoverEl&&!voiceMuted){
     const voStart=parseFloat($("voiceStart")?.value||0)||0;
     voiceoverEl.currentTime=voStart+globalTime();
     voiceoverEl.volume=parseFloat($("voiceVolume")?.value)||1;
@@ -1366,7 +1457,7 @@ window.autoTranscribe=autoTranscribe;
 /* ==== VOICEOVER ==== */
 async function setVoiceover(url,name,isBlob){
   if(voiceoverURL&&voiceoverBlob)URL.revokeObjectURL(voiceoverURL);
-  voiceoverURL=url;voiceoverName=name||"Voiceover";voiceoverBlob=!!isBlob;
+  voiceoverURL=url;voiceoverName=name||"Voiceover";voiceoverBlob=!!isBlob;voiceMuted=false;
   if(!voiceoverEl){voiceoverEl=new Audio();voiceoverEl.loop=false;}
   voiceoverEl.src=voiceoverURL;
   await new Promise(res=>{
@@ -1378,17 +1469,17 @@ async function setVoiceover(url,name,isBlob){
   if($("voiceoverInfo"))$("voiceoverInfo").textContent="🎙️ "+voiceoverName;
   if($("voiceoverControls"))$("voiceoverControls").classList.remove("hidden");
   if($("voiceLenVal"))$("voiceLenVal").textContent=voiceoverDuration.toFixed(1);
-  renderVoicePanel();renderTimeline();
+  renderVoicePanel();renderTimeline();updateTimelineTrackButtons();
   showToast("Voiceover loaded","Use the toggle to mute the original voice.");
 }
 function removeVoiceover(){
   if(voiceoverURL&&voiceoverBlob)URL.revokeObjectURL(voiceoverURL);
-  voiceoverURL=null;voiceoverName="";voiceoverDuration=0;voiceBuffer=null;
+  voiceoverURL=null;voiceoverName="";voiceoverDuration=0;voiceBuffer=null;voiceMuted=false;
   if(voiceoverEl){voiceoverEl.pause();voiceoverEl.removeAttribute("src")}
   if($("voiceoverInfo"))$("voiceoverInfo").textContent="No voiceover loaded.";
   if($("voiceoverControls"))$("voiceoverControls").classList.add("hidden");
   if($("voiceoverFile"))$("voiceoverFile").value="";
-  renderVoicePanel();renderTimeline();
+  renderVoicePanel();renderTimeline();updateTimelineTrackButtons();
 }
 function renderVoicePanel(){
   const el=$("clipMuteList");if(!el)return;
@@ -1406,7 +1497,7 @@ window.toggleClipMute=i=>{
   clips[i].muted=!clips[i].muted;
   const c=clips[selectedClip];
   if(selectedClip>=0)preview.muted=!!(c&&c.muted);
-  renderVoicePanel();renderTimeline();
+  renderVoicePanel();renderTimeline();updateTimelineTrackButtons();
   showToast(clips[i].muted?"Clip muted":"Clip unmuted",clips[i].name);
 };
 function updateAllClipMuteVisuals(){
@@ -1414,6 +1505,7 @@ function updateAllClipMuteVisuals(){
   forceMuteOriginal(allMuted);
   renderTimeline();
   if(currentPanel==="voice")renderVoicePanel();
+  updateTimelineTrackButtons();
 }
 
 /* ==== REAL MUSIC SEARCH: DEEZER + iTUNES ==== */
@@ -1513,23 +1605,23 @@ window.libAdd=async i=>{
 
 async function setMusicSource(url,name,isBlob){
   if(musicURL&&musicBlob)URL.revokeObjectURL(musicURL);
-  musicURL=url;musicBlob=!!isBlob;musicDuration=0;musicName=name||"Music";
+  musicURL=url;musicBlob=!!isBlob;musicDuration=0;musicName=name||"Music";musicMuted=false;
   const v=document.createElement("video");v.src=musicURL;v.onloadedmetadata=()=>{musicDuration=v.duration;v.removeAttribute("src");renderTimeline()};
   if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.loop=true;}
   musicPreviewEl.src=musicURL;musicPreviewEl.volume=parseFloat($("musicVolume")?.value)||0.35;
   if($("audioInfo"))$("audioInfo").textContent="🎵 "+name;
   if($("audioControls"))$("audioControls").classList.remove("hidden");
   musicBuffer=await decodeMusic(musicURL);
-  renderTimeline();unlockAudio();
+  renderTimeline();unlockAudio();updateTimelineTrackButtons();
 }
 function removeMusic(){
   if(musicURL&&musicBlob)URL.revokeObjectURL(musicURL);
-  musicURL=null;musicDuration=0;musicBuffer=null;musicName="";
+  musicURL=null;musicDuration=0;musicBuffer=null;musicName="";musicMuted=false;
   if(musicPreviewEl){musicPreviewEl.pause();musicPreviewEl.removeAttribute("src")}
   if($("musicFile"))$("musicFile").value="";
   if($("audioInfo"))$("audioInfo").textContent="No music selected.";
   if($("audioControls"))$("audioControls").classList.add("hidden");
-  renderTimeline();
+  renderTimeline();updateTimelineTrackButtons();
 }
 
 const EMOJIS=["⭐","❤️","🔥","✨","😂","🎉","😎","👍","👏","💯","🚀","🎵","💬","📍","🌸","😍","👑","💎","🏆","🎯"];
@@ -1563,9 +1655,9 @@ function setTransition(v){const c=clips[selectedClip];if(!c){showToast("No clip"
 window.setTransition=setTransition;
 
 $("quickRatio").addEventListener("change",e=>{$("aspectRatio").value=e.target.value;updateFrame()});
-function applyTheme(d){document.body.classList.toggle("dark",d);$("themeBtn").textContent=d?"☀️":"🌙";try{localStorage.setItem("pikoraTheme",d?"dark":"light")}catch(e){}}
-let startDark=false;try{startDark=localStorage.getItem("pikoraTheme")==="dark"}catch(e){}
-applyTheme(startDark);$("themeBtn").onclick=()=>applyTheme(!document.body.classList.contains("dark"));
+function applyTheme(d){document.body.classList.toggle("light",d);$("themeBtn").textContent=d?"🌙":"☀️";try{localStorage.setItem("pikoraTheme",d?"light":"dark")}catch(e){}}
+let startLight=false;try{startLight=localStorage.getItem("pikoraTheme")==="light"}catch(e){}
+applyTheme(startLight);$("themeBtn").onclick=()=>applyTheme(!document.body.classList.contains("light"));
 
 ["dragenter","dragover"].forEach(ev=>document.addEventListener(ev,e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes("Files")){e.preventDefault();document.body.classList.add("dragging")}}));
 document.addEventListener("dragleave",e=>{if(!e.relatedTarget)document.body.classList.remove("dragging")});
@@ -1773,7 +1865,7 @@ async function buildMixedAudio(total){
       }
       acc+=dur;
     }
-    if(musicURL){
+    if(musicURL && !musicMuted){
       const buf=await fetch(musicURL).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
       if(buf){
         const mStart=musicStartVal();
@@ -1799,7 +1891,7 @@ async function buildMixedAudio(total){
         }
       }
     }
-    if(voiceoverURL){
+    if(voiceoverURL && !voiceMuted){
       const buf=await fetch(voiceoverURL).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).catch(()=>null);
       if(buf){
         const voStart=parseFloat($("voiceStart")?.value||0)||0;
@@ -1838,10 +1930,10 @@ async function exportWebM(){
       for(const c of clips){const el=document.createElement("video");el.src=c.url;el.playsInline=true;
         await new Promise((res,rej)=>{el.onloadedmetadata=res;el.onerror=rej;el.load()});
         const src=audioCtx.createMediaElementSource(el),g=audioCtx.createGain();g.gain.value=c.muted?0:(parseFloat($("videoVolume")?.value)||1);src.connect(g);g.connect(dest);audioEls.push({el,gain:g});}
-      if(musicURL){musicEl=new Audio(musicURL);musicEl.loop=true;
+      if(musicURL && !musicMuted){musicEl=new Audio(musicURL);musicEl.loop=true;
         await new Promise(res=>{musicEl.onloadedmetadata=res;musicEl.onerror=res;musicEl.load()});
         const ms=audioCtx.createMediaElementSource(musicEl),mg=audioCtx.createGain();mg.gain.value=0;ms.connect(mg);mg.connect(dest);musicEl._gain=mg;}
-      if(voiceoverURL){voiceEl=new Audio(voiceoverURL);
+      if(voiceoverURL && !voiceMuted){voiceEl=new Audio(voiceoverURL);
         await new Promise(res=>{voiceEl.onloadedmetadata=res;voiceEl.onerror=res;voiceEl.load()});
         const vs=audioCtx.createMediaElementSource(voiceEl),vg=audioCtx.createGain();vg.gain.value=parseFloat($("voiceVolume")?.value)||1;vs.connect(vg);vg.connect(dest);voiceEl._gain=vg;}
       dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));}
