@@ -716,7 +716,6 @@ function wirePanel(panelId){
     if($("removeMusicBtn"))$("removeMusicBtn").onclick=()=>{if(selectedMusicClip>=0){musicClips.splice(selectedMusicClip,1);selectedMusicClip=-1;syncPrimaryMusicFromClips();renderAll();showToast("Removed","Music removed.")}};
     if(musicClips.length){$("audioControls").classList.remove("hidden");$("audioInfo").textContent="🎵 "+musicName}
     if(selectedMusicClip>=0&&musicClips[selectedMusicClip]){const mc=musicClips[selectedMusicClip];$("musicSrcStart").value=fmt(mc.srcStart);$("musicSrcEnd").value=fmt(mc.srcEnd);$("musicStart").value=fmt(mc.timelineStart);$("musicVolume").value=mc.volume;$("musicVolVal").textContent=Math.round(mc.volume*100)+"%"};
-    bindMusicPicker();requestAnimationFrame(drawMusicPicker);
   }
   if(panelId==="voice"){
     $("voiceoverFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);await setVoiceover(url,f.name,true);e.target.value=""};
@@ -1156,7 +1155,6 @@ function loadSelected(){
 }
 window.selectClip=selectClip;
 window.setTransition=setTransition;
-window.applyTemplate=applyTemplate;
 
 /* BIGGER PREVIEW */
 function updateFrame(){
@@ -1861,25 +1859,31 @@ async function exportMP4(){
   const {Muxer,ArrayBufferTarget}=muxerMod;
   const[w,h]=getExportSize();const FPS=30;const total=totalDuration();const totalFrames=Math.ceil(total*FPS);
   const target=new ArrayBufferTarget();
-  const muxer=new Muxer({target,video:{codec:"avc",width:w,height:h,frameRate:FPS},audio:{codec:"aac",numberOfChannels:2,sampleRate:48000},fastStart:"in-memory"});
   const bitrate=Math.round((+$("exportQuality").value||5)*1e6);
+  const btnPrep=$("startExportBtn");btnPrep.textContent="Mixing audio…";
+  const audioMix=await buildMixedAudio(total);
+  const wantsSound=clips.some(c=>!c.muted)||(musicClips.length&&!musicMuted)||(voiceoverURL&&!voiceMuted)||sfx.length>0;
+  const hasAudio=!!(audioMix&&audioMix.left.length>0&&audioMix.peak>0);
+  if(wantsSound&&!hasAudio){showToast("No sound found","The browser could not read the audio from your clips. Try an MP4 (H.264 + AAC) file.")}
+  // AAC encoding is missing in Firefox, Chrome on Linux and some Android phones; fall back to Opus so the video keeps its sound.
+  let audioCodec=null;
+  if(hasAudio&&typeof AudioEncoder!=="undefined"){
+    const cfg=codec=>({codec,sampleRate:48000,numberOfChannels:2,bitrate:128000});
+    try{if((await AudioEncoder.isConfigSupported(cfg("mp4a.40.2"))).supported)audioCodec={muxer:"aac",enc:"mp4a.40.2"}}catch(e){}
+    if(!audioCodec){try{if((await AudioEncoder.isConfigSupported(cfg("opus"))).supported)audioCodec={muxer:"opus",enc:"opus"}}catch(e){}}
+  }
+  if(hasAudio&&!audioCodec){return exportWebM()}
+  const muxer=new Muxer({target,video:{codec:"avc",width:w,height:h,frameRate:FPS},...(audioCodec?{audio:{codec:audioCodec.muxer,numberOfChannels:2,sampleRate:48000}}:{}),fastStart:"in-memory",firstTimestampBehavior:"offset"});
   let videoEncoder;
   try{
     await VideoEncoder.isConfigSupported({codec:"avc1.42001f",width:w,height:h,bitrate,framerate:FPS});
     videoEncoder=new VideoEncoder({output:(chunk,meta)=>muxer.addVideoChunk(chunk,meta),error:e=>console.error("video enc",e)});
     videoEncoder.configure({codec:"avc1.42001f",width:w,height:h,bitrate,framerate:FPS,latencyMode:"quality"});
   }catch(e){throw new Error("VideoEncoder unavailable: "+e.message)}
-  const audioMix=await buildMixedAudio(total);
-  window.__pikoraExportDebugInfo={music:musicClips.length,voice:!!voiceoverURL,sfx:sfx.length,audioMixLen:audioMix?audioMix.left.length:0,audioPeak:audioMix?audioMix.peak:0,stage:"mp4"};
-  let audioEncoder=null;
-  if(audioMix&&audioMix.left.length>0){
-    try{
-      const aSupport=await AudioEncoder.isConfigSupported({codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:2,bitrate:128000});
-      if(aSupport.supported){
-        audioEncoder=new AudioEncoder({output:(chunk,meta)=>muxer.addAudioChunk(chunk,meta),error:e=>console.error("audio enc",e)});
-        audioEncoder.configure({codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:2,bitrate:128000});
-      }
-    }catch(e){console.warn("AudioEncoder failed",e)}
+  let audioEncoder=null,audioEncError=null;
+  if(audioCodec){
+    audioEncoder=new AudioEncoder({output:(chunk,meta)=>muxer.addAudioChunk(chunk,meta),error:e=>{audioEncError=e;console.error("audio enc",e)}});
+    audioEncoder.configure({codec:audioCodec.enc,sampleRate:48000,numberOfChannels:2,bitrate:128000});
   }
   const canvas=new OffscreenCanvas(w,h);const ctx=canvas.getContext("2d",{alpha:false});
   const fit=$("fitMode").value;const timeline=[];let acc=0;
@@ -1922,6 +1926,7 @@ async function exportMP4(){
       if(i%(FRAME_SAMPLES*50)===0)await new Promise(r=>setTimeout(r,0));
     }
     await audioEncoder.flush();audioEncoder.close();
+    if(audioEncError)showToast("Audio problem","Sound could not be encoded: "+(audioEncError.message||audioEncError));
   }
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
