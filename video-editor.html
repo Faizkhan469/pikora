@@ -809,7 +809,7 @@ async function handleVideoUpload(e){
     renderAll();
   }
   loadSelected();
-  showToast("Uploaded",files.length+" clip(s) added.");
+  if(clips.some(c=>!c.duration)){showToast("Video not ready","This file may use an unsupported codec. Try an MP4 encoded with H.264.");}else{showToast("Uploaded",files.length+" clip(s) added.");}
   if(currentPanel==="media"){renderMediaGrid();if(selectedClip>=0&&$("clipControls")){$("clipControls").classList.remove("hidden");loadSelectedIntoPanel()}}
   if(currentPanel==="voice")renderVoicePanel();
 }
@@ -1239,7 +1239,9 @@ $("playBtn").onclick=()=>{
   playingAll=true;
   const _allMuted=clips.length>0&&clips.every(x=>x.muted);
   forceMuteOriginal(_allMuted||(c&&c.muted));
+  preview.muted=false; forceMuteOriginal(!!(c&&c.muted)||_allMuted);
   const p=preview.play();
+  if(p&&p.then){ p.then(()=>{ syncMusicPreview(); syncVoiceoverPreview(); }).catch(()=>{}); }
   if(p&&p.catch){
     p.catch((err)=>{
       if(err.name==="NotAllowedError"){
@@ -1514,6 +1516,7 @@ function renderAudioTab(){
   else if(audioTab==="full")body.innerHTML=search("Mood, genre or instrument…")+`<div class="chips">${chips(FULL_CHIPS)}</div><div id="musicResults"></div><div class="note">✅ Complete songs from Jamendo, free under Creative Commons.</div>`;
   else if(audioTab==="sfx")body.innerHTML=search("whoosh, pop, applause…")+`<div class="chips">${chips(SFX_CHIPS)}</div><div id="sfxList"></div><div id="musicResults"></div><div class="note">Sounds are added at the red playhead. From Freesound.</div>`;
   else body.innerHTML=`<label class="upload-zone" for="musicFile" style="padding:14px"><span>📁</span><strong>Upload a full song from your device</strong><br><small>MP3, WAV, M4A</small></label>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px"><label>Use online audio URL</label><div style="display:flex;gap:6px"><input id="onlineMusicUrl" type="url" placeholder="https://.../music.mp3" style="margin-bottom:0"><button class="act" id="addOnlineMusicBtn" type="button" style="width:auto;margin-top:0;padding:0 12px">Add</button></div><div class="note">Use a direct MP3/WAV/M4A link that allows browser playback.</div></div>
     <label style="margin-top:12px">Use the sound from one of your clips</label>
     ${clips.length?clips.map((c,i)=>`<div class="track-res">${c.thumb?`<img src="${c.thumb}" alt="">`:'<div class="cov">🎞</div>'}<div class="info"><div class="t">${esc(c.name)}</div><div class="m">${fmt(c.duration)}s</div></div><button class="icon-btn add" type="button" onclick="useClipSound(${i})">Use sound</button></div>`).join(""):'<div class="note">Upload a video first.</div>'}
     <div class="toggle-row"><input type="checkbox" id="muteAfterExtract" checked><span>Mute the clips' own sound after</span></div>`;
@@ -1528,6 +1531,12 @@ function renderAudioTab(){
     else if(audioTab==="full"){inp.value="cinematic";go()}
   }
   if(audioTab==="sfx")renderSfxList();
+  if(audioTab==="mine" && $("addOnlineMusicBtn")) $("addOnlineMusicBtn").onclick=async()=>{
+    const u=$("onlineMusicUrl").value.trim();
+    if(!/^https?:\/\//i.test(u)){showToast("Invalid URL","Paste a direct audio file link.");return}
+    try{await setMusicSource(u,u.split("/").pop().split("?")[0]||"Online music",false);showToast("Music added", "Online audio added to your timeline.");}
+    catch(e){showToast("Could not load music","The link must be a direct MP3, WAV, or M4A file and allow browser playback.");}
+  };
 }
 async function runAudioSearch(q){
   if(!q){showToast("Type a word","Any song, artist, mood or sound");return}
