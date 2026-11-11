@@ -1431,10 +1431,15 @@ async function decodeAudio(url){
 }
 async function setMusicSource(url,name,isBlob){
   const decoded=await decodeAudio(url);
-  const newClip={id:"m"+Date.now()+Math.floor(Math.random()*1000),url,name:name||"Music",srcStart:0,srcEnd:decoded?decoded.duration:0,timelineStart:0,volume:0.35,fadeIn:1,fadeOut:2,muted:false,blob:!!isBlob,buffer:decoded};
+  let duration=decoded?.duration||0;
+  if(!duration){
+    duration=await new Promise(resolve=>{const a=new Audio();a.preload="metadata";a.onloadedmetadata=()=>resolve(Number.isFinite(a.duration)?a.duration:0);a.onerror=()=>resolve(0);a.src=url;a.load();setTimeout(()=>resolve(0),8000)});
+  }
+  if(!duration){showToast("Music could not load","Choose an MP3/WAV/M4A file or a direct audio URL.");return}
+  const newClip={id:"m"+Date.now()+Math.floor(Math.random()*1000),url,name:name||"Music",srcStart:0,srcEnd:duration,timelineStart:0,volume:0.35,fadeIn:1,fadeOut:2,muted:false,blob:!!isBlob,buffer:decoded};
   musicClips.push(newClip);selectedMusicClip=musicClips.length-1;
   syncPrimaryMusicFromClips();
-  musicDuration=decoded?decoded.duration:0;musicBuffer=decoded;
+  musicDuration=duration;musicBuffer=decoded;
   if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.loop=true}
   musicPreviewEl.src=url;musicPreviewEl.volume=newClip.volume;
   if($("audioInfo"))$("audioInfo").textContent="🎵 "+name;
