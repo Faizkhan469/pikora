@@ -8,7 +8,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-:root{--bg:#000000;--panel:#0b0b0b;--border:#262626;--hover:#1f1f1f;--accent:#00e5ff;--text:#f4f4f5;--muted:#a1a1aa;--onacc:#000000;--track:#050505;--dots:#1a1a1a;--toolbar:#0b0b0b}
+:root{--bg:#eef1f5;--panel:#ffffff;--border:#e2e6ed;--hover:#eceff4;--accent:#0099c0;--text:#1b1f27;--muted:#6b7280;--onacc:#ffffff;--track:#f6f8fb;--dots:#d8dee7;--toolbar:#ffffff}
 body.dark{--bg:#0a0a0c;--panel:#151518;--border:#27272a;--hover:#27272a;--accent:#00e5ff;--text:#f4f4f5;--muted:#a1a1aa;--onacc:#000;--track:#0f0f12;--dots:#1a1a1f;--toolbar:#151518}
 html,body{height:100%}
 body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;-webkit-user-select:none;user-select:none}
@@ -207,6 +207,8 @@ input[type=file]{display:none}
   <button class="btool" data-panel="ai"><span>🤖</span>AI</button>
   <button class="btool" data-panel="video"><span>🎬</span>Video</button>
   <button class="btool" data-panel="layers"><span>📚</span>Layers</button>
+  <button class="btool" data-panel="music"><span>🎵</span>Music</button>
+  <button class="btool" data-panel="effects"><span>✨</span>Effects</button>
   <button class="btool" data-panel="save"><span>💾</span>Save</button>
 </nav>
 <input type="file" id="upload" accept="image/jpeg,image/png,image/webp">
@@ -255,7 +257,7 @@ let _baseCache=null,_baseKey="";
 function invalidateBase(){_baseCache=null;_baseKey=""}
 
 function applyTheme(d){document.body.classList.toggle("dark",d);$("themeBtn").textContent=d?"☀️":"🌙";try{localStorage.setItem("pikoraTheme",d?"dark":"light")}catch(e){}}
-let startDark=true;try{startDark=localStorage.getItem("pikoraTheme")!=="light"}catch(e){}
+let startDark=false;try{startDark=localStorage.getItem("pikoraTheme")==="dark"}catch(e){}
 applyTheme(startDark);$("themeBtn").onclick=()=>applyTheme(!document.body.classList.contains("dark"));
 
 const drawer=$("panelDrawer"),drawerBody=$("drawerBody"),drawerTitleText=$("drawerTitleText");
@@ -307,77 +309,68 @@ function buildPanelHTML(panelId){
         <option value="sepia(50%) hue-rotate(-20deg) saturate(180%)">Sunset</option>
       </select>`;
     case "text":return `
-      <div class="selected-info" id="selectionInfo">Type text below, then drag it on the photo.</div>
-      <label>Text content</label>
+      <div class="selected-info" id="selectionInfo">Type your text, tap <b>Add text</b>, then drag it on the photo.</div>
+      <label>Text</label>
       <input type="text" id="textInput" placeholder="Type here" style="font-size:16px">
       <div class="g2">
-        <div><label>Font</label><select id="fontFamily"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Impact">Impact</option><option value="Courier New">Courier New</option><option value="Comic Sans MS">Comic Sans MS</option></select></div>
-        <div><label>Align</label><select id="textAlign"><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option></select></div>
+        <div><label>Size</label><input type="number" id="textSize" min="8" max="300" value="45"></div>
+        <div><label>Colour</label><div class="color-row"><input type="color" id="textColor" value="#ffffff"><button class="pick" data-target="textColor">🎨</button></div></div>
       </div>
-      <label>Preset</label>
-      <select id="textPreset"><option value="custom">Custom</option><option value="title">Bold title</option><option value="subtitle">Elegant subtitle</option><option value="neon">Neon glow</option><option value="outline">Outlined</option><option value="shadow">Drop shadow</option><option value="badge">Label / badge</option></select>
-      <button class="sec" id="applyPreset" type="button">Apply preset</button>
-      <div class="g2">
-        <div><label>Text colour</label><div class="color-row"><input type="color" id="textColor" value="#ffffff"><button class="pick" data-target="textColor">🎨</button></div></div>
-        <div><label>Outline</label><div class="color-row"><input type="color" id="outlineColor" value="#000000"><button class="pick" data-target="outlineColor">🎨</button></div></div>
-      </div>
-      <div class="g2">
-        <div><label>Outline width</label><input type="number" id="outlineWidth" min="0" max="15" value="2"></div>
-        <div><label>Font size</label><input type="number" id="textSize" min="8" max="300" value="45"></div>
-      </div>
-      <label>Opacity <span class="range-value" id="textOpacityValue">100%</span></label>
-      <input type="range" id="textOpacity" min="0" max="100" value="100">
-      <label>Letter spacing <span class="range-value" id="letterSpacingValue">0px</span></label>
-      <input type="range" id="letterSpacing" min="-5" max="30" value="0">
-      <label>Line spacing <span class="range-value" id="lineSpacingValue">1.2x</span></label>
-      <input type="range" id="lineSpacing" min="0.8" max="3" step="0.1" value="1.2">
-      <h3>🌈 Curved text</h3>
-      <select id="textCurve"><option value="none">Straight</option><option value="up">Arc up</option><option value="down">Arc down</option><option value="circle">Full circle</option></select>
-      <label>Curve amount <span class="range-value" id="curveAmountValue">180°</span></label>
-      <input type="range" id="curveAmount" min="45" max="360" value="180">
-      <label>Rotation <span class="range-value" id="textRotationValue">0°</span></label>
-      <input type="range" id="textRotation" min="0" max="360" value="0">
-      <div class="g2"><button class="sec" id="rotateTextLeft" type="button">↶ -90°</button><button class="sec" id="rotateTextRight" type="button">↷ +90°</button></div>
       <div class="g2">
         <div class="checkline"><input type="checkbox" id="textBold" checked><label for="textBold">Bold</label></div>
         <div class="checkline"><input type="checkbox" id="textItalic"><label for="textItalic">Italic</label></div>
       </div>
-      <h3>🌑 Shadow</h3>
-      <div class="checkline"><input type="checkbox" id="textShadowEnabled"><label for="textShadowEnabled">Enable</label></div>
-      <div class="color-row"><input type="color" id="textShadowColor" value="#000000"><button class="pick" data-target="textShadowColor">🎨</button></div>
-      <label>Blur <span class="range-value" id="textShadowBlurValue">8px</span></label><input type="range" id="textShadowBlur" min="0" max="30" value="8">
-      <label>X <span class="range-value" id="textShadowXValue">4px</span></label><input type="range" id="textShadowX" min="-30" max="30" value="4">
-      <label>Y <span class="range-value" id="textShadowYValue">4px</span></label><input type="range" id="textShadowY" min="-30" max="30" value="4">
-      <h3>▭ Background</h3>
-      <div class="checkline"><input type="checkbox" id="textBgEnabled"><label for="textBgEnabled">Enable</label></div>
-      <div class="color-row"><input type="color" id="textBgColor" value="#000000"><button class="pick" data-target="textBgColor">🎨</button></div>
-      <div class="g2"><button class="sec" id="blackBg" type="button">Black</button><button class="sec" id="whiteBg" type="button">White</button></div>
-      <button class="sec" id="noBg" type="button">Transparent</button>
-      <hr>
-      <button class="act" id="addText" type="button">＋ New text</button>
-      <div class="g2"><button class="sec" id="duplicateSelected" disabled type="button">⧉ Duplicate</button><button class="sec dan" id="deleteSelected" disabled type="button">Delete</button></div>`;
+      <button class="act" id="addText" type="button">＋ Add text</button>
+      <div class="g2"><button class="sec" id="duplicateSelected" disabled type="button">⧉ Duplicate</button><button class="sec dan" id="deleteSelected" disabled type="button">🗑 Delete</button></div>
+      <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12px">More text options</summary>
+        <div class="g2">
+          <div><label>Font</label><select id="fontFamily"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Verdana">Verdana</option><option value="Impact">Impact</option><option value="Courier New">Courier New</option><option value="Comic Sans MS">Comic Sans MS</option></select></div>
+          <div><label>Align</label><select id="textAlign"><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option></select></div>
+        </div>
+        <label>Preset</label>
+        <select id="textPreset"><option value="custom">Custom</option><option value="title">Bold title</option><option value="subtitle">Elegant subtitle</option><option value="neon">Neon glow</option><option value="outline">Outlined</option><option value="shadow">Drop shadow</option><option value="badge">Label / badge</option></select>
+        <button class="sec" id="applyPreset" type="button">Apply preset</button>
+        <div class="g2">
+          <div><label>Outline</label><div class="color-row"><input type="color" id="outlineColor" value="#000000"><button class="pick" data-target="outlineColor">🎨</button></div></div>
+          <div><label>Outline width</label><input type="number" id="outlineWidth" min="0" max="15" value="2"></div>
+        </div>
+        <label>Opacity <span class="range-value" id="textOpacityValue">100%</span></label>
+        <input type="range" id="textOpacity" min="0" max="100" value="100">
+        <label>Letter spacing <span class="range-value" id="letterSpacingValue">0px</span></label>
+        <input type="range" id="letterSpacing" min="-5" max="30" value="0">
+        <label>Line spacing <span class="range-value" id="lineSpacingValue">1.2x</span></label>
+        <input type="range" id="lineSpacing" min="0.8" max="3" step="0.1" value="1.2">
+        <h3>🌈 Curved text</h3>
+        <select id="textCurve"><option value="none">Straight</option><option value="up">Arc up</option><option value="down">Arc down</option><option value="circle">Full circle</option></select>
+        <label>Curve amount <span class="range-value" id="curveAmountValue">180°</span></label>
+        <input type="range" id="curveAmount" min="45" max="360" value="180">
+        <label>Rotation <span class="range-value" id="textRotationValue">0°</span></label>
+        <input type="range" id="textRotation" min="0" max="360" value="0">
+        <div class="g2"><button class="sec" id="rotateTextLeft" type="button">↶ -90°</button><button class="sec" id="rotateTextRight" type="button">↷ +90°</button></div>
+        <h3>🌑 Shadow</h3>
+        <div class="checkline"><input type="checkbox" id="textShadowEnabled"><label for="textShadowEnabled">Enable</label></div>
+        <div class="color-row"><input type="color" id="textShadowColor" value="#000000"><button class="pick" data-target="textShadowColor">🎨</button></div>
+        <label>Blur <span class="range-value" id="textShadowBlurValue">8px</span></label><input type="range" id="textShadowBlur" min="0" max="30" value="8">
+        <label>X <span class="range-value" id="textShadowXValue">4px</span></label><input type="range" id="textShadowX" min="-30" max="30" value="4">
+        <label>Y <span class="range-value" id="textShadowYValue">4px</span></label><input type="range" id="textShadowY" min="-30" max="30" value="4">
+        <h3>▭ Background</h3>
+        <div class="checkline"><input type="checkbox" id="textBgEnabled"><label for="textBgEnabled">Enable</label></div>
+        <div class="color-row"><input type="color" id="textBgColor" value="#000000"><button class="pick" data-target="textBgColor">🎨</button></div>
+        <div class="g2"><button class="sec" id="blackBg" type="button">Black</button><button class="sec" id="whiteBg" type="button">White</button></div>
+        <button class="sec" id="noBg" type="button">Transparent</button>
+      </details>`;
     case "elements":return `
+      <label class="upload-zone" for="logoFile" style="padding:14px"><span>🖼️</span><strong>Add photo / PNG sticker</strong><br><small>Choose an image from your device</small></label>
       <label>Stickers</label><div class="emoji-grid" id="emojiGrid"></div>
       <h3>🔷 Shapes</h3>
       <label>Shape colour</label>
       <div class="color-row"><input type="color" id="shapeColor" value="#a78bfa"><button class="pick" data-target="shapeColor">🎨</button></div>
-      <div class="g2"><button class="sec" id="addRect" type="button">▭ Rectangle</button><button class="sec" id="addCircle" type="button">◯ Circle</button></div>`;
+      <div class="g2"><button class="sec" id="addRect" type="button">▭ Rectangle</button><button class="sec" id="addCircle" type="button">◯ Circle</button></div>
+      <div class="note">Tap any sticker, shape or photo on the canvas to select, move, resize and rotate it.</div>`;
     case "frames":return `
-      <label>Built-in frames</label>
-      <div class="frame-grid" id="frameGrid"></div>
-      <div class="g2">
-        <div><label>Colour</label><div class="color-row"><input type="color" id="frameColor" value="#ffffff"><button class="pick" data-target="frameColor">🎨</button></div></div>
-        <div><label>Second</label><div class="color-row"><input type="color" id="frameColor2" value="#d4af37"><button class="pick" data-target="frameColor2">🎨</button></div></div>
-      </div>
-      <label>Thickness <span class="range-value" id="frameThickVal">6%</span></label>
-      <input type="range" id="frameThick" min="1" max="25" value="6">
-      <label>Emoji</label>
-      <input type="text" id="frameEmoji" value="🌙⭐">
-      <button class="sec dan" id="frameNone" type="button">Remove built-in frame</button>
-      <hr>
-      <label>🌐 Search worldwide frames (Pixabay)</label>
+      <label>🌐 Online frames — search and add</label>
       <div style="display:flex;gap:6px;align-items:stretch">
-        <input type="text" id="frameSearch" placeholder="birthday, wedding, gold..." style="margin-bottom:0">
+        <input type="text" id="frameSearch" placeholder="birthday, wedding, gold, Islamic..." style="margin-bottom:0">
         <button class="act" id="frameSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button>
       </div>
       <div class="chips" id="frameTags">
@@ -394,8 +387,20 @@ function buildPanelHTML(panelId){
         <button class="chip" type="button" data-q="valentine frame">Valentine</button>
         <button class="chip" type="button" data-q="vintage frame">Vintage</button>
       </div>
+      <div id="frameResults" class="online-grid"></div>
       <div id="frameControlsContainer"></div>
-      <div id="frameResults" class="online-grid"></div>`;
+      <hr>
+      <label>Built-in frames</label>
+      <div class="frame-grid" id="frameGrid"></div>
+      <div class="g2">
+        <div><label>Colour</label><div class="color-row"><input type="color" id="frameColor" value="#ffffff"><button class="pick" data-target="frameColor">🎨</button></div></div>
+        <div><label>Second</label><div class="color-row"><input type="color" id="frameColor2" value="#d4af37"><button class="pick" data-target="frameColor2">🎨</button></div></div>
+      </div>
+      <label>Thickness <span class="range-value" id="frameThickVal">6%</span></label>
+      <input type="range" id="frameThick" min="1" max="25" value="6">
+      <label>Emoji</label>
+      <input type="text" id="frameEmoji" value="🌙⭐">
+      <button class="sec dan" id="frameNone" type="button">Remove built-in frame</button>`;
     case "social":return `
       <div class="selected-info">Resize canvas to platform size.</div>
       <label>Platform</label>
@@ -475,6 +480,56 @@ function buildPanelHTML(panelId){
       <div class="g2"><button class="sec" id="bringForward" disabled type="button">Forward ↑</button><button class="sec" id="sendBackward" disabled type="button">Backward ↓</button></div>
       <div class="g2"><button class="sec" id="bringTop" disabled type="button">To front</button><button class="sec" id="sendBottom" disabled type="button">To back</button></div>
       <div class="g2"><button class="sec" id="undoOverlay" type="button">Undo last</button><button class="sec dan" id="clearOverlays" type="button">Remove all</button></div>`;
+    case "music":return `
+      <div class="selected-info">Add music for the photo video. Search a song or upload your own audio.</div>
+      <label>🔎 Search any song</label>
+      <div style="display:flex;gap:6px;align-items:stretch">
+        <input type="text" id="musicSearch" placeholder="Any song, artist..." style="margin-bottom:0">
+        <button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button>
+      </div>
+      <div class="chips" id="musicTags">
+        <button class="chip" type="button" id="trendingBtn" style="background:linear-gradient(90deg,#f97316,#ef4444);color:#fff;border:none;font-weight:700">🔥 Trending</button>
+        <button class="chip" type="button" data-q="lofi">Lo-fi</button>
+        <button class="chip" type="button" data-q="bollywood hits">Bollywood</button>
+        <button class="chip" type="button" data-q="quran recitation">Quran</button>
+        <button class="chip" type="button" data-q="naat">Naat</button>
+        <button class="chip" type="button" data-q="instrumental">Instrumental</button>
+        <button class="chip" type="button" data-q="epic cinematic">Epic</button>
+        <button class="chip" type="button" data-q="relaxing piano">Relaxing</button>
+      </div>
+      <button class="sec dan" id="stopLibBtn" type="button" hidden>⏹ Stop</button>
+      <div id="musicResults" style="margin-top:8px"></div>
+      <div class="note">Preview 30s (legal limit).</div>
+      <label class="upload-zone" for="musicFile" style="padding:14px;margin-top:10px"><span>🎵</span><strong>Upload music</strong></label>
+      <div id="musicInfo" class="note">No music selected.</div>
+      <div id="musicControls" hidden>
+        <label>Music volume <span class="range-value" id="musicVolVal">80%</span></label>
+        <input type="range" id="musicVol" min="0" max="1" step="0.05" value="0.8">
+        <label>Fade out (s)</label>
+        <input type="number" id="fadeOut" value="2" min="0" max="10" step="0.5">
+        <button class="sec dan" id="removeMusicBtn" type="button">Remove music</button>
+      </div>`;
+    case "effects":return `
+      <div class="selected-info">Tap an effect to apply it to the photo. Use <b>Adjust</b> for fine control.</div>
+      <div class="card-grid" id="effectCards">
+        <div class="tool-card" data-fx="none"><b>🚫</b>Original</div>
+        <div class="tool-card" data-fx="grayscale(100%)"><b>⚫</b>Black &amp; White</div>
+        <div class="tool-card" data-fx="sepia(100%)"><b>🟤</b>Sepia</div>
+        <div class="tool-card" data-fx="saturate(180%) contrast(110%)"><b>🌈</b>Vivid</div>
+        <div class="tool-card" data-fx="brightness(110%) saturate(80%)"><b>☀️</b>Soft</div>
+        <div class="tool-card" data-fx="sepia(30%) saturate(130%)"><b>🌅</b>Warm</div>
+        <div class="tool-card" data-fx="invert(100%)"><b>🔄</b>Invert</div>
+        <div class="tool-card" data-fx="contrast(130%)"><b>◐</b>High contrast</div>
+        <div class="tool-card" data-fx="hue-rotate(180deg) saturate(120%)"><b>🔵</b>Cool</div>
+        <div class="tool-card" data-fx="brightness(110%) saturate(130%) contrast(95%)"><b>✨</b>Dreamy</div>
+        <div class="tool-card" data-fx="grayscale(100%) contrast(150%) brightness(90%)"><b>🎬</b>Noir</div>
+        <div class="tool-card" data-fx="sepia(50%) hue-rotate(-20deg) saturate(180%)"><b>🌇</b>Sunset</div>
+      </div>
+      <label>Blur <span class="range-value" id="fxBlurVal">0px</span></label>
+      <input type="range" id="fxBlur" min="0" max="15" value="0">
+      <label>Vignette <span class="range-value" id="fxVignetteVal">0%</span></label>
+      <input type="range" id="fxVignette" min="0" max="100" value="0">
+      <button class="sec dan" id="fxReset" type="button">↺ Remove effects</button>`;
     case "save":return `
       <label>File format</label>
       <select id="format"><option value="image/png">PNG (transparency)</option><option value="image/jpeg" selected>JPG (photos)</option><option value="image/webp">WebP (small)</option></select>
@@ -565,10 +620,35 @@ function wirePanel(panelId){
     $("emojiGrid").querySelectorAll(".emoji-btn").forEach(b=>b.onclick=()=>addSticker("emoji",b.dataset.e));
     $("addRect").onclick=()=>addOverlay({type:"rect",color:$("shapeColor").value});
     $("addCircle").onclick=()=>addOverlay({type:"circle",color:$("shapeColor").value});
+    $("logoFile").onchange=e=>{const f=e.target.files[0];e.target.value="";if(!f)return;addImageSticker(f)};
     wireEyedroppers();
+  }
+  if(panelId==="music"){
+    $("musicSearchBtn").onclick=searchMusic;
+    $("musicSearch").addEventListener("keydown",e=>{if(e.key==="Enter")searchMusic()});
+    $("trendingBtn").onclick=searchTrending;
+    document.querySelectorAll("#musicTags .chip:not(#trendingBtn)").forEach(b=>b.onclick=()=>{$("musicSearch").value=b.dataset.q;searchMusic()});
+    $("stopLibBtn").onclick=stopLib;
+    $("musicFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;setMusicSource(URL.createObjectURL(f),f.name,true);e.target.value=""});
+    $("musicVol").addEventListener("input",e=>{$("musicVolVal").textContent=Math.round(e.target.value*100)+"%"});
+    $("removeMusicBtn").onclick=removeMusic;
+    renderStrip();
+    if(music.url){$("musicControls").hidden=false;$("musicInfo").textContent="🎵 "+music.name}
+  }
+  if(panelId==="effects"){
+    document.querySelectorAll("#effectCards .tool-card").forEach(b=>b.onclick=()=>{
+      if(!img){toast("Upload a photo first");return}
+      saveSnapshot();adjustState.filter=b.dataset.fx;
+      const f=$("filter");if(f)f.value=adjustState.filter;
+      render();toast("Effect applied");
+    });
+    $("fxBlur").addEventListener("input",e=>{adjustState.blur=+e.target.value;$("fxBlurVal").textContent=e.target.value+"px";scheduleRender()});
+    $("fxVignette").addEventListener("input",e=>{adjustState.vignette=+e.target.value;$("fxVignetteVal").textContent=e.target.value+"%";scheduleRender()});
+    $("fxReset").onclick=()=>{if(!img)return;saveSnapshot();adjustState.filter="none";adjustState.blur=0;adjustState.vignette=0;const f=$("filter");if(f)f.value="none";render();toast("Effects removed")};
   }
   if(panelId==="frames"){
     buildFrameGrid();syncFrameControls();wireEyedroppers();
+    $("frameSearch").value="frame border";searchFramesPixabay();
     $("frameColor").addEventListener("input",()=>{if(!img)return;frame.color=$("frameColor").value;if(frame.id==="none")frame.id="solid";render();syncFrameControls()});
     $("frameColor2").addEventListener("input",()=>{if(!img)return;frame.color2=$("frameColor2").value;if(frame.id==="none")frame.id="solid";render();syncFrameControls()});
     $("frameThick").addEventListener("input",e=>{if(!img)return;frame.thick=+e.target.value;$("frameThickVal").textContent=frame.thick+"%";if(frame.id==="none")frame.id="solid";render()});
@@ -1167,6 +1247,15 @@ function rotateText(d){
   saveSnapshot();item.rotation=((Number(item.rotation)||0)+d+360)%360;loadTextForm(selectedIndex);render();
 }
 
+function addImageSticker(file){
+  if(!img){toast("Upload a photo first");return}
+  loadImageFile(file).then(im=>{
+    saveSnapshot();
+    const d=getBaseDimensions(),size=Math.round(Math.min(d.width,d.height)*.5);
+    overlays.push({type:"image",src:"",img:im,size:size,x:d.width/2,y:d.height/2,opacity:100,rotation:0,blur:0,darkness:0});
+    selectedIndex=overlays.length-1;render();toast("Sticker added — drag it");
+  }).catch(()=>toast("Could not load image"));
+}
 const EMOJIS=["⭐","❤️","🔥","✨","😍","🎉","🌸","🌈","👍","☀️","🎂","💯","📍","💬","🎵","👑","🌙","🕌","🤲","🎈","💎","🏆","🎯","😂"];
 function addSticker(type,value){if(!img){toast("Upload photo first");return}addOverlay({type:"sticker",text:value,size:65})}
 window.addSticker=addSticker;
