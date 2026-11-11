@@ -791,6 +791,7 @@ async function handleVideoUpload(e){
   const files=[...e.target.files];e.target.value="";if(!files.length)return;
   snapshot();
   dropZone.style.display="none";
+  videoError.classList.remove("show");
   for(const f of files){
     const c={name:f.name,url:URL.createObjectURL(f),start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none",muted:false};
     clips.push(c);
@@ -1125,6 +1126,8 @@ function loadSelected(){
   if(clips[selectedClip]){dropZone.style.display="none"}
   const onMeta=()=>{
     preview.removeEventListener("loadedmetadata",onMeta);
+    if(!c.duration || c.end<=0){ c.duration=preview.duration||0; c.end=c.duration; }
+
     preview.currentTime=pendingSeek!=null?pendingSeek:clamp(c.start,0,Math.max(0,preview.duration-.05));
     pendingSeek=null;
     preview.playbackRate=c.speed;
@@ -1147,6 +1150,8 @@ function loadSelected(){
   preview.addEventListener("error",onErr);
   preview.src=c.url;
   preview.load();
+  preview.oncanplay=()=>{ updateFrame(); videoError.classList.remove("show"); };
+  preview.onloadeddata=()=>{ updateFrame(); videoError.classList.remove("show"); };
   setTimeout(()=>{if(preview.readyState<1&&clips[selectedClip]===c){showVideoError("⚠ Video is taking too long to load. Try a smaller MP4 (H.264).")}},6000);
 }
 window.selectClip=selectClip;
@@ -1517,7 +1522,7 @@ function renderAudioTab(){
   document.querySelectorAll("#audioTabs .tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===audioTab));
   const chips=arr=>arr.map(([l,q])=>`<button class="chip" type="button" data-q="${esc(q)}">${l}</button>`).join("");
   const search=ph=>`<div style="display:flex;gap:6px"><input type="text" id="musicSearch" placeholder="${ph}" style="margin-bottom:0" value="${esc(lastQuery[audioTab]||"")}"><button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button></div>`;
-  if(audioTab==="songs")body.innerHTML=search("Any song, artist or language…")+`<div class="chips"><button class="chip trend" type="button" id="trendingBtn">🔥 Trending now</button>${chips(SONG_CHIPS)}</div><div id="musicResults"></div><div class="note">⚠️ 30-second clips. For music safe to post, use <b>Free full songs</b>.</div>`;
+  if(audioTab==="songs")body.innerHTML=`<label class="upload-zone" for="musicFile" style="padding:12px;margin-bottom:10px"><span>📁</span><strong>Add music from your PC</strong><br><small>MP3, WAV, M4A</small></label>`+search("Any song, artist or language…")+`<div class="chips"><button class="chip trend" type="button" id="trendingBtn">🔥 Trending now</button>${chips(SONG_CHIPS)}</div><div id="musicResults"></div><div class="note">⚠️ 30-second clips. For music safe to post, use <b>Free full songs</b>.</div>`;
   else if(audioTab==="full")body.innerHTML=search("Mood, genre or instrument…")+`<div class="chips">${chips(FULL_CHIPS)}</div><div id="musicResults"></div><div class="note">✅ Complete songs from Jamendo, free under Creative Commons.</div>`;
   else if(audioTab==="sfx")body.innerHTML=search("whoosh, pop, applause…")+`<div class="chips">${chips(SFX_CHIPS)}</div><div id="sfxList"></div><div id="musicResults"></div><div class="note">Sounds are added at the red playhead. From Freesound.</div>`;
   else body.innerHTML=`<label class="upload-zone" for="musicFile" style="padding:14px"><span>📁</span><strong>Upload a full song from your device</strong><br><small>MP3, WAV, M4A</small></label>
