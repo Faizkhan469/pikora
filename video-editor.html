@@ -251,6 +251,19 @@ input[type=file]{display:none}
   body.panel-open .workspace{margin-right:380px}
   body.panel-open .toast{right:396px}
 }
+
+/* Reels-style mobile polish */
+@media(max-width:700px){
+  body{background:#050505}
+  .stage-area{padding-bottom:0}
+  .canvas-container{padding:10px 8px 4px;background-image:none}
+  #previewWrap{border-radius:14px;border:0;box-shadow:0 10px 35px rgba(0,0,0,.7);max-height:calc(100% - 8px)}
+  .topbar-center .tool-btn:not(:first-child){display:none}
+  .topbar{background:rgba(8,8,8,.96);backdrop-filter:blur(14px)}
+  .bottom-toolbar{background:rgba(10,10,10,.96);backdrop-filter:blur(14px);border-top:1px solid #222}
+  .panel-drawer{border-radius:18px 18px 0 0;background:#111}
+  .track-labels{flex-basis:68px}
+}
 </style>
 </head>
 <body>
@@ -1168,12 +1181,14 @@ function syncMusicPreview(){
   if(!musicPreviewEl||!musicClips.length)return;
   if(musicMuted){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
   const c=clips[selectedClip];if(!c){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
-  const gt=globalTime();const mc=musicClips[0];
-  const mt=gt-mc.timelineStart;
-  if(mt<0||mt>(mc.srcEnd-mc.srcStart)){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
+  const gt=globalTime();
+  const mc=musicClips.find(x=>gt>=x.timelineStart && gt<=x.timelineStart+(x.srcEnd-x.srcStart)+0.05);
+  if(!mc){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
   if(preview.paused&&!forceMusicPlay){if(!musicPreviewEl.paused)musicPreviewEl.pause();return}
-  const vol=musicFade(mt,gt,totalDuration(),mc.fadeIn,mc.fadeOut,mc.volume);
-  musicPreviewEl.volume=vol;
+  if(musicPreviewEl.src!==mc.url)musicPreviewEl.src=mc.url;
+  const mt=gt-mc.timelineStart;
+  const total=mc.srcEnd-mc.srcStart;
+  musicPreviewEl.volume=musicFade(mt,gt,total,mc.fadeIn||0,mc.fadeOut||0,mc.volume??1);
   if(musicPreviewEl.paused)musicPreviewEl.play().catch(()=>{});
   const target=mc.srcStart+mt;
   if(Math.abs(musicPreviewEl.currentTime-target)>0.4)musicPreviewEl.currentTime=target;
@@ -1202,7 +1217,7 @@ function previewMusic(){
   if(!musicClips.length){showToast("No music","Upload music first.");return}
   if(selectedClip<0){showToast("No clip","Upload a video first.");return}
   unlockAudio();forceMusicPlay=true;
-  const mc=musicClips[0];const mt=Math.max(0,globalTime()-mc.timelineStart);
+  const mc=musicClips.find(x=>globalTime()>=x.timelineStart&&globalTime()<=x.timelineStart+(x.srcEnd-x.srcStart))||musicClips[0];const mt=Math.max(0,globalTime()-mc.timelineStart);
   if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.loop=true}
   musicPreviewEl.volume=mc.volume;
   try{
@@ -1301,8 +1316,8 @@ function moveClip(d){const j=selectedClip+d;if(selectedClip<0||j<0||j>=clips.len
 function liveText(){
   if(!$("textInput"))return;
   const style={text:$("textInput").value.trim(),color:$("textColor").value,outlineColor:$("textStroke").value,
-    outlineWidth:clamp(parseInt($("textStrokeW").value)||0,0,20),fontFamily:$("textFont").value,align:"center",
-    bold:textBold,italic:textItalic,size:clamp(parseInt($("textSize").value)||64,10,300),
+    outlineWidth:clamp(parseInt($("textStrokeW").value)||0,0,20),fontFamily:$("fontGrid").querySelector(".font-card.selected")?.dataset.font||"Montserrat",align:"center",
+    bold:textBold,italic:textItalic,size:clamp(parseInt($("textSizeRange").value)||64,10,300),
     opacity:parseInt($("textOpacity").value)||100,rotation:0,letterSpacing:0,lineSpacing:1.2,curve:"none",curveAmount:180,
     shadowEnabled:false,shadowColor:"#000",shadowBlur:0,shadowOffsetX:0,shadowOffsetY:0,backgroundEnabled:false,backgroundColor:"#000",
     anim:"none",start:parseFloat($("textStart").value)||0,end:parseFloat($("textEnd").value)||0};
