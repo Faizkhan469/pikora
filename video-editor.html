@@ -91,7 +91,18 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .clip-block .mute-badge{position:absolute;right:16px;top:2px;font-size:10px;z-index:2;pointer-events:none;text-shadow:0 1px 2px #000}
 .th{position:absolute;top:0;bottom:0;width:12px;cursor:ew-resize;background:rgba(255,255,255,.15);opacity:0;z-index:3;touch-action:none;display:flex;align-items:center;justify-content:center}
 .th::after{content:"";width:2px;height:20px;border-radius:2px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
-.clip-block.selected .th,.clip-block:hover .th{opacity:1;background:rgba(0,0,0,.3)}
+.clip-block.selected .th,.clip-block:hover .th{opacity:1;background:rgba(0,0,0,.48)}
+.clip-block .th{width:18px;opacity:.22}
+.clip-block.selected .th{opacity:1}
+.clip-block .cn{padding:0 8px}
+.track-label.video,.track-row.video-track{height:56px;flex-basis:56px}
+.selected-clip-bar{min-height:40px;flex-shrink:0;display:flex;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid var(--border);overflow-x:auto;background:#090909;white-space:nowrap}
+.selected-clip-info{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:150px;flex:1}
+.clip-action{border:1px solid var(--border);background:#171717;color:var(--text);border-radius:6px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;min-height:30px}
+.clip-action:disabled{opacity:.35;cursor:not-allowed}
+.clip-action.danger{border-color:#7f1d1d;color:#fca5a5}
+.clip-action.primary{border-color:#0891b2;color:#67e8f9}
+@media(max-width:700px){.selected-clip-bar{min-height:42px;padding:4px 6px;gap:5px}.clip-action{padding:8px 10px;min-height:34px;font-size:11px}.selected-clip-info{min-width:132px;font-size:9px}.track-label.video,.track-row.video-track{height:54px;flex-basis:54px}.clip-block .th{width:22px;opacity:.5}.clip-block.selected .th{opacity:1}}
 .th.l{left:0;border-radius:5px 0 0 5px}
 .th.r{right:0;border-radius:0 5px 5px 0}
 .tl-item{position:absolute;height:20px;border-radius:4px;font-size:9px;padding:0 9px;overflow:hidden;white-space:nowrap;line-height:20px;cursor:grab;color:#fff;background:#8b5cf6;border:1px solid transparent;font-weight:600;touch-action:none}
@@ -310,6 +321,17 @@ input[type=file]{position:absolute!important;width:1px!important;height:1px!impo
         </div>
         <button class="tool-btn" id="splitBtn2" type="button">✂</button>
         <button class="tool-btn" id="delBtn2" type="button">🗑</button>
+      </div>
+      <div class="selected-clip-bar" id="selectedClipBar">
+        <div class="selected-clip-info" id="selectedClipInfo">Select a video clip to edit</div>
+        <button class="clip-action primary" id="clipTrimBtn" type="button" disabled title="Open trim controls for this clip">✂ Trim</button>
+        <button class="clip-action" id="extendClipBtn" type="button" disabled title="Restore this clip to its available source range">↔ Extend</button>
+        <button class="clip-action" id="clipSplitBtn" type="button" disabled title="Split at the playhead">✂ Split</button>
+        <button class="clip-action" id="clipMoveLeftBtn" type="button" disabled title="Move clip earlier">← Move</button>
+        <button class="clip-action" id="clipMoveRightBtn" type="button" disabled title="Move clip later">Move →</button>
+        <button class="clip-action" id="clipDuplicateBtn" type="button" disabled title="Duplicate selected clip">⧉ Duplicate</button>
+        <button class="clip-action danger" id="clipDeleteBtn" type="button" disabled title="Remove selected clip">🗑 Delete</button>
+        <button class="clip-action" id="clipUndoBtn" type="button" title="Undo last edit">↶ Undo</button>
       </div>
       <div class="timeline-tracks">
         <div class="track-labels">
@@ -680,22 +702,22 @@ const SPEEDS=[0.25,0.5,0.75,1,1.25,1.5,2,3,4];
 
 function wirePanel(panelId){
   if(panelId==="media"){
-    $("setStartBtn").onclick=()=>{const c=clips[selectedClip];if(!c)return;const t=clamp(preview.currentTime,0,Math.max(0,(parseFloat($("trimEnd").value)||c.end)-0.05));$("trimStart").value=fmt(t)};
-    $("setEndBtn").onclick=()=>{const c=clips[selectedClip];if(!c)return;const t=clamp(preview.currentTime,(parseFloat($("trimStart").value)||0)+0.05,c.duration||preview.duration||0);$("trimEnd").value=fmt(t)};
+    $("setStartBtn").onclick=()=>{const c=clips[selectedClip];if(!c)return;const t=clamp(preview.currentTime,Number(c.availableStart||0),Math.max(Number(c.availableStart||0),(parseFloat($("trimEnd").value)||c.end)-0.05));$("trimStart").value=fmt(t)};
+    $("setEndBtn").onclick=()=>{const c=clips[selectedClip];if(!c)return;const t=clamp(preview.currentTime,(parseFloat($("trimStart").value)||c.start)+0.05,Number(c.availableEnd||c.duration||preview.duration||0));$("trimEnd").value=fmt(t)};
     $("applyTrimBtn").onclick=()=>{
       const c=clips[selectedClip];if(!c){showToast("No clip","Select a clip.");return}
       const dur=c.duration||preview.duration||0;
       let a=parseFloat($("trimStart").value),b=parseFloat($("trimEnd").value);
       if(!isFinite(a))a=c.start;if(!isFinite(b))b=c.end;
-      a=clamp(a,0,dur);b=clamp(b,0,dur);
+      a=clamp(a,Number(c.availableStart||0),Number(c.availableEnd||c.duration||dur));b=clamp(b,Number(c.availableStart||0),Number(c.availableEnd||c.duration||dur));
       if(b-a<0.05){showToast("Invalid trim","End after start.");return}
       snapshot();c.start=a;c.end=b;c.speed=parseFloat($("speed").value)||1;
       preview.playbackRate=c.speed;preview.pause();preview.currentTime=a;
       renderAll();showToast("Trim applied ✅",`${fmt(a)}s → ${fmt(b)}s`);
     };
     $("splitBtn").onclick=doSplit;
-    $("deleteClipBtn").onclick=()=>{if(selectedClip<0)return;snapshot();playingAll=false;clips.splice(selectedClip,1);selectedClip=Math.min(selectedClip,clips.length-1);if(selectedClip>=0)loadSelected();else{preview.pause();preview.removeAttribute("src")}renderAll();closePanel()};
-    $("dupClipBtn").onclick=()=>{const c=clips[selectedClip];if(!c)return;snapshot();clips.splice(selectedClip+1,0,{...c,name:c.name+" (copy)"});selectedClip++;loadSelected();renderAll()};
+    $("deleteClipBtn").onclick=deleteSelectedClip;
+    $("dupClipBtn").onclick=duplicateSelectedClip;
     $("moveLeftBtn").onclick=()=>moveClip(-1);
     $("moveRightBtn").onclick=()=>moveClip(1);
     renderMediaGrid();
@@ -802,7 +824,7 @@ async function handleVideoUpload(e){
   let failed=0;
   for(const f of files){
     const url=URL.createObjectURL(f);
-    const c={name:f.name||"Video",url,start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none",muted:false};
+    const c={name:f.name||"Video",url,start:0,end:0,duration:0,availableStart:0,availableEnd:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none",muted:false};
     clips.push(c);
     const duration=await new Promise(resolve=>{
       const v=document.createElement("video");
@@ -815,7 +837,7 @@ async function handleVideoUpload(e){
       try{v.load()}catch(err){finish(0)}
       setTimeout(()=>finish(v.duration||0),18000);
     });
-    c.duration=duration;c.end=duration;
+    c.duration=duration;c.end=duration;c.availableEnd=duration;
     if(!duration)failed++;
     makeThumbnail(c);
     selectedClip=clips.length-1;
@@ -855,6 +877,7 @@ function renderAll(){
   const allMuted=clips.length>0&&clips.every(c=>c.muted);
   forceMuteOriginal(allMuted);
   updateTimelineTrackButtons();
+  updateSelectedClipBar();
   maybeStartLoop();
 }
 
@@ -889,7 +912,8 @@ function renderTimeline(){
     const d=durationOf(c),b=document.createElement("div");b.className="clip-block"+(i===selectedClip?" selected":"")+(c.muted?" muted":"");
     b.style.left=(10+acc*sc)+"px";b.style.width=Math.max(20,d*sc)+"px";
     if(c.thumb)b.style.background='linear-gradient(180deg,rgba(59,130,246,.5),rgba(37,99,235,.5)),url("'+c.thumb+'") repeat-x left center / auto 100%';
-    const sp=document.createElement("span");sp.className="cn";sp.textContent=c.name.substring(0,26)+(c.speed!==1?" · "+c.speed+"x":"");b.appendChild(sp);
+    const sp=document.createElement("span");sp.className="cn";sp.textContent=c.name.substring(0,20)+" · "+fmt(d)+"s"+(c.speed!==1?" · "+c.speed+"x":"");b.appendChild(sp);
+    b.title=c.name+" | source "+fmt(c.start)+"s–"+fmt(c.end)+"s | clip "+fmt(d)+"s";
     if(c.muted){const mb=document.createElement("span");mb.className="mute-badge";mb.textContent="🔇";b.appendChild(mb)}
     ["l","r"].forEach(side=>{const h=document.createElement("div");h.className="th "+side;b.appendChild(h);bindTrim(h,b,c,i,side)});
     track.appendChild(b);blocks.push(b);bindClip(b,i,blocks);acc+=d;
@@ -1030,15 +1054,25 @@ function bindMusicClip(wb,mc,idx){
 
 function bindTrim(h,b,c,i,side){
   let snapshotTaken=false;
+  h.setAttribute("aria-label",side==="l"?"Trim clip start":"Trim clip end");
   h.addEventListener("pointerdown",e=>{
     e.preventDefault();e.stopPropagation();snapshotTaken=false;
-    const x0=e.clientX,s0=c.start,e0=c.end;
+    selectedClip=i;playingAll=false;preview.pause();loadSelectedIntoPanel();
+    const x0=e.clientX,s0=c.start,e0=c.end,left0=b.offsetLeft;
     dragHelper(h,e,ev=>{
+      const dx=ev.clientX-x0;
+      if(Math.abs(dx)<0.5)return;
       if(!snapshotTaken){snapshot();snapshotTaken=true}
-      const d=(ev.clientX-x0)/tlScale*c.speed;
-      if(side==="r")c.end=clamp(e0+d,c.start+0.1,c.duration||e0);else c.start=clamp(s0+d,0,c.end-0.1);
+      const d=(dx/tlScale)*(c.speed||1);
+      const lo=Number(c.availableStart||0),hi=Number(c.availableEnd||c.duration||e0);
+      if(side==="r")c.end=clamp(e0+d,c.start+0.1,hi);
+      else c.start=clamp(s0+d,lo,c.end-0.1);
       b.style.width=Math.max(20,durationOf(c)*tlScale)+"px";
-    },()=>{renderAll()});
+      b.style.left=(left0+(c.start-s0)/(c.speed||1)*tlScale)+"px";
+      if($("selectedClipInfo"))updateSelectedClipBar();
+      if($("trimStart"))$("trimStart").value=fmt(c.start);
+      if($("trimEnd"))$("trimEnd").value=fmt(c.end);
+    },()=>{if(snapshotTaken)renderAll();else updateSelectedClipBar()});
   });
 }
 
@@ -1093,9 +1127,9 @@ function bindClip(b,i,blocks){
     e.preventDefault();const x0=e.clientX,w=b.offsetWidth;let moved=false;
     const mids=blocks.map(k=>k.offsetLeft+k.offsetWidth/2);
     dragHelper(b,e,ev=>{const dx=ev.clientX-x0;if(!moved&&Math.abs(dx)<6)return;moved=true;b.style.transform=`translateX(${dx}px)`;b.style.zIndex=5;b.style.opacity=.85},ev=>{
-      if(!moved){playingAll=false;preview.pause();seekGlobal(xToTime(ev.clientX));return}
+      if(!moved){playingAll=false;preview.pause();selectClip(i);return}
       const center=b.offsetLeft+w/2+(ev.clientX-x0);let ni=0;mids.forEach((m,k)=>{if(k!==i&&m<center)ni++});
-      if(ni!==i){snapshot();const[c]=clips.splice(i,1);clips.splice(ni,0,c);selectedClip=ni;loadSelected()}
+      if(ni!==i){snapshot();const[c]=clips.splice(i,1);clips.splice(ni,0,c);selectedClip=ni;loadSelected()}else{selectedClip=i}
       renderAll();
     });
   });
@@ -1116,7 +1150,7 @@ phEl.addEventListener("pointercancel",()=>{phDragging=false});
 $("zoomIn").onclick=()=>{tlScale=clamp(tlScale+15,30,240);$("tlZoom").value=tlScale;renderTimeline()};
 $("zoomOut").onclick=()=>{tlScale=clamp(tlScale-15,30,240);$("tlZoom").value=tlScale;renderTimeline()};
 $("tlZoom").addEventListener("input",e=>{tlScale=+e.target.value;renderTimeline()});
-$("delBtn2").onclick=()=>{if(selectedClip<0)return;snapshot();clips.splice(selectedClip,1);selectedClip=Math.min(selectedClip,clips.length-1);if(selectedClip>=0)loadSelected();renderAll()};
+$("delBtn2").onclick=deleteSelectedClip;
 
 $("tlMuteVideoBtn").onclick=()=>{if(!clips.length)return;snapshot();const allMuted=clips.every(c=>c.muted);clips.forEach(c=>c.muted=!allMuted);forceMuteOriginal(!allMuted);updateTimelineTrackButtons();renderTimeline();showToast(allMuted?"Original sound ON":"Original sound MUTED",allMuted?"Video voice is back.":"Music / voiceover only.")};
 $("tlMuteMusicBtn").onclick=()=>{if(!musicClips.length)return;snapshot();musicMuted=!musicMuted;musicClips.forEach(m=>m.muted=musicMuted);if(musicMuted&&musicPreviewEl)musicPreviewEl.pause();updateTimelineTrackButtons();renderTimeline()};
@@ -1129,8 +1163,51 @@ resizeHandle.addEventListener("pointermove",e=>{if(!resizing)return;const newH=c
 resizeHandle.addEventListener("pointerup",()=>{resizing=false});
 resizeHandle.addEventListener("pointercancel",()=>{resizing=false});
 
-function selectClip(i){playingAll=false;selectedClip=i;loadSelected();renderAll();if(currentPanel==="media"){renderMediaGrid();loadSelectedIntoPanel()}}
-function loadSelectedIntoPanel(){const c=clips[selectedClip];if(!c)return;if($("clipControls"))$("clipControls").classList.remove("hidden");if($("selectedClipName"))$("selectedClipName").textContent="✂ "+c.name;if($("trimStart"))$("trimStart").value=fmt(c.start);if($("trimEnd"))$("trimEnd").value=fmt(c.end);if($("speed"))$("speed").value=c.speed}
+function selectClip(i){if(i<0||i>=clips.length)return;playingAll=false;selectedClip=i;loadSelected();renderAll();updateSelectedClipBar();if(currentPanel==="media"){renderMediaGrid();loadSelectedIntoPanel()}}
+function loadSelectedIntoPanel(){const c=clips[selectedClip];if(!c)return;if($("clipControls"))$("clipControls").classList.remove("hidden");if($("selectedClipName"))$("selectedClipName").textContent="✂ "+c.name;if($("trimStart"))$("trimStart").value=fmt(c.start);if($("trimEnd"))$("trimEnd").value=fmt(c.end);if($("speed"))$("speed").value=c.speed;updateSelectedClipBar()}
+function updateSelectedClipBar(){
+  const c=clips[selectedClip],info=$("selectedClipInfo");
+  const ids=["clipTrimBtn","extendClipBtn","clipSplitBtn","clipDuplicateBtn","clipDeleteBtn"];
+  ids.forEach(id=>{const b=$(id);if(b)b.disabled=!c});
+  if($("clipMoveLeftBtn"))$("clipMoveLeftBtn").disabled=!c||selectedClip<=0;
+  if($("clipMoveRightBtn"))$("clipMoveRightBtn").disabled=!c||selectedClip>=clips.length-1;
+  if(!info)return;
+  if(!c){info.textContent="Select a video clip to edit";return}
+  const availStart=Number(c.availableStart||0),availEnd=Number(c.availableEnd||c.duration||c.end);
+  info.textContent=c.name+" · "+fmt(durationOf(c))+"s · In "+fmt(c.start)+"s / Out "+fmt(c.end)+"s · Source "+fmt(Math.max(0,availEnd-availStart))+"s";
+}
+function deleteSelectedClip(){
+  if(selectedClip<0||!clips[selectedClip])return;
+  snapshot();playingAll=false;const removed=clips.splice(selectedClip,1)[0];
+  selectedClip=Math.min(selectedClip,clips.length-1);pendingSeek=null;
+  if(selectedClip>=0)loadSelected();else{preview.pause();preview.removeAttribute("src");preview.load()}
+  renderAll();if(currentPanel==="media"){if(selectedClip>=0)loadSelectedIntoPanel();else if($("clipControls"))$("clipControls").classList.add("hidden")}
+  showToast("Clip removed",removed.name+" was removed. Other clips were kept.");
+}
+function duplicateSelectedClip(){
+  const c=clips[selectedClip];if(!c)return;snapshot();
+  const copy={...c,name:c.name+" (copy)",thumb:c.thumb};
+  clips.splice(selectedClip+1,0,copy);selectedClip++;loadSelected();renderAll();
+  if(currentPanel==="media")loadSelectedIntoPanel();
+  showToast("Clip duplicated","A separate copy was added after the selected clip.");
+}
+function extendSelectedClip(){
+  const c=clips[selectedClip];if(!c)return;
+  const a=Number(c.availableStart||0),b=Number(c.availableEnd||c.duration||c.end);
+  if(Math.abs(c.start-a)<0.001&&Math.abs(c.end-b)<0.001){showToast("Already full length","This clip is using all of its available source footage.");return}
+  snapshot();c.start=a;c.end=b;
+  if(selectedClip>=0){preview.pause();preview.currentTime=clamp(c.start,0,Math.max(0,(preview.duration||b)-0.05));}
+  renderAll();if(currentPanel==="media")loadSelectedIntoPanel();
+  showToast("Clip extended",fmt(durationOf(c))+" seconds restored from the original footage.");
+}
+$("clipTrimBtn").onclick=()=>{if(selectedClip>=0)openPanel("media")};
+$("clipMoveLeftBtn").onclick=()=>moveClip(-1);
+$("clipMoveRightBtn").onclick=()=>moveClip(1);
+$("clipDeleteBtn").onclick=deleteSelectedClip;
+$("clipDuplicateBtn").onclick=duplicateSelectedClip;
+$("clipSplitBtn").onclick=doSplit;
+$("extendClipBtn").onclick=extendSelectedClip;
+$("clipUndoBtn").onclick=()=>$("undoBtn").click();
 
 function loadSelected(){
   const c=clips[selectedClip];if(!c){preview.pause();preview.removeAttribute("src");return}
@@ -1325,8 +1402,9 @@ function doSplit(){
   const cut=preview.currentTime;
   if(!(cut>c.start+0.05&&cut<c.end-0.05)){showToast("Position playhead","Move playhead to cut point.");return}
   snapshot();const baseName=c.name.replace(/ \(part \d+\)$/,"");
-  const second={...c,name:baseName+" (part 2)",start:cut,end:c.end,transition:"cut",transitionDuration:1,thumb:c.thumb};
-  c.end=cut;c.name=baseName+" (part 1)";clips.splice(selectedClip+1,0,second);
+  const oldAvailableEnd=Number(c.availableEnd||c.duration||c.end);
+  const second={...c,name:baseName+" (part 2)",start:cut,end:c.end,availableStart:cut,availableEnd:oldAvailableEnd,transition:"cut",transitionDuration:1,thumb:c.thumb};
+  c.availableEnd=cut;c.end=cut;c.name=baseName+" (part 1)";clips.splice(selectedClip+1,0,second);
   preview.pause();loadSelected();renderAll();showToast("Split done ✂","2 clips.");
 }
 window.doSplit=doSplit;$("splitBtn2").onclick=doSplit;
