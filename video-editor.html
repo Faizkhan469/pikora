@@ -234,8 +234,6 @@ input[type=file]{display:none}
 .music-card .row button.add{background:var(--accent);color:var(--onacc);font-weight:700}
 .music-card .row button.fav{background:transparent;border:1px solid var(--border)}
 .music-card .row button.fav.on{background:#f59e0b;color:#000;border-color:#f59e0b}
-.badge.region{background:#3b82f6;color:#fff}
-.badge.live{background:#10b981;color:#000}
 @media(max-width:700px){
   .topbar{height:44px;padding:0 8px}
   .logo{font-size:15px}
@@ -1510,7 +1508,6 @@ async function removeMusic(){
 let musicTab="trending",musicCredit="",lastMusicUpdate=null,musicCache={},suggestMood="";
 let libResults=[],libAudio=new Audio(),libNow=-1;
 const savedMusic=JSON.parse(localStorage.getItem("pikoraSavedMusic")||"[]");
-
 const MUSIC_TABS={
  trending:{label:"Trending Now",type:"chart",country:"US"},
  global:{label:"Global Hits",type:"search",q:"global hits",country:"US"},
@@ -1530,174 +1527,77 @@ const MUSIC_TABS={
  new:{label:"New Releases",type:"search",q:"new release",country:"US"},
  saved:{label:"Saved Music",type:"saved"}
 };
-
 function saveFavorites(){try{localStorage.setItem("pikoraSavedMusic",JSON.stringify(savedMusic))}catch(e){}}
 function isSaved(t){return savedMusic.some(x=>x.preview===t.preview)}
-function toggleSave(i){
-  const t=libResults[i];if(!t)return;
-  const idx=savedMusic.findIndex(x=>x.preview===t.preview);
-  if(idx>=0){savedMusic.splice(idx,1);showToast("Removed from Saved","")}
-  else{savedMusic.unshift({...t});if(savedMusic.length>100)savedMusic.pop();showToast("Saved ✅","Added to Saved Music")}
-  saveFavorites();renderMusicResults();
-}
+function toggleSave(i){const t=libResults[i];if(!t)return;const idx=savedMusic.findIndex(x=>x.preview===t.preview);if(idx>=0){savedMusic.splice(idx,1);showToast("Removed from Saved","")}else{savedMusic.unshift({...t});if(savedMusic.length>100)savedMusic.pop();showToast("Saved ✅","Added to Saved Music")}saveFavorites();renderMusicResults()}
 async function fetchItunesChart(country,limit=20){
-  const key="chart|"+country+"|"+limit;
-  const cached=musicCache[key];
+  const key="chart|"+country+"|"+limit;const cached=musicCache[key];
   if(cached&&Date.now()-cached.time<10*60*1000)return cached.items;
   const r=await fetch(`https://rss.applemarketingtools.com/api/v2/${country}/music/most-played/${limit}/songs.json`);
   if(!r.ok)throw new Error("chart "+r.status);
-  const d=await r.json();
-  const items=(d.feed?.results||[]).slice(0,limit);
-  const out=[];
+  const d=await r.json();const items=(d.feed&&d.feed.results||[]).slice(0,limit);const out=[];
   for(const it of items){
     try{
       const q=encodeURIComponent((it.artistName||"")+" "+(it.name||""));
       const sr=await fetch(`https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=1&country=${country}`);
-      const sd=await sr.json();
-      const hit=(sd.results||[])[0];
-      if(hit&&hit.previewUrl){
-        out.push({kind:"song",title:hit.trackName||it.name,creator:hit.artistName||it.artistName,duration:30000,preview:hit.previewUrl,cover:hit.artworkUrl100||it.artworkUrl100,licenseLabel:"Apple preview",country});
-      }
+      const sd=await sr.json();const hit=(sd.results||[])[0];
+      if(hit&&hit.previewUrl){out.push({kind:"song",title:hit.trackName||it.name,creator:hit.artistName||it.artistName,duration:30000,preview:hit.previewUrl,cover:hit.artworkUrl100||it.artworkUrl100,licenseLabel:"Apple preview",country})}
     }catch(e){}
   }
   if(!out.length)throw new Error("No playable results");
-  musicCache[key]={time:Date.now(),items:out};
-  return out;
+  musicCache[key]={time:Date.now(),items:out};return out;
 }
 async function fetchItunesSearch(q,country="US",limit=25){
-  const key="search|"+country+"|"+q.toLowerCase();
-  const cached=musicCache[key];
+  const key="search|"+country+"|"+q.toLowerCase();const cached=musicCache[key];
   if(cached&&Date.now()-cached.time<10*60*1000)return cached.items;
   const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=${limit}&country=${country}`);
   if(!r.ok)throw new Error("itunes "+r.status);
-  const d=await r.json();
-  const out=(d.results||[]).filter(t=>t.previewUrl).map(t=>({kind:"song",title:t.trackName||"Untitled",creator:t.artistName||"Unknown",duration:30000,preview:t.previewUrl,cover:t.artworkUrl100,licenseLabel:"Apple preview",country}));
+  const d=await r.json();const out=(d.results||[]).filter(t=>t.previewUrl).map(t=>({kind:"song",title:t.trackName||"Untitled",creator:t.artistName||"Unknown",duration:30000,preview:t.previewUrl,cover:t.artworkUrl100,licenseLabel:"Apple preview",country}));
   if(!out.length)throw new Error("No playable results");
-  musicCache[key]={time:Date.now(),items:out};
-  return out;
+  musicCache[key]={time:Date.now(),items:out};return out;
 }
-function musicCard(t,i){
-  const saved=isSaved(t);
-  return `<div class="music-card">
-    ${t.cover?`<img class="art" src="${esc(t.cover)}" loading="lazy" alt="">`:'<div class="art" style="display:flex;align-items:center;justify-content:center;font-size:34px">🎵</div>'}
-    <div class="info">
-      <div class="t">${esc(t.title||"Untitled")}</div>
-      <div class="a">${esc(t.creator||"Unknown")}</div>
-      <div class="m" style="font-size:9px;color:var(--muted)">${t.duration?Math.round(t.duration/1000)+"s · ":""}${esc(t.licenseLabel||"Preview")}</div>
-      <div class="row">
-        <button type="button" class="lp" data-i="${i}">▶</button>
-        <button type="button" class="add" data-add="${i}">＋ Add</button>
-        <button type="button" class="fav ${saved?"on":""}" data-fav="${i}">${saved?"★":"☆"}</button>
-      </div>
-    </div>
-  </div>`;
-}
-function renderMusicResults(){
-  const box=$("musicResults");if(!box)return;
-  if(!libResults.length){box.innerHTML='<div class="note">No playable music found. Try another category or search.</div>';return}
-  box.innerHTML='<div class="music-grid">'+libResults.map((t,i)=>musicCard(t,i)).join("")+'</div>';
-  box.querySelectorAll(".lp").forEach(b=>b.onclick=()=>libPlay(+b.dataset.i));
-  box.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>libAdd(+b.dataset.add));
-  box.querySelectorAll("[data-fav]").forEach(b=>b.onclick=()=>toggleSave(+b.dataset.fav));
-  paintLib();
-}
+function musicCard(t,i){const saved=isSaved(t);return `<div class="music-card">${t.cover?`<img class="art" src="${esc(t.cover)}" loading="lazy" alt="">`:'<div class="art" style="display:flex;align-items:center;justify-content:center;font-size:34px">🎵</div>'}<div class="info"><div class="t">${esc(t.title||"Untitled")}</div><div class="a">${esc(t.creator||"Unknown")}</div><div class="m" style="font-size:9px;color:var(--muted)">${t.duration?Math.round(t.duration/1000)+"s · ":""}${esc(t.licenseLabel||"Preview")}</div><div class="row"><button type="button" class="lp" data-i="${i}">▶</button><button type="button" class="add" data-add="${i}">＋ Add</button><button type="button" class="fav ${saved?"on":""}" data-fav="${i}">${saved?"★":"☆"}</button></div></div></div>`}
+function renderMusicResults(){const box=$("musicResults");if(!box)return;if(!libResults.length){box.innerHTML='<div class="note">No playable music found. Try another category or search.</div>';return}box.innerHTML='<div class="music-grid">'+libResults.map((t,i)=>musicCard(t,i)).join("")+'</div>';box.querySelectorAll(".lp").forEach(b=>b.onclick=()=>libPlay(+b.dataset.i));box.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>libAdd(+b.dataset.add));box.querySelectorAll("[data-fav]").forEach(b=>b.onclick=()=>toggleSave(+b.dataset.fav));paintLib()}
 function renderMusicDiscovery(){
   const body=$("audioTabBody");if(!body)return;
   document.querySelectorAll("#audioTabs .tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===musicTab));
   const cfg=MUSIC_TABS[musicTab]||MUSIC_TABS.trending;
-  body.innerHTML=`
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-      <input type="text" id="musicSearch" placeholder="Search song, artist or mood…" style="margin-bottom:0" value="">
-      <button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button>
-    </div>
-    <div class="chips">
-      <button class="chip trend" type="button" id="refreshTrendingBtn">🔄 Refresh trends</button>
-      <button class="chip" type="button" data-q="islamic nasheed">Islamic</button>
-      <button class="chip" type="button" data-q="wedding romantic">Wedding</button>
-      <button class="chip" type="button" data-q="cinematic instrumental">Cinematic</button>
-      <button class="chip" type="button" data-q="relaxing piano">Relaxing</button>
-    </div>
-    <div id="musicResults"></div>
-    <div class="note" id="musicUpdated">${lastMusicUpdate?"Last updated: "+lastMusicUpdate:"Trends update automatically."}</div>
-    <div class="note">Previews are for editing/preview. Check licensing before commercial use or publishing.</div>`;
-  const inp=$("musicSearch");
-  const go=()=>runMusicSearch(inp.value.trim());
-  $("musicSearchBtn").onclick=go;
-  inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+  body.innerHTML=`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="text" id="musicSearch" placeholder="Search song, artist or mood…" style="margin-bottom:0" value=""><button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button></div><div class="chips"><button class="chip trend" type="button" id="refreshTrendingBtn">🔄 Refresh trends</button><button class="chip" type="button" data-q="islamic nasheed">Islamic</button><button class="chip" type="button" data-q="wedding romantic">Wedding</button><button class="chip" type="button" data-q="cinematic instrumental">Cinematic</button><button class="chip" type="button" data-q="relaxing piano">Relaxing</button></div><div id="musicResults"></div><div class="note" id="musicUpdated">${lastMusicUpdate?"Last updated: "+lastMusicUpdate:"Trends update automatically."}</div><div class="note">Previews are for editing/preview. Check licensing before commercial use or publishing.</div>`;
+  const inp=$("musicSearch");const go=()=>runMusicSearch(inp.value.trim());
+  $("musicSearchBtn").onclick=go;inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
   $("refreshTrendingBtn").onclick=()=>loadMusicTab("trending",true);
   body.querySelectorAll(".chip[data-q]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.q;go()});
   if(musicTab==="saved"){libResults=savedMusic;renderMusicResults();return}
-  if(musicCache["tab|"+musicTab]){libResults=musicCache["tab|"+musicTab];renderMusicResults()}
-  else loadMusicTab(musicTab);
+  if(musicCache["tab|"+musicTab]){libResults=musicCache["tab|"+musicTab];renderMusicResults()}else loadMusicTab(musicTab);
 }
 async function loadMusicTab(tab,force){
-  const cfg=MUSIC_TABS[tab]||MUSIC_TABS.trending;
-  const box=$("musicResults");if(!box)return;
+  const cfg=MUSIC_TABS[tab]||MUSIC_TABS.trending;const box=$("musicResults");if(!box)return;
   box.innerHTML='<div class="note">Loading '+(cfg.label||"music")+'…</div>';stopLib();
-  try{
-    let out=[];
-    if(cfg.type==="chart")out=await fetchItunesChart(cfg.country,20);
-    else out=await fetchItunesSearch(cfg.q,cfg.country,25);
-    musicCache["tab|"+tab]=out;libResults=out;lastMusicUpdate=new Date().toLocaleString();
-    const up=$("musicUpdated");if(up)up.textContent="Last updated: "+lastMusicUpdate;
-    renderMusicResults();
-  }catch(e){
-    box.innerHTML='<div class="note">Could not load music right now. Please try again.</div>';
-  }
+  try{let out=[];if(cfg.type==="chart")out=await fetchItunesChart(cfg.country,20);else out=await fetchItunesSearch(cfg.q,cfg.country,25);musicCache["tab|"+tab]=out;libResults=out;lastMusicUpdate=new Date().toLocaleString();const up=$("musicUpdated");if(up)up.textContent="Last updated: "+lastMusicUpdate;renderMusicResults()}catch(e){box.innerHTML='<div class="note">Could not load music right now. Please try again.</div>'}
 }
 async function runMusicSearch(q){
   if(!q){showToast("Type a word","Any song, artist, mood or sound");return}
-  const box=$("musicResults");if(!box)return;
-  box.innerHTML='<div class="note">Searching…</div>';stopLib();
-  try{
-    const out=await fetchItunesSearch(q,"US",25);
-    libResults=out;renderMusicResults();
-  }catch(e){box.innerHTML='<div class="note">Could not load results. Try another search.</div>'}
+  const box=$("musicResults");if(!box)return;box.innerHTML='<div class="note">Searching…</div>';stopLib();
+  try{const out=await fetchItunesSearch(q,"US",25);libResults=out;renderMusicResults()}catch(e){box.innerHTML='<div class="note">Could not load results. Try another search.</div>'}
 }
 async function suggestMusicForVideo(){
   const box=$("suggestResults");if(!box)return;
   if(!clips.length){box.innerHTML='<div class="note">Upload a video first.</div>';return}
   box.innerHTML='<div class="note">Analysing video…</div>';
-  const name=(clips[0].name||"").toLowerCase();
-  let mood=suggestMood;
-  if(!mood){
-    if(/madinah|medina|islam|quran|nasheed|mosque/.test(name))mood="islamic";
-    else if(/wedding|shadi|marriage/.test(name))mood="wedding";
-    else if(/travel|trip|tour/.test(name))mood="travel";
-    else if(/nature|forest|mountain/.test(name))mood="nature";
-    else if(/funny|comedy|laugh/.test(name))mood="funny";
-    else if(/sad|emotional|love/.test(name))mood="emotional";
-    else if(/fashion|style|outfit/.test(name))mood="fashion";
-    else mood="cinematic";
-  }
+  const name=(clips[0].name||"").toLowerCase();let mood=suggestMood;
+  if(!mood){if(/madinah|medina|islam|quran|nasheed|mosque/.test(name))mood="islamic";else if(/wedding|shadi|marriage/.test(name))mood="wedding";else if(/travel|trip|tour/.test(name))mood="travel";else if(/nature|forest|mountain/.test(name))mood="nature";else if(/funny|comedy|laugh/.test(name))mood="funny";else if(/sad|emotional|love/.test(name))mood="emotional";else if(/fashion|style|outfit/.test(name))mood="fashion";else mood="cinematic"}
   const map={islamic:"islamic nasheed",madinah:"islamic nasheed",wedding:"wedding romantic",travel:"cinematic travel",nature:"relaxing instrumental",funny:"funny upbeat",emotional:"emotional piano",fashion:"fashion upbeat",cinematic:"cinematic instrumental"};
-  try{
-    const out=await fetchItunesSearch(map[mood]||"cinematic instrumental","US",10);
-    libResults=out;renderMusicResults();
-    box.innerHTML='<div class="note">Suggestions ready — '+out.length+' tracks.</div>';
-  }catch(e){box.innerHTML='<div class="note">Could not load suggestions.</div>'}
+  try{const out=await fetchItunesSearch(map[mood]||"cinematic instrumental","US",10);libResults=out;renderMusicResults();box.innerHTML='<div class="note">Suggestions ready — '+out.length+' tracks.</div>'}catch(e){box.innerHTML='<div class="note">Could not load suggestions.</div>'}
 }
 function paintLib(){document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹":"▶")}
 function stopLib(){libAudio.pause();libNow=-1;paintLib()}
 libAudio.addEventListener("ended",stopLib);libAudio.addEventListener("pause",paintLib);libAudio.addEventListener("playing",paintLib);
-window.libPlay=async i=>{
-  const t=libResults[i];if(!t||!t.preview)return;
-  if(libNow===i&&!libAudio.paused){stopLib();return}
-  unlockAudio();libAudio.pause();libNow=i;
-  try{libAudio.src=t.preview;await libAudio.play();paintLib()}catch(e){libNow=-1;paintLib();showToast("Cannot play","Try another track.")}
-};
+window.libPlay=async i=>{const t=libResults[i];if(!t||!t.preview)return;if(libNow===i&&!libAudio.paused){stopLib();return}unlockAudio();libAudio.pause();libNow=i;try{libAudio.src=t.preview;await libAudio.play();paintLib()}catch(e){libNow=-1;paintLib();showToast("Cannot play","Try another track.")}};
 window.libAdd=async i=>{
-  const t=libResults[i];if(!t||!t.preview)return;stopLib();
-  showToast("Adding…","Preparing music");
+  const t=libResults[i];if(!t||!t.preview)return;stopLib();showToast("Adding…","Preparing music");
   const name=(t.title||"Untitled")+" – "+(t.creator||"Unknown");
-  try{
-    const r=await fetch(t.preview);
-    if(!r.ok)throw new Error("blocked");
-    await setMusicSource(URL.createObjectURL(await r.blob()),name,true);
-    showToast("Music added ✅","Trim it on the timeline.");
-  }catch(e){
-    showToast("Preview not exportable","This source blocks download. Upload an MP3/WAV or use a downloadable file.");
-  }
+  try{const r=await fetch(t.preview);if(!r.ok)throw new Error("blocked");await setMusicSource(URL.createObjectURL(await r.blob()),name,true);showToast("Music added ✅","Trim it on the timeline.")}
+  catch(e){showToast("Preview not exportable","This source blocks download. Upload an MP3/WAV or use a downloadable file.")}
 };
 async function addSfx(url,name,dur){
   if(!clips.length){showToast("No video","Upload a video first.");return}
