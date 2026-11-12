@@ -171,7 +171,8 @@ body.dragging .stage-area{outline:3px dashed var(--accent);outline-offset:-6px}
 .toast.show{display:block;animation:slideIn .3s}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 .hidden{display:none!important}
-input[type=file]{display:none}
+/* Keep file inputs visually hidden but still activatable by their labels on iOS Safari. */
+input[type=file]{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;opacity:0!important}
 #exportPanelFloat{position:fixed;right:12px;top:56px;width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px;z-index:300;box-shadow:0 20px 50px rgba(0,0,0,.6);padding:14px;overflow-y:auto;max-height:80vh}
 #exportPanelFloat select,#exportPanelFloat input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-size:14px}
 .audio-status{position:fixed;bottom:70px;right:12px;background:var(--accent);color:var(--onacc);padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;z-index:99;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
@@ -376,11 +377,11 @@ input[type=file]{display:none}
   <button class="btool" data-panel="brand"><span>🎨</span>Brand Kit</button>
 </nav>
 
-<input type="file" id="videoFiles" accept="video/*" multiple>
+<input type="file" id="videoFiles" accept="video/*,.mp4,.mov,.m4v,.webm,.3gp" multiple>
 <input type="file" id="srtFile" accept=".srt">
-<input type="file" id="musicFile" accept="audio/*">
+<input type="file" id="musicFile" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus">
 <input type="file" id="logoFile" accept="image/*">
-<input type="file" id="voiceoverFile" accept="audio/*">
+<input type="file" id="voiceoverFile" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus">
 
 <div class="audio-status" id="audioStatus">🎵 Music playing</div>
 <div class="toast" id="toast">
@@ -785,31 +786,44 @@ function wirePanel(panelId){
   }
 }
 
-/* UPLOAD — hides dropZone immediately */
+/* Mobile-safe local video upload. Keep object URLs alive for the whole edit. */
 async function handleVideoUpload(e){
-  const files=[...e.target.files];e.target.value="";if(!files.length)return;
+  const picked=Array.from(e.target.files||[]);
+  e.target.value="";
+  if(!picked.length)return;
+  const files=picked.filter(f=>{
+    const ext=(f.name||"").split(".").pop().toLowerCase();
+    return (f.type&&f.type.startsWith("video/"))||["mp4","mov","m4v","webm","3gp","3gpp","mkv"].includes(ext);
+  });
+  if(!files.length){showToast("Choose a video","Select an MP4, MOV, M4V or supported video file.");return}
   snapshot();
-  dropZone.style.display="none";
   videoError.classList.remove("show");
+  dropZone.style.display="none";
+  let failed=0;
   for(const f of files){
-    const c={name:f.name,url:URL.createObjectURL(f),start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none",muted:false};
+    const url=URL.createObjectURL(f);
+    const c={name:f.name||"Video",url,start:0,end:0,duration:0,speed:1,filter:"none",transition:"cut",transitionDuration:1,thumb:null,brightness:100,contrast:100,saturation:100,effect:"none",muted:false};
     clips.push(c);
-    await new Promise(res=>{
-      const v=document.createElement("video");v.preload="metadata";v.muted=true;v.src=c.url;
+    const duration=await new Promise(resolve=>{
+      const v=document.createElement("video");
+      v.preload="metadata";v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");
       let done=false;
-      const finish=(dur)=>{if(done)return;done=true;c.duration=Number.isFinite(dur)&&dur>0?dur:0;c.end=c.duration;try{v.removeAttribute("src")}catch(e){};res()};
+      const finish=dur=>{if(done)return;done=true;const d=Number.isFinite(dur)&&dur>0?dur:0;try{v.pause();v.removeAttribute("src");v.load()}catch(err){}resolve(d)};
       v.onloadedmetadata=()=>finish(v.duration);
-      v.onloadeddata=()=>{if(!done)finish(v.duration)};
       v.onerror=()=>finish(0);
-      v.load();
-      setTimeout(()=>{if(!done)finish(v.duration||0)},8000);
+      v.src=url;
+      try{v.load()}catch(err){finish(0)}
+      setTimeout(()=>finish(v.duration||0),18000);
     });
+    c.duration=duration;c.end=duration;
+    if(!duration)failed++;
     makeThumbnail(c);
     selectedClip=clips.length-1;
     renderAll();
   }
   loadSelected();
-  if(clips.some(c=>!c.duration)){showToast("Video not ready","This file may use an unsupported codec. Try an MP4 encoded with H.264.");}else{showToast("Uploaded",files.length+" clip(s) added.");}
+  if(failed){showToast("Some videos could not open","For best compatibility use MP4 (H.264 video + AAC audio). MOV/HEVC files may not work in every browser.");}
+  else{showToast("Uploaded",files.length+" clip(s) added.");}
   if(currentPanel==="media"){renderMediaGrid();if(selectedClip>=0&&$("clipControls")){$("clipControls").classList.remove("hidden");loadSelectedIntoPanel()}}
   if(currentPanel==="voice")renderVoicePanel();
 }
@@ -1599,7 +1613,20 @@ window.useClipSound=async i=>{
   if($("muteAfterExtract")?.checked){snapshot();clips.forEach(x=>x.muted=true);updateTimelineTrackButtons()}
   showToast("Sound added ✅","Clip sound now plays as music.");
 };
-$("musicFile").onchange=e=>{const f=e.target.files[0];if(!f)return;setMusicSource(URL.createObjectURL(f),f.name,true).then(()=>{musicCredit="";showToast("Music added ✅",f.name)});e.target.value=""};
+$("musicFile").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value="";
+  if(!f)return;
+  const url=URL.createObjectURL(f);
+  try{
+    await setMusicSource(url,f.name,true);
+    if(!musicClips.some(m=>m.url===url)){URL.revokeObjectURL(url);return}
+    musicCredit="";
+  }catch(err){
+    URL.revokeObjectURL(url);
+    console.error("Music upload failed",err);
+    showToast("Music could not be added",err.message||"Try an MP3, M4A or WAV file.");
+  }
+});
 
 async function addSfx(url,name,dur){
   if(!clips.length){showToast("No video","Upload a video first.");return}
@@ -1837,7 +1864,13 @@ $("startExportBtn").onclick=async()=>{
   exporting=true;$("startExportBtn").disabled=true;$("startExportBtn").textContent="Preparing…";$("downloadLink").style.display="none";$("shareExportBtn").style.display="none";
   try{
     await ensureFontsLoaded();
-    if(typeof VideoEncoder!=="undefined"&&typeof AudioEncoder!=="undefined"){await exportMP4()}else{await exportWebM()}
+    const mobileDevice=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+    if(!mobileDevice&&typeof VideoEncoder!=="undefined"&&typeof AudioEncoder!=="undefined"){
+      try{await exportMP4()}
+      catch(mp4Err){console.warn("MP4/WebCodecs export unavailable; trying MediaRecorder",mp4Err);await exportWebM()}
+    }else{
+      await exportWebM();
+    }
   }catch(err){
     console.error(err);showToast("Export failed",err.message||"Try again.");$("startExportBtn").textContent="🚀 Start Export";
   }finally{
@@ -2000,45 +2033,70 @@ async function buildMixedAudio(total){
 }
 
 async function exportWebM(){
-  if(!window.MediaRecorder){showToast("Unsupported","Use Chrome/Firefox.");return}
+  if(!window.MediaRecorder)throw new Error("This browser cannot record video. Try the latest Safari or Chrome.");
+  if(!HTMLCanvasElement.prototype.captureStream)throw new Error("Canvas video recording is not supported by this browser.");
   const[w,h]=getExportSize();
   const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
-  const ctx=canvas.getContext("2d",{alpha:false});const stream=canvas.captureStream(30);
+  const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)throw new Error("Could not create the export canvas.");
+  const stream=canvas.captureStream(30);
   const workCanvas=document.createElement("canvas");workCanvas.width=w;workCanvas.height=h;
   const workCtx=workCanvas.getContext("2d",{alpha:false});
+  if(!workCtx)throw new Error("Could not create the rendering canvas.");
   let audioCtx=null,dest=null,musicEls=[],voiceEl=null;const audioEls=[],sfxEls2=[];
+  const wantsAudio=clips.some(c=>!c.muted)||(musicClips.length&&!musicMuted)||(voiceoverURL&&!voiceMuted)||sfx.length>0;
   try{
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(AC){
-      audioCtx=new AC();dest=audioCtx.createMediaStreamDestination();
+    if(wantsAudio){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC)throw new Error("This browser does not provide audio mixing support.");
+      audioCtx=new AC();
+      if(audioCtx.state==="suspended")await audioCtx.resume();
+      dest=audioCtx.createMediaStreamDestination();
       for(const c of clips){
-        const el=document.createElement("video");el.src=c.url;el.playsInline=true;
-        await new Promise((res,rej)=>{el.onloadedmetadata=res;el.onerror=rej;el.load()});
+        const el=document.createElement("video");
+        el.preload="auto";el.playsInline=true;el.setAttribute("playsinline","");el.src=c.url;
+        await new Promise((res,rej)=>{let done=false;const finish=(err)=>{if(done)return;done=true;err?rej(err):res()};el.onloadedmetadata=()=>finish();el.onerror=()=>finish(new Error("A video clip could not be opened for audio export."));el.load();setTimeout(()=>finish(new Error("Timed out loading a video clip for audio export.")),15000)});
         const src=audioCtx.createMediaElementSource(el),g=audioCtx.createGain();g.gain.value=c.muted?0:AS.videoVolume;
         src.connect(g);g.connect(dest);audioEls.push({el,gain:g,c});
       }
       if(musicClips.length&&!musicMuted){
         for(const mc of musicClips){
-          const m=new Audio(mc.url);
-          await new Promise(res=>{m.onloadedmetadata=res;m.onerror=res;m.load()});
+          const m=new Audio();m.preload="auto";m.src=mc.url;
+          await new Promise((res,rej)=>{let done=false;const finish=(err)=>{if(done)return;done=true;err?rej(err):res()};m.onloadedmetadata=()=>finish();m.onerror=()=>finish(new Error("Background music could not be decoded by this browser."));m.load();setTimeout(()=>finish(new Error("Timed out loading background music.")),15000)});
           const ms=audioCtx.createMediaElementSource(m),mg=audioCtx.createGain();mg.gain.value=0;
           ms.connect(mg);mg.connect(dest);musicEls.push({el:m,gain:mg,clip:mc});
         }
       }
       if(voiceoverURL&&!voiceMuted){
-        voiceEl=new Audio(voiceoverURL);
-        await new Promise(res=>{voiceEl.onloadedmetadata=res;voiceEl.onerror=res;voiceEl.load()});
+        voiceEl=new Audio();voiceEl.preload="auto";voiceEl.src=voiceoverURL;
+        await new Promise((res,rej)=>{let done=false;const finish=(err)=>{if(done)return;done=true;err?rej(err):res()};voiceEl.onloadedmetadata=()=>finish();voiceEl.onerror=()=>finish(new Error("Voiceover could not be loaded."));voiceEl.load();setTimeout(()=>finish(new Error("Timed out loading voiceover.")),15000)});
         const vs=audioCtx.createMediaElementSource(voiceEl),vg=audioCtx.createGain();vg.gain.value=AS.voiceVolume;
         vs.connect(vg);vg.connect(dest);voiceEl._gain=vg;
       }
-      for(const s of sfx){const el=new Audio(s.url);await new Promise(res=>{el.onloadedmetadata=res;el.onerror=res;el.load()});
-        const ss=audioCtx.createMediaElementSource(el),sg=audioCtx.createGain();sg.gain.value=s.volume??1;ss.connect(sg);sg.connect(dest);sfxEls2.push({el,s,done:false})}
-      dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+      for(const sound of sfx){
+        const el=new Audio();el.preload="auto";el.src=sound.url;
+        await new Promise((res,rej)=>{let done=false;const finish=(err)=>{if(done)return;done=true;err?rej(err):res()};el.onloadedmetadata=()=>finish();el.onerror=()=>finish(new Error("A sound effect could not be loaded."));el.load();setTimeout(()=>finish(new Error("Timed out loading a sound effect.")),15000)});
+        const ss=audioCtx.createMediaElementSource(el),sg=audioCtx.createGain();sg.gain.value=sound.volume??1;ss.connect(sg);sg.connect(dest);sfxEls2.push({el,s:sound,done:false});
+      }
+      const audioTracks=dest.stream.getAudioTracks();
+      if(!audioTracks.length)throw new Error("The audio mixer did not create an audio track.");
+      audioTracks.forEach(t=>stream.addTrack(t));
     }
-  }catch(err){console.warn("audio init",err)}
-  const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
-  if(!mime){showToast("Error","WebM unsupported.");cleanup();return}
-  let rec;try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:+$("exportQuality").value*1e6})}catch(e){showToast("Error",e.message);cleanup();return}
+  }catch(err){
+    if(audioCtx)try{await audioCtx.close()}catch(closeErr){}
+    stream.getTracks().forEach(t=>t.stop());
+    throw new Error("Audio setup failed — export stopped to avoid a silent video. "+(err.message||"Check the selected audio files and try again."));
+  }
+  const mimeCandidates=[
+    "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+    "video/mp4",
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm"
+  ];
+  const mime=mimeCandidates.find(t=>MediaRecorder.isTypeSupported(t));
+  if(!mime){cleanup();throw new Error("This browser does not support MP4 or WebM recording. Update your browser and try again.");}
+  let rec;try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:+$("exportQuality").value*1e6})}catch(e){cleanup();throw new Error("Could not start video recording: "+e.message)}
+  const exportExt=mime.toLowerCase().includes("mp4")?"mp4":"webm";
   const chunks=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
   const done=new Promise(r=>rec.onstop=r);
   const total=totalDuration();let elapsed=0;const btn=$("startExportBtn");
@@ -2101,13 +2159,15 @@ async function exportWebM(){
       v.pause();if(audioEls[i])audioEls[i].gain.gain.value=0;elapsed=clipStart+clipDur;
     }
     rec.stop();await done;
-    const blob=new Blob(chunks,{type:"video/webm"});
-    finishExport(blob,"webm");
+    const blob=new Blob(chunks,{type:rec.mimeType||mime});
+    if(!blob.size)throw new Error("The browser produced an empty video file.");
+    if(wantsAudio&&stream.getAudioTracks().length===0)throw new Error("The export has no audio track; no silent download was created.");
+    finishExport(blob,exportExt);
   }catch(err){if(rec.state!=="inactive")rec.stop();await done;throw err}
   finally{cleanup()}
   function cleanup(){
-    musicEls.forEach(m=>m.el.pause());if(voiceEl)voiceEl.pause();
-    sfxEls2.forEach(x=>x.el.pause());audioEls.forEach(x=>{x.el.pause();x.el.remove()});
+    musicEls.forEach(m=>{try{m.el.pause()}catch(e){}});if(voiceEl)try{voiceEl.pause()}catch(e){}
+    sfxEls2.forEach(x=>{try{x.el.pause()}catch(e){}});audioEls.forEach(x=>{try{x.el.pause();x.el.remove()}catch(e){}});
     if(audioCtx)audioCtx.close().catch(()=>{});stream.getTracks().forEach(t=>t.stop());
   }
 }
