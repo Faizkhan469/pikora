@@ -221,6 +221,21 @@ input[type=file]{display:none}
 .fx-card .pv div.m{background:linear-gradient(135deg,#f97316,#8b5cf6 55%,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:26px}
 .fx-card .lb{padding:5px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #musicPicker{width:100%;height:56px;display:block;border-radius:8px;background:var(--bg);border:1px solid var(--border);cursor:pointer;touch-action:none;margin-bottom:4px}
+/* Music discovery */
+.music-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.music-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.music-card:hover{border-color:var(--accent)}
+.music-card .art{width:100%;aspect-ratio:1;object-fit:cover;background:#111;display:block}
+.music-card .info{padding:6px 8px}
+.music-card .t{font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-card .a{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-card .row{display:flex;gap:4px;margin-top:6px}
+.music-card .row button{flex:1;background:var(--hover);border:none;color:var(--text);border-radius:5px;font-size:10px;padding:5px 0;cursor:pointer}
+.music-card .row button.add{background:var(--accent);color:var(--onacc);font-weight:700}
+.music-card .row button.fav{background:transparent;border:1px solid var(--border)}
+.music-card .row button.fav.on{background:#f59e0b;color:#000;border-color:#f59e0b}
+.badge.region{background:#3b82f6;color:#fff}
+.badge.live{background:#10b981;color:#000}
 @media(max-width:700px){
   .topbar{height:44px;padding:0 8px}
   .logo{font-size:15px}
@@ -466,7 +481,7 @@ function stateJSON(){
   return JSON.stringify({
     clips,texts,captions,captionStyle,selectedClip,
     stickers:stickers.map(s=>{const o={...s};delete o.img;return o}),
-    musicClips:musicClips.map(m=>({id:m.id,url:m.url,name:m.name,srcStart:m.srcStart,srcEnd:m.srcEnd,timelineStart:m.timelineStart,volume:m.volume,fadeIn:m.fadeIn,fadeOut:m.fadeOut,muted:m.muted,blob:m.blob})),
+    musicClips:musicClips.map(m=>({id:m.id,url:m.url,name:m.name,srcStart:m.srcStart,srcEnd:m.srcEnd,timelineStart:m.timelineStart,volume:m.volume,fadeIn:m.fadeIn,fadeOut:m.fadeOut,muted:m.muted,blob:m.blob,loop:m.loop})),
     voiceover:voiceoverURL?{url:voiceoverURL,name:voiceoverName,isBlob:voiceoverBlob,muted:voiceMuted}:null,
     as:{...AS},sfx:sfx.map(s=>({...s})),musicMuted,voiceMuted
   });
@@ -533,6 +548,21 @@ function buildPanelHTML(panelId){
       </div>
       <div class="note">Tap a sticker on the video to select it, then drag to move it.</div>`;
     case "audio":return `
+      <div class="section">
+        <div class="h">🤖 Smart music suggestions</div>
+        <div class="chips" id="videoMoodChips">
+          <button class="chip" type="button" data-mood="islamic">🕌 Islamic</button>
+          <button class="chip" type="button" data-mood="madinah">🕋 Madinah</button>
+          <button class="chip" type="button" data-mood="wedding">💍 Wedding</button>
+          <button class="chip" type="button" data-mood="travel">✈️ Travel</button>
+          <button class="chip" type="button" data-mood="nature">🌿 Nature</button>
+          <button class="chip" type="button" data-mood="funny">😂 Funny</button>
+          <button class="chip" type="button" data-mood="emotional">💔 Emotional</button>
+          <button class="chip" type="button" data-mood="fashion">👗 Fashion</button>
+        </div>
+        <button class="act" id="suggestMusicBtn" type="button">✨ Suggest music for my video</button>
+        <div id="suggestResults"></div>
+      </div>
       <div id="audioControls" class="hidden" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px 12px 10px;margin-bottom:12px">
         <div class="h" id="audioInfo">No music selected.</div>
         <label>Source range (seconds of the audio file)</label>
@@ -548,15 +578,29 @@ function buildPanelHTML(panelId){
           <div><label>Fade in (s)</label><input type="number" id="musicFadeIn" min="0" max="20" step="0.1" value="1"></div>
           <div><label>Fade out (s)</label><input type="number" id="musicFadeOut" min="0" max="20" step="0.1" value="2"></div>
         </div>
+        <div class="toggle-row"><input type="checkbox" id="musicLoop"><span>Loop music</span></div>
         <label>Video's own sound <span id="vidVolVal" style="float:right">100%</span></label>
         <input type="range" id="videoVolume" min="0" max="1" step="0.05" value="1">
         <div class="g2"><button class="sec" id="previewMusicBtn" type="button">▶ Test music</button><button class="sec dan" id="removeMusicBtn" type="button">Remove music</button></div>
       </div>
       <div class="tabs" id="audioTabs">
-        <button class="tab" type="button" data-tab="songs">🎵 Popular</button>
-        <button class="tab" type="button" data-tab="full">🎼 Free full songs</button>
-        <button class="tab" type="button" data-tab="sfx">💥 Sound effects</button>
-        <button class="tab" type="button" data-tab="mine">🎞 My sounds</button>
+        <button class="tab" type="button" data-tab="trending">🔥 Trending</button>
+        <button class="tab" type="button" data-tab="global">🌍 Global</button>
+        <button class="tab" type="button" data-tab="sa">🇸🇦 Saudi</button>
+        <button class="tab" type="button" data-tab="in">🇮🇳 India</button>
+        <button class="tab" type="button" data-tab="ae">🇦🇪 UAE</button>
+        <button class="tab" type="button" data-tab="uk">🇬🇧 UK</button>
+        <button class="tab" type="button" data-tab="us">🇺🇸 USA</button>
+        <button class="tab" type="button" data-tab="tiktok">📱 TikTok</button>
+        <button class="tab" type="button" data-tab="instagram">📸 Instagram</button>
+        <button class="tab" type="button" data-tab="islamic">🕌 Islamic</button>
+        <button class="tab" type="button" data-tab="wedding">💍 Wedding</button>
+        <button class="tab" type="button" data-tab="cinematic">🎬 Cinematic</button>
+        <button class="tab" type="button" data-tab="emotional">💔 Emotional</button>
+        <button class="tab" type="button" data-tab="instrumental">🎹 Instrumental</button>
+        <button class="tab" type="button" data-tab="relaxing">😌 Relaxing</button>
+        <button class="tab" type="button" data-tab="new">🆕 New</button>
+        <button class="tab" type="button" data-tab="saved">💾 Saved</button>
       </div>
       <div id="audioTabBody"></div>`;
     case "voice":return `
@@ -703,8 +747,9 @@ function wirePanel(panelId){
   if(panelId==="templates"){$("templateGrid").innerHTML=TEMPLATES.map((t,i)=>`<div class="tool-card" onclick="applyTemplate(${i})"><b>${t.icon}</b>${t.name}</div>`).join("")}
   if(panelId==="elements"){wireStickers()}
   if(panelId==="audio"){
-    $("audioTabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{audioTab=b.dataset.tab;stopLib();renderAudioTab()});
-    renderAudioTab();
+    renderMusicDiscovery();
+    $("suggestMusicBtn").onclick=suggestMusicForVideo;
+    document.querySelectorAll("#videoMoodChips .chip").forEach(b=>b.onclick=()=>{suggestMood=b.dataset.mood;document.querySelectorAll("#videoMoodChips .chip").forEach(x=>x.classList.toggle("sel",x===b));suggestMusicForVideo()});
     if($("musicVolume"))$("musicVolume").addEventListener("input",e=>{if(selectedMusicClip>=0)musicClips[selectedMusicClip].volume=+e.target.value;AS.musicVolume=+e.target.value;$("musicVolVal").textContent=Math.round(e.target.value*100)+"%"});
     if($("videoVolume"))$("videoVolume").addEventListener("input",e=>{AS.videoVolume=+e.target.value;$("vidVolVal").textContent=Math.round(e.target.value*100)+"%";preview.volume=AS.videoVolume});
     if($("musicStart"))$("musicStart").addEventListener("change",e=>{const mc=musicClips[selectedMusicClip];if(mc){mc.timelineStart=Math.max(0,+e.target.value||0)}AS.musicStart=Math.max(0,+e.target.value||0);renderTimeline()});
@@ -712,10 +757,11 @@ function wirePanel(panelId){
     if($("musicSrcEnd"))$("musicSrcEnd").addEventListener("change",e=>{const mc=musicClips[selectedMusicClip];if(!mc)return;mc.srcEnd=clamp(+e.target.value||0,mc.srcStart+0.1,musicDuration||mc.srcEnd);renderTimeline()});
     if($("musicFadeIn"))$("musicFadeIn").addEventListener("change",e=>{AS.fadeIn=Math.max(0,+e.target.value||0);if(selectedMusicClip>=0)musicClips[selectedMusicClip].fadeIn=AS.fadeIn});
     if($("musicFadeOut"))$("musicFadeOut").addEventListener("change",e=>{AS.fadeOut=Math.max(0,+e.target.value||0);if(selectedMusicClip>=0)musicClips[selectedMusicClip].fadeOut=AS.fadeOut});
+    if($("musicLoop"))$("musicLoop").addEventListener("change",e=>{const mc=musicClips[selectedMusicClip];if(mc){mc.loop=e.target.checked}if(musicPreviewEl)musicPreviewEl.loop=!!(mc&&mc.loop);renderTimeline()});
     if($("previewMusicBtn"))$("previewMusicBtn").onclick=previewMusic;
     if($("removeMusicBtn"))$("removeMusicBtn").onclick=()=>{if(selectedMusicClip>=0){musicClips.splice(selectedMusicClip,1);selectedMusicClip=-1;syncPrimaryMusicFromClips();renderAll();showToast("Removed","Music removed.")}};
     if(musicClips.length){$("audioControls").classList.remove("hidden");$("audioInfo").textContent="🎵 "+musicName}
-    if(selectedMusicClip>=0&&musicClips[selectedMusicClip]){const mc=musicClips[selectedMusicClip];$("musicSrcStart").value=fmt(mc.srcStart);$("musicSrcEnd").value=fmt(mc.srcEnd);$("musicStart").value=fmt(mc.timelineStart);$("musicVolume").value=mc.volume;$("musicVolVal").textContent=Math.round(mc.volume*100)+"%"};
+    if(selectedMusicClip>=0&&musicClips[selectedMusicClip]){const mc=musicClips[selectedMusicClip];$("musicSrcStart").value=fmt(mc.srcStart);$("musicSrcEnd").value=fmt(mc.srcEnd);$("musicStart").value=fmt(mc.timelineStart);$("musicVolume").value=mc.volume;$("musicVolVal").textContent=Math.round(mc.volume*100)+"%";if($("musicLoop"))$("musicLoop").checked=!!mc.loop}
   }
   if(panelId==="voice"){
     $("voiceoverFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);await setVoiceover(url,f.name,true);e.target.value=""};
@@ -1439,11 +1485,12 @@ async function setMusicSource(url,name,isBlob){
     duration=await new Promise(resolve=>{const a=new Audio();a.preload="metadata";a.onloadedmetadata=()=>resolve(Number.isFinite(a.duration)?a.duration:0);a.onerror=()=>resolve(0);a.src=url;a.load();setTimeout(()=>resolve(0),8000)});
   }
   if(!duration){showToast("Music could not load","Choose an MP3/WAV/M4A file or a direct audio URL.");return}
-  const newClip={id:"m"+Date.now()+Math.floor(Math.random()*1000),url,name:name||"Music",srcStart:0,srcEnd:duration,timelineStart:0,volume:0.35,fadeIn:1,fadeOut:2,muted:false,blob:!!isBlob,buffer:decoded};
+  const newClip={id:"m"+Date.now()+Math.floor(Math.random()*1000),url,name:name||"Music",srcStart:0,srcEnd:duration,timelineStart:0,volume:0.35,fadeIn:1,fadeOut:2,muted:false,blob:!!isBlob,buffer:decoded,loop:false};
   musicClips.push(newClip);selectedMusicClip=musicClips.length-1;
   syncPrimaryMusicFromClips();
   musicDuration=duration;musicBuffer=decoded;
-  if(!musicPreviewEl){musicPreviewEl=new Audio();musicPreviewEl.loop=true}
+  if(!musicPreviewEl){musicPreviewEl=new Audio()}
+  musicPreviewEl.loop=!!newClip.loop;
   musicPreviewEl.src=url;musicPreviewEl.volume=newClip.volume;
   if($("audioInfo"))$("audioInfo").textContent="🎵 "+name;
   if($("audioControls"))$("audioControls").classList.remove("hidden");
@@ -1460,147 +1507,198 @@ async function removeMusic(){
   renderTimeline();updateTimelineTrackButtons();
 }
 
-let audioTab="songs",musicCredit="";
-const tabResults={},lastQuery={};
-const EMOJIS=["⭐","❤️","🔥","✨","😂","🎉","😎","👍","👏","💯","🚀","🎵","💬","📍","🌸","😍","👑","💎","🏆","🎯"];
-const TEMPLATES=[
-  {name:"TikTok Viral",icon:"🔥",aspect:"9:16",filter:"saturate(180%) contrast(110%)",transition:"fade",effect:"zoompulse",title:"YOUR TITLE",y:15},
-  {name:"Cinematic",icon:"🎬",aspect:"16:9",filter:"contrast(120%) brightness(95%)",transition:"fade",effect:"smoothzoom",title:"A STORY",y:50},
-  {name:"Story Promo",icon:"📱",aspect:"9:16",filter:"sepia(50%) hue-rotate(-20deg) saturate(180%)",transition:"zoom",effect:"flash",title:"SALE",y:50},
-  {name:"Clean Vlog",icon:"🌿",aspect:"16:9",filter:"none",transition:"cut",effect:"none",title:"My Vlog",y:85},
-  {name:"Noir Mood",icon:"🖤",aspect:"4:5",filter:"grayscale(100%) contrast(150%) brightness(90%)",transition:"fade",effect:"shake",title:"MIDNIGHT",y:50},
-  {name:"VHS Vibes",icon:"📼",aspect:"9:16",filter:"sepia(60%) contrast(110%) brightness(95%)",transition:"fade",effect:"vhs",title:"RETRO",y:50}
-];
-window.applyTemplate=i=>{
-  const t=TEMPLATES[i];snapshot();$("aspectRatio").value=t.aspect;updateFrame();
-  const c=clips[selectedClip];if(c){c.filter=t.filter;c.transition=t.transition;c.effect=t.effect;applyPreviewFilters()}
-  texts.push({...TEXT_DEFAULT,text:t.title,color:"#ffffff",size:56,fontFamily:"Anton",x:50,y:t.y,pos:"custom",anim:"zoom",start:0,end:0,outlineWidth:2,outlineColor:"#000",bold:true,italic:false,opacity:100,rotation:0,letterSpacing:0,lineSpacing:1.2,curve:"none",curveAmount:180,shadowEnabled:false,backgroundEnabled:false});
-  selectedText=texts.length-1;renderTextList();updatePreviewText();renderTimeline();
+let musicTab="trending",musicCredit="",lastMusicUpdate=null,musicCache={},suggestMood="";
+let libResults=[],libAudio=new Audio(),libNow=-1;
+const savedMusic=JSON.parse(localStorage.getItem("pikoraSavedMusic")||"[]");
+
+const MUSIC_TABS={
+ trending:{label:"Trending Now",type:"chart",country:"US"},
+ global:{label:"Global Hits",type:"search",q:"global hits",country:"US"},
+ sa:{label:"Trending in Saudi Arabia",type:"chart",country:"SA"},
+ in:{label:"Trending in India",type:"chart",country:"IN"},
+ ae:{label:"Trending in UAE",type:"chart",country:"AE"},
+ uk:{label:"Trending in UK",type:"chart",country:"GB"},
+ us:{label:"Trending in USA",type:"chart",country:"US"},
+ tiktok:{label:"Viral on TikTok",type:"search",q:"tiktok viral",country:"US"},
+ instagram:{label:"Trending on Instagram",type:"search",q:"instagram trending",country:"US"},
+ islamic:{label:"Islamic & Nasheeds",type:"search",q:"islamic nasheed",country:"SA"},
+ wedding:{label:"Wedding & Romantic",type:"search",q:"wedding romantic",country:"US"},
+ cinematic:{label:"Cinematic",type:"search",q:"cinematic instrumental",country:"US"},
+ emotional:{label:"Emotional",type:"search",q:"emotional piano",country:"US"},
+ instrumental:{label:"Instrumental",type:"search",q:"instrumental",country:"US"},
+ relaxing:{label:"Relaxing",type:"search",q:"relaxing instrumental",country:"US"},
+ new:{label:"New Releases",type:"search",q:"new release",country:"US"},
+ saved:{label:"Saved Music",type:"saved"}
 };
-function setEffect(v){const c=clips[selectedClip];if(!c){showToast("No clip","Pick a clip.");return}snapshot();c.effect=v;if($("effectSelect"))$("effectSelect").value=v;paintEffectActive();showToast("Effect",v==="none"?"Removed.":v+" applied.")}
-window.setEffect=setEffect;
-function paintEffectActive(){paintEffects();return}
-function setTransition(v){const c=clips[selectedClip];if(!c){showToast("No clip","Pick a clip.");return}snapshot();c.transition=v;c.transitionDuration=parseFloat($("transDur")?.value)||1;showToast("Transition",v+" applied.")}
 
-const SONG_CHIPS=[["Bollywood","bollywood hits"],["Punjabi","punjabi"],["Arijit Singh","arijit singh"],["Naat","naat"],["Nasheed","nasheed"],["Quran","quran recitation"],["Arabic","arabic music"],["Turkish","turkish pop"],["Pakistani","coke studio"],["K-pop","kpop"],["Lo-fi","lofi"],["Hip hop","hip hop"],["EDM","edm dance"],["Romantic","romantic songs"]];
-const FULL_CHIPS=[["Cinematic","cinematic"],["Happy","happy"],["Chill","chill"],["Lo-fi","lofi"],["Piano","piano"],["Arabic / Oud","oud"],["Indian","indian"],["Sitar","sitar"],["Hip hop","hip hop"],["Electronic","electronic"],["Rock","rock"],["Acoustic","acoustic guitar"],["Sad","sad"],["Epic","epic"],["Ambient","ambient"],["Kids","kids"],["Vlog","vlog"]];
-const SFX_CHIPS=[["Whoosh","whoosh"],["Pop","pop"],["Applause","applause"],["Laugh","laugh"],["Ding","ding"],["Boom","boom"],["Click","click"],["Camera","camera shutter"],["Cash","cash register"],["Drum roll","drum roll"],["Swoosh","swoosh"],["Notification","notification"],["Typing","typing"],["Cheer","crowd cheer"],["Heartbeat","heartbeat"],["Rain","rain"],["Wind","wind"],["Birds","birds"],["Glitch","glitch"],["Scratch","record scratch"],["Bell","bell"],["Fail","fail"]];
-
-function jsonp(url){
-  return new Promise((res,rej)=>{
-    const cb="pkcb"+Date.now()+Math.floor(Math.random()*1e5);const s=document.createElement("script");
-    const done=()=>{clearTimeout(tm);try{delete window[cb]}catch(e){window[cb]=undefined}s.remove()};
-    const tm=setTimeout(()=>{done();rej(new Error("timeout"))},9000);
-    window[cb]=d=>{done();res(d)};
-    s.onerror=()=>{done();rej(new Error("jsonp failed"))};
-    s.src=url+(url.includes("?")?"&":"?")+"output=jsonp&callback="+cb;
-    document.head.appendChild(s);
-  });
+function saveFavorites(){try{localStorage.setItem("pikoraSavedMusic",JSON.stringify(savedMusic))}catch(e){}}
+function isSaved(t){return savedMusic.some(x=>x.preview===t.preview)}
+function toggleSave(i){
+  const t=libResults[i];if(!t)return;
+  const idx=savedMusic.findIndex(x=>x.preview===t.preview);
+  if(idx>=0){savedMusic.splice(idx,1);showToast("Removed from Saved","")}
+  else{savedMusic.unshift({...t});if(savedMusic.length>100)savedMusic.pop();showToast("Saved ✅","Added to Saved Music")}
+  saveFavorites();renderMusicResults();
 }
-function mapDeezer(d){return (d&&d.data||[]).filter(t=>t.preview).map(t=>({kind:"song",title:t.title||"Untitled",creator:t.artist?.name||"Unknown",duration:30000,preview:t.preview,cover:t.album?.cover_small||"",licenseLabel:"Deezer preview"}))}
-async function getDeezer(q){return mapDeezer(await jsonp("https://api.deezer.com/search?q="+encodeURIComponent(q)+"&limit=25"))}
-async function getiTunes(q){const r=await fetch("https://itunes.apple.com/search?term="+encodeURIComponent(q)+"&media=music&entity=song&limit=25");if(!r.ok)throw new Error("itunes "+r.status);const d=await r.json();return (d.results||[]).filter(t=>t.previewUrl).map(t=>({kind:"song",title:t.trackName||"Untitled",creator:t.artistName||"Unknown",duration:30000,preview:t.previewUrl,cover:t.artworkUrl60||"",licenseLabel:"Apple preview"}))}
-function licLabel(l,v){l=String(l||"").toLowerCase();if(l==="cc0")return "CC0 · no credit needed";if(l==="pdm")return "Public domain";return "CC "+l.toUpperCase()+(v?" "+v:"")}
-async function getOpenverse(q,mode){
-  const key="pk-ov|"+mode+"|"+q.toLowerCase();
-  try{const c=sessionStorage.getItem(key);if(c)return JSON.parse(c)}catch(e){}
-  const p=new URLSearchParams({q,page_size:"20",mature:"false"});
-  if(mode==="sfx"){p.set("source","freesound");p.set("length","shortest")}else{p.set("source","jamendo");p.set("length","short,medium,long")}
-  const r=await fetch("https://api.openverse.org/v1/audio/?"+p);
-  if(r.status===429)throw new Error("limit");
-  if(!r.ok)throw new Error("openverse "+r.status);
+async function fetchItunesChart(country,limit=20){
+  const key="chart|"+country+"|"+limit;
+  const cached=musicCache[key];
+  if(cached&&Date.now()-cached.time<10*60*1000)return cached.items;
+  const r=await fetch(`https://rss.applemarketingtools.com/api/v2/${country}/music/most-played/${limit}/songs.json`);
+  if(!r.ok)throw new Error("chart "+r.status);
   const d=await r.json();
-  const out=(d.results||[]).filter(t=>t.url).map(t=>{const lic=licLabel(t.license,t.license_version);const from=t.source==="jamendo"?"Jamendo":"Freesound";return{kind:mode==="sfx"?"sfx":"full",title:t.title||"Untitled",creator:t.creator||"Unknown",duration:t.duration||0,preview:t.url,licenseLabel:lic,credit:`Music: "${t.title}" by ${t.creator} (${lic}, ${from})`}});
-  try{sessionStorage.setItem(key,JSON.stringify(out))}catch(e){}
+  const items=(d.feed?.results||[]).slice(0,limit);
+  const out=[];
+  for(const it of items){
+    try{
+      const q=encodeURIComponent((it.artistName||"")+" "+(it.name||""));
+      const sr=await fetch(`https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=1&country=${country}`);
+      const sd=await sr.json();
+      const hit=(sd.results||[])[0];
+      if(hit&&hit.previewUrl){
+        out.push({kind:"song",title:hit.trackName||it.name,creator:hit.artistName||it.artistName,duration:30000,preview:hit.previewUrl,cover:hit.artworkUrl100||it.artworkUrl100,licenseLabel:"Apple preview",country});
+      }
+    }catch(e){}
+  }
+  if(!out.length)throw new Error("No playable results");
+  musicCache[key]={time:Date.now(),items:out};
   return out;
 }
-function dedupe(arr){const seen=new Set();return arr.filter(t=>{const k=(t.title+"|"+t.creator).toLowerCase().replace(/[^a-z0-9\u0600-\u06ff\u0900-\u097f|]/g,"");if(seen.has(k))return false;seen.add(k);return true})}
-function renderAudioTab(){
-  const body=$("audioTabBody");if(!body)return;
-  document.querySelectorAll("#audioTabs .tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===audioTab));
-  const chips=arr=>arr.map(([l,q])=>`<button class="chip" type="button" data-q="${esc(q)}">${l}</button>`).join("");
-  const search=ph=>`<div style="display:flex;gap:6px"><input type="text" id="musicSearch" placeholder="${ph}" style="margin-bottom:0" value="${esc(lastQuery[audioTab]||"")}"><button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button></div>`;
-  if(audioTab==="songs")body.innerHTML=`<label class="upload-zone" for="musicFile" style="padding:12px;margin-bottom:10px"><span>📁</span><strong>Add music from your PC</strong><br><small>MP3, WAV, M4A</small></label>`+search("Any song, artist or language…")+`<div class="chips"><button class="chip trend" type="button" id="trendingBtn">🔥 Trending now</button>${chips(SONG_CHIPS)}</div><div id="musicResults"></div><div class="note">⚠️ 30-second clips. For music safe to post, use <b>Free full songs</b>.</div>`;
-  else if(audioTab==="full")body.innerHTML=search("Mood, genre or instrument…")+`<div class="chips">${chips(FULL_CHIPS)}</div><div id="musicResults"></div><div class="note">✅ Complete songs from Jamendo, free under Creative Commons.</div>`;
-  else if(audioTab==="sfx")body.innerHTML=search("whoosh, pop, applause…")+`<div class="chips">${chips(SFX_CHIPS)}</div><div id="sfxList"></div><div id="musicResults"></div><div class="note">Sounds are added at the red playhead. From Freesound.</div>`;
-  else body.innerHTML=`<label class="upload-zone" for="musicFile" style="padding:14px"><span>📁</span><strong>Upload a full song from your device</strong><br><small>MP3, WAV, M4A</small></label>
-    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px"><label>Use online audio URL</label><div style="display:flex;gap:6px"><input id="onlineMusicUrl" type="url" placeholder="https://.../music.mp3" style="margin-bottom:0"><button class="act" id="addOnlineMusicBtn" type="button" style="width:auto;margin-top:0;padding:0 12px">Add</button></div><div class="note">Use a direct MP3/WAV/M4A link that allows browser playback.</div></div>
-    <label style="margin-top:12px">Use the sound from one of your clips</label>
-    ${clips.length?clips.map((c,i)=>`<div class="track-res">${c.thumb?`<img src="${c.thumb}" alt="">`:'<div class="cov">🎞</div>'}<div class="info"><div class="t">${esc(c.name)}</div><div class="m">${fmt(c.duration)}s</div></div><button class="icon-btn add" type="button" onclick="useClipSound(${i})">Use sound</button></div>`).join(""):'<div class="note">Upload a video first.</div>'}
-    <div class="toggle-row"><input type="checkbox" id="muteAfterExtract" checked><span>Mute the clips' own sound after</span></div>`;
-  const inp=$("musicSearch");
-  if(inp){
-    const go=()=>runAudioSearch(inp.value.trim());
-    $("musicSearchBtn").onclick=go;inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
-    body.querySelectorAll(".chip[data-q]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.q;go()});
-    if($("trendingBtn"))$("trendingBtn").onclick=searchTrending;
-    if(tabResults[audioTab]){libResults=tabResults[audioTab];renderLibResults()}
-    else if(audioTab==="songs")searchTrending();
-    else if(audioTab==="full"){inp.value="cinematic";go()}
-  }
-  if(audioTab==="sfx")renderSfxList();
-  if(audioTab==="mine" && $("addOnlineMusicBtn")) $("addOnlineMusicBtn").onclick=async()=>{
-    const u=$("onlineMusicUrl").value.trim();
-    if(!/^https?:\/\//i.test(u)){showToast("Invalid URL","Paste a direct audio file link.");return}
-    try{await setMusicSource(u,u.split("/").pop().split("?")[0]||"Online music",false);showToast("Music added", "Online audio added to your timeline.");}
-    catch(e){showToast("Could not load music","The link must be a direct MP3, WAV, or M4A file and allow browser playback.");}
-  };
+async function fetchItunesSearch(q,country="US",limit=25){
+  const key="search|"+country+"|"+q.toLowerCase();
+  const cached=musicCache[key];
+  if(cached&&Date.now()-cached.time<10*60*1000)return cached.items;
+  const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=${limit}&country=${country}`);
+  if(!r.ok)throw new Error("itunes "+r.status);
+  const d=await r.json();
+  const out=(d.results||[]).filter(t=>t.previewUrl).map(t=>({kind:"song",title:t.trackName||"Untitled",creator:t.artistName||"Unknown",duration:30000,preview:t.previewUrl,cover:t.artworkUrl100,licenseLabel:"Apple preview",country}));
+  if(!out.length)throw new Error("No playable results");
+  musicCache[key]={time:Date.now(),items:out};
+  return out;
 }
-async function runAudioSearch(q){
-  if(!q){showToast("Type a word","Any song, artist, mood or sound");return}
-  lastQuery[audioTab]=q;const tab=audioTab;const box=$("musicResults");if(!box)return;
-  box.innerHTML='<div class="note">Searching…</div>';stopLib();
-  let out=[];
-  try{
-    if(tab==="songs"){const res=await Promise.allSettled([getiTunes(q),getDeezer(q)]);const ok=res.filter(r=>r.status==="fulfilled").map(r=>r.value);if(!ok.length)throw new Error("offline");const mx=Math.max(...ok.map(a=>a.length));for(let i=0;i<mx;i++)ok.forEach(a=>{if(a[i])out.push(a[i])});out=dedupe(out)}
-    else out=await getOpenverse(q,tab==="sfx"?"sfx":"full");
-  }catch(e){
-    if(audioTab===tab&&$("musicResults"))$("musicResults").innerHTML=`<div class="note">${e.message==="limit"?"Too many searches right now.":"Could not load."}</div>`;
-    return;
-  }
-  tabResults[tab]=out;
-  if(audioTab===tab){libResults=out;renderLibResults()}
+function musicCard(t,i){
+  const saved=isSaved(t);
+  return `<div class="music-card">
+    ${t.cover?`<img class="art" src="${esc(t.cover)}" loading="lazy" alt="">`:'<div class="art" style="display:flex;align-items:center;justify-content:center;font-size:34px">🎵</div>'}
+    <div class="info">
+      <div class="t">${esc(t.title||"Untitled")}</div>
+      <div class="a">${esc(t.creator||"Unknown")}</div>
+      <div class="m" style="font-size:9px;color:var(--muted)">${t.duration?Math.round(t.duration/1000)+"s · ":""}${esc(t.licenseLabel||"Preview")}</div>
+      <div class="row">
+        <button type="button" class="lp" data-i="${i}">▶</button>
+        <button type="button" class="add" data-add="${i}">＋ Add</button>
+        <button type="button" class="fav ${saved?"on":""}" data-fav="${i}">${saved?"★":"☆"}</button>
+      </div>
+    </div>
+  </div>`;
 }
-async function searchTrending(){
-  const box=$("musicResults");if(!box)return;box.innerHTML='<div class="note">Loading what\'s trending…</div>';stopLib();
-  try{const out=mapDeezer(await jsonp("https://api.deezer.com/chart/0/tracks?limit=40"));if(!out.length)throw 0;tabResults.songs=out;libResults=out;renderLibResults()}
-  catch(e){runAudioSearch("top hits")}
-}
-let libResults=[],libAudio=new Audio(),libNow=-1;
-function renderLibResults(){
+function renderMusicResults(){
   const box=$("musicResults");if(!box)return;
-  if(!libResults.length){box.innerHTML='<div class="note">Nothing found.</div>';return}
-  box.innerHTML=libResults.map((t,i)=>{
-    const sec=Math.round((t.duration||0)/1000),d=t.kind!=="song"&&sec?Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"):"";
-    const badge=t.kind==="song"?'<span class="badge prev">30s</span>':t.kind==="full"?'<span class="badge full">FULL · FREE</span>':'<span class="badge sfx">SFX</span>';
-    const cov=t.cover?`<img src="${esc(t.cover)}" loading="lazy" alt="">`:`<div class="cov">${t.kind==="sfx"?"💥":"🎼"}</div>`;
-    return `<div class="track-res">${cov}<div class="info"><div class="t">${esc(t.title)}</div><div class="m">${badge}${esc(t.creator)}${d?" · "+d:""}${t.kind!=="song"?" · "+esc(t.licenseLabel):""}</div></div><button class="icon-btn lp" type="button" onclick="libPlay(${i})" title="Listen">▶</button><button class="icon-btn add" type="button" onclick="libAdd(${i})">${t.kind==="sfx"?"+ Add":"Use"}</button></div>`;
-  }).join("");
+  if(!libResults.length){box.innerHTML='<div class="note">No playable music found. Try another category or search.</div>';return}
+  box.innerHTML='<div class="music-grid">'+libResults.map((t,i)=>musicCard(t,i)).join("")+'</div>';
+  box.querySelectorAll(".lp").forEach(b=>b.onclick=()=>libPlay(+b.dataset.i));
+  box.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>libAdd(+b.dataset.add));
+  box.querySelectorAll("[data-fav]").forEach(b=>b.onclick=()=>toggleSave(+b.dataset.fav));
   paintLib();
+}
+function renderMusicDiscovery(){
+  const body=$("audioTabBody");if(!body)return;
+  document.querySelectorAll("#audioTabs .tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===musicTab));
+  const cfg=MUSIC_TABS[musicTab]||MUSIC_TABS.trending;
+  body.innerHTML=`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+      <input type="text" id="musicSearch" placeholder="Search song, artist or mood…" style="margin-bottom:0" value="">
+      <button class="act" id="musicSearchBtn" type="button" style="width:auto;margin-top:0;padding:0 14px">🔍</button>
+    </div>
+    <div class="chips">
+      <button class="chip trend" type="button" id="refreshTrendingBtn">🔄 Refresh trends</button>
+      <button class="chip" type="button" data-q="islamic nasheed">Islamic</button>
+      <button class="chip" type="button" data-q="wedding romantic">Wedding</button>
+      <button class="chip" type="button" data-q="cinematic instrumental">Cinematic</button>
+      <button class="chip" type="button" data-q="relaxing piano">Relaxing</button>
+    </div>
+    <div id="musicResults"></div>
+    <div class="note" id="musicUpdated">${lastMusicUpdate?"Last updated: "+lastMusicUpdate:"Trends update automatically."}</div>
+    <div class="note">Previews are for editing/preview. Check licensing before commercial use or publishing.</div>`;
+  const inp=$("musicSearch");
+  const go=()=>runMusicSearch(inp.value.trim());
+  $("musicSearchBtn").onclick=go;
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+  $("refreshTrendingBtn").onclick=()=>loadMusicTab("trending",true);
+  body.querySelectorAll(".chip[data-q]").forEach(b=>b.onclick=()=>{inp.value=b.dataset.q;go()});
+  if(musicTab==="saved"){libResults=savedMusic;renderMusicResults();return}
+  if(musicCache["tab|"+musicTab]){libResults=musicCache["tab|"+musicTab];renderMusicResults()}
+  else loadMusicTab(musicTab);
+}
+async function loadMusicTab(tab,force){
+  const cfg=MUSIC_TABS[tab]||MUSIC_TABS.trending;
+  const box=$("musicResults");if(!box)return;
+  box.innerHTML='<div class="note">Loading '+(cfg.label||"music")+'…</div>';stopLib();
+  try{
+    let out=[];
+    if(cfg.type==="chart")out=await fetchItunesChart(cfg.country,20);
+    else out=await fetchItunesSearch(cfg.q,cfg.country,25);
+    musicCache["tab|"+tab]=out;libResults=out;lastMusicUpdate=new Date().toLocaleString();
+    const up=$("musicUpdated");if(up)up.textContent="Last updated: "+lastMusicUpdate;
+    renderMusicResults();
+  }catch(e){
+    box.innerHTML='<div class="note">Could not load music right now. Please try again.</div>';
+  }
+}
+async function runMusicSearch(q){
+  if(!q){showToast("Type a word","Any song, artist, mood or sound");return}
+  const box=$("musicResults");if(!box)return;
+  box.innerHTML='<div class="note">Searching…</div>';stopLib();
+  try{
+    const out=await fetchItunesSearch(q,"US",25);
+    libResults=out;renderMusicResults();
+  }catch(e){box.innerHTML='<div class="note">Could not load results. Try another search.</div>'}
+}
+async function suggestMusicForVideo(){
+  const box=$("suggestResults");if(!box)return;
+  if(!clips.length){box.innerHTML='<div class="note">Upload a video first.</div>';return}
+  box.innerHTML='<div class="note">Analysing video…</div>';
+  const name=(clips[0].name||"").toLowerCase();
+  let mood=suggestMood;
+  if(!mood){
+    if(/madinah|medina|islam|quran|nasheed|mosque/.test(name))mood="islamic";
+    else if(/wedding|shadi|marriage/.test(name))mood="wedding";
+    else if(/travel|trip|tour/.test(name))mood="travel";
+    else if(/nature|forest|mountain/.test(name))mood="nature";
+    else if(/funny|comedy|laugh/.test(name))mood="funny";
+    else if(/sad|emotional|love/.test(name))mood="emotional";
+    else if(/fashion|style|outfit/.test(name))mood="fashion";
+    else mood="cinematic";
+  }
+  const map={islamic:"islamic nasheed",madinah:"islamic nasheed",wedding:"wedding romantic",travel:"cinematic travel",nature:"relaxing instrumental",funny:"funny upbeat",emotional:"emotional piano",fashion:"fashion upbeat",cinematic:"cinematic instrumental"};
+  try{
+    const out=await fetchItunesSearch(map[mood]||"cinematic instrumental","US",10);
+    libResults=out;renderMusicResults();
+    box.innerHTML='<div class="note">Suggestions ready — '+out.length+' tracks.</div>';
+  }catch(e){box.innerHTML='<div class="note">Could not load suggestions.</div>'}
 }
 function paintLib(){document.querySelectorAll("#musicResults .lp").forEach((b,i)=>b.textContent=(i===libNow&&!libAudio.paused)?"⏹":"▶")}
 function stopLib(){libAudio.pause();libNow=-1;paintLib()}
 libAudio.addEventListener("ended",stopLib);libAudio.addEventListener("pause",paintLib);libAudio.addEventListener("playing",paintLib);
-window.libPlay=async i=>{const t=libResults[i];if(!t||!t.preview)return;if(libNow===i&&!libAudio.paused){stopLib();return}unlockAudio();libAudio.pause();libNow=i;try{libAudio.src=t.preview;await libAudio.play();paintLib()}catch(e){libNow=-1;paintLib();showToast("Cannot play","Try another one.")}};
+window.libPlay=async i=>{
+  const t=libResults[i];if(!t||!t.preview)return;
+  if(libNow===i&&!libAudio.paused){stopLib();return}
+  unlockAudio();libAudio.pause();libNow=i;
+  try{libAudio.src=t.preview;await libAudio.play();paintLib()}catch(e){libNow=-1;paintLib();showToast("Cannot play","Try another track.")}
+};
 window.libAdd=async i=>{
   const t=libResults[i];if(!t||!t.preview)return;stopLib();
-  if(t.kind==="sfx"){await addSfx(t.preview,t.title,(t.duration||1000)/1000);return}
-  showToast("Adding…",t.kind==="full"?"Downloading the full song":"Downloading 30s clip");
-  const name=(t.title||"Untitled")+" – "+(t.creator||"Unknown")+(t.kind==="song"?" (30s)":"");
-  try{const r=await fetch(t.preview);if(!r.ok)throw new Error("blocked");await setMusicSource(URL.createObjectURL(await r.blob()),name,true)}
-  catch(err){await setMusicSource(t.preview,name,false)}
-  musicCredit=t.kind==="full"?t.credit:"";if($("drawerBody"))$("drawerBody").scrollTop=0;
-  showToast("Music added ✅","Trim it on the timeline.");
+  showToast("Adding…","Preparing music");
+  const name=(t.title||"Untitled")+" – "+(t.creator||"Unknown");
+  try{
+    const r=await fetch(t.preview);
+    if(!r.ok)throw new Error("blocked");
+    await setMusicSource(URL.createObjectURL(await r.blob()),name,true);
+    showToast("Music added ✅","Trim it on the timeline.");
+  }catch(e){
+    showToast("Preview not exportable","This source blocks download. Upload an MP3/WAV or use a downloadable file.");
+  }
 };
-window.useClipSound=async i=>{
-  const c=clips[i];if(!c)return;
-  await setMusicSource(c.url,"Sound from "+c.name,false);
-  musicCredit="";
-  if($("muteAfterExtract")?.checked){snapshot();clips.forEach(x=>x.muted=true);updateTimelineTrackButtons()}
-  showToast("Sound added ✅","Clip sound now plays as music.");
-};
-$("musicFile").onchange=e=>{const f=e.target.files[0];if(!f)return;setMusicSource(URL.createObjectURL(f),f.name,true).then(()=>{musicCredit="";showToast("Music added ✅",f.name)});e.target.value=""};
-
 async function addSfx(url,name,dur){
   if(!clips.length){showToast("No video","Upload a video first.");return}
   showToast("Adding sound…",name);
@@ -1864,7 +1962,7 @@ async function exportMP4(){
   const audioMix=await buildMixedAudio(total);
   const wantsSound=clips.some(c=>!c.muted)||(musicClips.length&&!musicMuted)||(voiceoverURL&&!voiceMuted)||sfx.length>0;
   const hasAudio=!!(audioMix&&audioMix.left.length>0&&audioMix.peak>0);
-  if(wantsSound&&!hasAudio){showToast("No sound found","The browser could not read the audio from your clips. Try an MP4 (H.264 + AAC) file.")}
+  if(wantsSound&&!hasAudio){showToast("No MP4 audio","Falling back to WebM so sound can be included.");return exportWebM()}
   // AAC encoding is missing in Firefox, Chrome on Linux and some Android phones; fall back to Opus so the video keeps its sound.
   let audioCodec=null;
   if(hasAudio&&typeof AudioEncoder!=="undefined"){
@@ -1872,7 +1970,7 @@ async function exportMP4(){
     try{if((await AudioEncoder.isConfigSupported(cfg("mp4a.40.2"))).supported)audioCodec={muxer:"aac",enc:"mp4a.40.2"}}catch(e){}
     if(!audioCodec){try{if((await AudioEncoder.isConfigSupported(cfg("opus"))).supported)audioCodec={muxer:"opus",enc:"opus"}}catch(e){}}
   }
-  if(hasAudio&&!audioCodec){return exportWebM()}
+  if(hasAudio&&!audioCodec){showToast("Using WebM","MP4 audio encoder unavailable; exporting WebM with sound.");return exportWebM()}
   const muxer=new Muxer({target,video:{codec:"avc",width:w,height:h,frameRate:FPS},...(audioCodec?{audio:{codec:audioCodec.muxer,numberOfChannels:2,sampleRate:48000}}:{}),fastStart:"in-memory",firstTimestampBehavior:"offset"});
   let videoEncoder;
   try{
@@ -1959,14 +2057,17 @@ async function buildMixedAudio(total){
         if(!buf)continue;
         const srcL=buf.getChannelData(0);const srcR=buf.numberOfChannels>1?buf.getChannelData(1):srcL;
         const step=buf.sampleRate/sampleRate;const durSrc=(mc.srcEnd-mc.srcStart);
-        const startSample=Math.floor(mc.timelineStart*sampleRate);const len=Math.floor(durSrc*sampleRate);
+        const startSample=Math.floor(mc.timelineStart*sampleRate);
+        const len=mc.loop?Math.max(0,totalSamples-startSample):Math.floor(durSrc*sampleRate);
         const srcOffsetStart=Math.floor(mc.srcStart*buf.sampleRate);
         for(let i=0;i<len;i++){
-          const srcI=srcOffsetStart+Math.floor(i*step);if(srcI<0||srcI>=srcL.length)continue;
+          let srcI=srcOffsetStart+Math.floor(i*step);
+          if(mc.loop&&srcI>=srcL.length)srcI=srcOffsetStart+((Math.floor(i*step))%(Math.max(1,Math.floor((mc.srcEnd-mc.srcStart)*buf.sampleRate))));
+          if(srcI<0||srcI>=srcL.length)continue;
           const idx=startSample+i;if(idx<0||idx>=totalSamples)continue;
           const mt=(i)/sampleRate;
           const fadeInGain=mc.fadeIn>0?Math.min(1,mt/mc.fadeIn):1;
-          const fadeOutGain=mc.fadeOut>0?Math.min(1,(durSrc-mt)/mc.fadeOut):1;
+          const fadeOutGain=mc.fadeOut>0?Math.min(1,(len/sampleRate-mt)/mc.fadeOut):1;
           const g=mc.volume*Math.min(fadeInGain,fadeOutGain);
           left[idx]+=srcL[srcI]*g;right[idx]+=srcR[srcI]*g;
         }
